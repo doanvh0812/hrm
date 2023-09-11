@@ -26,8 +26,13 @@
     # always loaded
     'data': [
         'views/blocks_view.xml',
+<<<<<<< HEAD
         'views/menu.xml',
         # 'views/hrm_position_view'
+=======
+        'views/employee_profile_view.xml',
+        'views/menu.xml'
+>>>>>>> 5ab18f2be80dd364744331de0affafd11a59956b
     ],
     # only loaded in demonstration mode
     'demo': [
