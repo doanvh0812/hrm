@@ -25,6 +25,7 @@
 
     # always loaded
     'data': [
+        'views/systems_views.xml',
         'views/blocks_view.xml',
         'views/menu.xml'
     ],
