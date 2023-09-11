@@ -16,7 +16,7 @@ class EmployeeProfile(models.Model):
     phone_num = fields.Integer('Số điện thoại di động', required=True)
     identifier = fields.Integer('Số căn cước công dân', required=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
-    # system_id = fields.Many2one('hrm.systems', string='Hệ thống')
+    system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     # company = chưa có model systems
     # team_marketing = chưa có model position
     # team_sales = chưa có model position
