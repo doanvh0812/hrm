@@ -13,3 +13,8 @@ DEFAULT_TRADE = {
     'has_change': False
 }
 DO_NOT_DELETE = "Không thể xoá!"
+
+TYPE_SYSTEM = [
+    ('sale', 'Sale'),
+    ('resale', 'Resale')
+]
