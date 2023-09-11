@@ -19,13 +19,9 @@
         <field name="model">hrm.departments</field>
         <field name="arch" type="xml">
             <tree string="Phòng ban">
-                <sheet>
-                    <group>
-                        <field name="name"/>
-                        <field name="manager_id"/>
-                        <field name="superior_department"/>
-                    </group>
-                </sheet>
+                <field name="name"/>
+                <field name="manager_id"/>
+                <field name="superior_department"/>
             </tree>
         </field>
     </record>
