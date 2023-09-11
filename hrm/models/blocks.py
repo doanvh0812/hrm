@@ -10,11 +10,16 @@ class Blocks(models.Model):
     name = fields.Char(string='Tên khối', required=True)
     description = fields.Text(string='Mô tả', default='')
     status = fields.Boolean(string='Hoạt động', default=True)
-    has_change = fields.Boolean()
+    has_change = fields.Boolean(default=True)
 
     @api.model
     def _auto_init(self):
-        # Tự tạo các bản ghi 'Văn phòng', 'Thương mại'
+        """
+            Tự tạo các bản ghi 'Văn phòng', 'Thương mại'
+            Duyệt qua bảng hrm.blocks
+            Nếu không có bản ghi nào có tên 'Văn phòng' hoặc 'Thương mại' thì tạo mới cả 2
+            Thiếu 1 bản ghi thì tạo mới bản ghi còn thiếu
+        """
         super(Blocks, self)._auto_init()
         existing_records = self.env['hrm.blocks'].search([('has_change', '=', False)])
         if len(existing_records) == 0:
@@ -30,7 +35,7 @@ class Blocks(models.Model):
     def unlink(self, context=None):
         # Chặn không cho xoá khối 'Văn phòng' và 'Thương mại'
         for line in self:
-            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME]:
+            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_TRADE_NAME]:
                 raise ValidationError(constraint.DO_NOT_DELETE)
         return super(Blocks, self).unlink()
 

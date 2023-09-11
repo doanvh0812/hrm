@@ -8,9 +8,9 @@
                     <sheet>
                         <group>
                             <field name="has_change" invisible="1"/>
-                            <field name="name" attrs="{'readonly':[('has_change','!=', False)]}"/>
-                            <field name="description" attrs="{'readonly':[('has_change','!=', False)]}"/>
-                            <field name="status" attrs="{'readonly':[('has_change','!=', False)]}"/>
+                            <field name="name" attrs="{'readonly':[('has_change','=', False)]}"/>
+                            <field name="description" attrs="{'readonly':[('has_change','=', False)]}"/>
+                            <field name="status" attrs="{'readonly':[('has_change','=', False)]}"/>
                         </group>
                     </sheet>
                 </form>
@@ -23,15 +23,15 @@
             <field name="arch" type="xml">
                 <tree>
                     <field name="has_change" invisible="1"/>
-                    <field name="name" attrs="{'readonly':[('has_change','!=', False)]}"/>
-                    <field name="description" attrs="{'readonly':[('has_change','!=', False)]}"/>
-                    <field name="status" attrs="{'readonly':[('has_change','!=', False)]}"/>
+                    <field name="name" attrs="{'readonly':[('has_change','=', False)]}"/>
+                    <field name="description" attrs="{'readonly':[('has_change','=', False)]}"/>
+                    <field name="status" attrs="{'readonly':[('has_change','=', False)]}"/>
                 </tree>
             </field>
         </record>
 
         <record id="blocks_action" model="ir.actions.act_window">
-            <field name="name">Block</field>
+            <field name="name">Khối</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.blocks</field>
             <field name="view_mode">tree,form</field>
