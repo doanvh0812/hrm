@@ -61,7 +61,9 @@
 <!--                    <field name="department_id"/>-->
                     <field name="manager_id"/>
 <!--                    <field name="rank_id"/>-->
-                    <field name="auto_create_acc"/>
+                    <group>
+                        <field name="auto_create_acc"/>
+                    </group>
                 </tree>
             </field>
         </record>
