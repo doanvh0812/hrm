@@ -13,3 +13,6 @@ DEFAULT_TRADE = {
     'has_change': False
 }
 DO_NOT_DELETE = "Không thể xoá!"
+PROFILE_STATUS = [
+    ('incomplete', 'Chưa hoàn thiện'),
+    ('complete', 'Hoàn thiện')]

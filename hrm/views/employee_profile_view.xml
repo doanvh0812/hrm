@@ -1,7 +1,6 @@
 <odoo>
     <data>
-    <data>
-        <record id="view_blocks_form" model="ir.ui.view">
+        <record id="view_employee_profile_form" model="ir.ui.view">
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
             <field name="arch" type="xml">
@@ -11,15 +10,68 @@
                             <group>
                                 <field name="name"/>
                                 <field name="block_id"/>
-                                <field name=""/>
+<!--                                <field name="position_id"/>-->
+                            </group>
+                            <group>
+                                <field name="work_start_date"/>
+                                <field name="date_receipt"/>
+                                <field name="employee_code"/>
+                                <field name="email"/>
+                                <field name="phone_num"/>
+                                <field name="identifier"/>
+                                <field name="profile_status"/>
                             </group>
                         </group>
                         <group>
-                            <field name="name"/>
+<!--                            <field name="system_id"/>-->
+<!--                            <field name="company"/>-->
+<!--                            <field name="team_marketing"/>-->
+<!--                            <field name="team_sales"/>-->
+<!--                            <field name="department_id"/>-->
+                            <field name="manager_id"/>
+<!--                            <field name="rank_id"/>-->
                         </group>
+                        <field name="auto_create_acc"/>
                     </sheet>
                 </form>
             </field>
+        </record>
+
+        <record id="view_employee_profile_tree" model="ir.ui.view">
+            <field name="name">hrm.blocks.tree</field>
+            <field name="model">hrm.employee.profile</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <field name="block_id"/>
+<!--                    <field name="position_id"/>-->
+                    <field name="work_start_date"/>
+                    <field name="date_receipt"/>
+                    <field name="employee_code"/>
+                    <field name="email"/>
+                    <field name="phone_num"/>
+                    <field name="identifier"/>
+                    <field name="profile_status"/>
+<!--                    <field name="system_id"/>-->
+<!--                    <field name="company"/>-->
+<!--                    <field name="team_marketing"/>-->
+<!--                    <field name="team_sales"/>-->
+<!--                    <field name="department_id"/>-->
+                    <field name="manager_id"/>
+<!--                    <field name="rank_id"/>-->
+                    <field name="auto_create_acc"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="employee_profile_action" model="ir.actions.act_window">
+            <field name="name">Tạo mới hồ sơ</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">hrm.employee.profile</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_profile_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_employee_profile_form')})]"/>
         </record>
     </data>
 </odoo>

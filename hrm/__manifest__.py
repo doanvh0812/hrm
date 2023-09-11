@@ -26,6 +26,7 @@
     # always loaded
     'data': [
         'views/blocks_view.xml',
+        'views/employee_profile_view.xml',
         'views/menu.xml'
     ],
     # only loaded in demonstration mode

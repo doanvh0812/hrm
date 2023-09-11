@@ -3,7 +3,7 @@ from . import constraint
 
 
 class EmployeeProfile(models.Model):
-    _name = 'hrm.employee_profile'
+    _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
 
     name = fields.Char(string='Họ và tên nhân sự', required=True)
@@ -15,13 +15,13 @@ class EmployeeProfile(models.Model):
     email = fields.Char('Email công việc', required=True)
     phone_num = fields.Integer('Số điện thoại di động', required=True)
     identifier = fields.Integer('Số căn cước công dân', required=True)
-    profile_status = fields.Boolean(string='Trạng thái hồ sơ', default=False)
+    profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
     # system_id = fields.Many2one('hrm.systems', string='Hệ thống')
-    # company chưa có model systems
+    # company = chưa có model systems
     # team_marketing = chưa có model position
     # team_sales = chưa có model position
     # department_id = chưa có model department
-    # manager_id = chưa có model employee
+    manager_id = fields.Many2one('res.users', string='Quản lý')
     # rank_id = chưa có model rank
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản')
 
