@@ -15,5 +15,5 @@
     <menuitem id="approval_flow" name="Luồng phê duyệt" parent="config" sequence="120" action=""/>
 
     <menuitem id="employee" name="Nhân viên" parent="menu_field" sequence="2"/>
-    <menuitem id="employee_profile" name="Tạo mới hồ sơ" parent="employee" sequence="10" action=""/>
+    <menuitem id="employee_profile" name="Tạo mới" parent="employee" sequence="10" action=""/>
 </odoo>
