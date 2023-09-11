@@ -7,7 +7,7 @@
     <menuitem id="subsidiaries" name="Công ty" parent="config" sequence="30" action=""/>
     <menuitem id="team" name="Đội ngũ" parent="config" sequence="40" action=""/>
     <menuitem id="departments" name="Phòng ban" parent="config" sequence="50" action=""/>
-    <menuitem id="position" name="Vị trí" parent="config" sequence="60" action=""/>
+    <menuitem id="position" name="Vị trí" parent="config" sequence="60" action="action_hrm_position"/>
     <menuitem id="employee" name="Nhân viên" parent="config" sequence="70" action=""/>
     <menuitem id="ranks" name="Cấp bậc" parent="config" sequence="90" action=""/>
     <menuitem id="managers" name="Người quản lý" parent="config" sequence="100" action=""/>
