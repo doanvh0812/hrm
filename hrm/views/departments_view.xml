@@ -7,8 +7,10 @@
                 <sheet>
                     <group>
                         <field name="name"/>
-                        <field name="manager_id"/>
                         <field name="superior_department"/>
+                    </group>
+                    <group>
+                        <field name="manager_id"/>
                     </group>
                 </sheet>
             </form>
