@@ -7,9 +7,10 @@
                 <form>
                     <sheet>
                         <group>
+                            <field name="related" invisible="1"/>
                             <field name="work_position"/>
                             <field name="block"/>
-                            <field name="department"  attrs ="{'invisible': [('block', '=', 'commerce')]}"/>
+                            <field name="department" attrs="{'invisible': [('related', '=', True)]}"/>
                         </group>
                     </sheet>
                 </form>
