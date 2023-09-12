@@ -9,7 +9,7 @@
                         <group>
                             <field name="work_position"/>
                             <field name="block"/>
-                            <field name="department" attrs ="{'invisible': [('block', '=', 'commerce')]}"/>
+                            <field name="department"  attrs ="{'invisible': [('block', '=', 'commerce')]}"/>
                         </group>
                     </sheet>
                 </form>
@@ -27,7 +27,6 @@
                 </tree>
             </field>
         </record>
-
 
         <record id="action_hrm_position" model="ir.actions.act_window">
             <field name="name">Position</field>
