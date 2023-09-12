@@ -21,18 +21,14 @@
     'application': True,
     'sequence': -100,
     # any module necessary for this one to work correctly
-    'depends': ['base', 'utm', 'mail'],
+    'depends': ['base'],
 
     # always loaded
     'data': [
         'views/blocks_view.xml',
-<<<<<<< HEAD
-        'views/menu.xml',
-        # 'views/hrm_position_view'
-=======
+        'views/hrm_position_view.xml',
         'views/employee_profile_view.xml',
-        'views/menu.xml'
->>>>>>> 5ab18f2be80dd364744331de0affafd11a59956b
+        'views/menu.xml',
     ],
     # only loaded in demonstration mode
     'demo': [
