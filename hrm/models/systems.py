@@ -1,6 +1,7 @@
 from odoo import models, api, fields
 from . import constraint
 
+
 class Systems(models.Model):
     _name = "hrm.systems"
     _description = "System of Hrm"

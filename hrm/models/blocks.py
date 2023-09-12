@@ -7,10 +7,10 @@ class Blocks(models.Model):
     _name = 'hrm.blocks'
     _description = 'Block'
 
+    has_change = fields.Boolean(default=True)
     name = fields.Char(string='Tên khối', required=True)
     description = fields.Text(string='Mô tả', default='')
     status = fields.Boolean(string='Hoạt động', default=True)
-    has_change = fields.Boolean(default=True)
 
     @api.model
     def _auto_init(self):
