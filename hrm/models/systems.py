@@ -1,6 +1,7 @@
 from odoo import models, api, fields
 from . import constraint
 
+
 class Systems(models.Model):
     _name = "hrm.systems"
     _description = "System of Hrm"
@@ -12,4 +13,5 @@ class Systems(models.Model):
     phone_number = fields.Char(string="Số điện thoại")
     chairperson = fields.Char(string="Chủ tịch")
     vice_president = fields.Char(string="Phó chủ tịch")
+
     active = fields.Boolean(string="Hoạt động", default=True)
