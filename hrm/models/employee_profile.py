@@ -18,24 +18,25 @@ class EmployeeProfile(models.Model):
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     company = fields.Many2one('hrm.systems')
-    # team_marketing = chưa có model position
-    # team_sales = chưa có model position
+    team_marketing = fields.Char()
+    team_sales = fields.Char()
     department_id = fields.Many2one('hrm.departments')
     manager_id = fields.Many2one('res.users', string='Quản lý')
-    # rank_id = chưa có model rank
+    rank_id = fields.Char()
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản')
 
-    related_field = fields.Boolean()
+    related = fields.Boolean()
 
     @api.onchange('block_id')
     def _compute_related_field(self):
+        # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
             if record.block_id.name == constraint.BLOCK_OFFICE_NAME:
-                record.related_field = True
+                record.related = True
             else:
-                record.related_field = False
+                record.related = False
 
     def _default_block_(self):
+        # Đặt giá trị mặc định cho Khối
         ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_TRADE_NAME)], limit=1).id
-        print('---------------->', ids)
         return ids
