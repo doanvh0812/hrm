@@ -25,6 +25,7 @@
 
     # always loaded
     'data': [
+        'views/departments_view.xml',
         'views/blocks_view.xml',
         'views/hrm_position_view.xml',
         'views/employee_profile_view.xml',
