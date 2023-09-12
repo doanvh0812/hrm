@@ -8,7 +8,7 @@ class EmployeeProfile(models.Model):
 
     name = fields.Char(string='Họ và tên nhân sự', required=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_())
-    position_id = fields.Many2one('hrm.position', required=True)
+    position_id = fields.Many2one('hrm.position', required=True, string='Vị trí')
     work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True)
     employee_code = fields.Char(string='Mã nhân viên', required=True)
@@ -17,12 +17,13 @@ class EmployeeProfile(models.Model):
     identifier = fields.Integer('Số căn cước công dân', required=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống')
-    company = fields.Many2one('hrm.systems')
-    team_marketing = fields.Char()
-    team_sales = fields.Char()
-    department_id = fields.Many2one('hrm.departments')
+    company = fields.Many2one('hrm.systems', string='Công ty con')
+    team_marketing = fields.Char(string='Đội ngũ marketing')
+    team_sales = fields.Char(string='Đội ngũ bán hàng')
+    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban')
     manager_id = fields.Many2one('res.users', string='Quản lý')
-    rank_id = fields.Char()
+
+    rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
 
     related = fields.Boolean()
