@@ -14,6 +14,10 @@ DEFAULT_TRADE = {
 }
 DO_NOT_DELETE = "Không thể xoá!"
 
+
+SELECT_TYPE_COMPANY = [
+    ('sale', 'Sale'),
+    ('upsale', 'Upsale'),]
 PROFILE_STATUS = [
     ('incomplete', 'Chưa hoàn thiện'),
     ('complete', 'Hoàn thiện')]

@@ -8,7 +8,7 @@ class EmployeeProfile(models.Model):
 
     name = fields.Char(string='Họ và tên nhân sự', required=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_())
-    # position_id = fields.Many2one('hrm.position', required=True)
+    position_id = fields.Many2one('hrm.position', required=True)
     work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True)
     employee_code = fields.Char(string='Mã nhân viên', required=True)
@@ -20,7 +20,7 @@ class EmployeeProfile(models.Model):
     company = fields.Many2one('hrm.systems')
     # team_marketing = chưa có model position
     # team_sales = chưa có model position
-    # department_id = chưa có model department
+    department_id = fields.Many2one('hrm.departments')
     manager_id = fields.Many2one('res.users', string='Quản lý')
     # rank_id = chưa có model rank
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản')
