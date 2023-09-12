@@ -23,7 +23,7 @@ class EmployeeProfile(models.Model):
     department_id = fields.Many2one('hrm.departments')
     manager_id = fields.Many2one('res.users', string='Quản lý')
     rank_id = fields.Char()
-    auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản')
+    auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
 
     related = fields.Boolean()
 
