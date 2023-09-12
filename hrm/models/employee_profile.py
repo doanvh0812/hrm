@@ -25,22 +25,15 @@ class EmployeeProfile(models.Model):
     # rank_id = chưa có model rank
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản')
 
+    related_field = fields.Boolean()
+
     @api.onchange('block_id')
-    def _check_block_(self):
-        self.fields_view_get()
-
-    def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
-        res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
-                                                           submenu=submenu)
-
-        # Thay đổi thuộc tính của trường 'company'
-        if view_type == 'form':
-            for field_name, field_attrs in res['fields'].items():
-                if field_name == 'company':
-                    # Thiết lập thuộc tính 'invisible' cho trường 'company' dựa trên giá trị của 'block_id'
-                    field_attrs['invisible'] = [('block_id.name', '=', constraint.BLOCK_OFFICE_NAME)]
-
-        return res
+    def _compute_related_field(self):
+        for record in self:
+            if record.block_id.name == constraint.BLOCK_OFFICE_NAME:
+                record.related_field = True
+            else:
+                record.related_field = False
 
     def _default_block_(self):
         ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_TRADE_NAME)], limit=1).id

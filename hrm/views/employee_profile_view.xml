@@ -23,7 +23,8 @@
                             </group>
                         </group>
                         <group>
-                            <field name="system_id"/>
+                            <field name="related_field" invisible="1"/>
+                            <field name="system_id" attrs="{'invisible': [('related_field', '=', True)]}"/>
 <!--                            <field name="company"/>-->
 <!--                            <field name="team_marketing"/>-->
 <!--                            <field name="team_sales"/>-->
