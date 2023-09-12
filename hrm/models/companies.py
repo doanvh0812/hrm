@@ -15,7 +15,7 @@ class Companies(models.Model):
     phone_num = fields.Char(string="Số điện thoại", required=True)
     chairperson = fields.Many2one('res.users', string="Chủ tịch")
     vice_president = fields.Many2one('res.users', string='Phó chủ tịch')
-
+    active = fields.Boolean(string='Hoạt động', default=True)
     """
     decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
     """
