@@ -26,7 +26,7 @@ class EmployeeProfile(models.Model):
     manager_id = fields.Many2one('res.users', string='Quản lý')
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
-
+    active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
 
     @api.depends('block_id')

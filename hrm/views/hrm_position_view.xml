@@ -9,7 +9,7 @@
                         <group>
                             <field name="work_position"/>
                             <field name="block"/>
-                            <field name="department" attrs ="{'invisible': [('block', '=', 'commerce')]}"/>
+                            <field name="department" attrs="{'invisible': [('block', '=', 'commerce')]}"/>
                         </group>
                     </sheet>
                 </form>
@@ -28,10 +28,10 @@
             </field>
         </record>
 
-
         <record id="action_hrm_position" model="ir.actions.act_window">
-            <field name="name">Position</field>
+            <field name="name">Vị trí</field>
             <field name="res_model">hrm.position</field>
+            <field name="search_view_id" ref="blocks_filter"/>
             <field name="view_mode">tree,form</field>
         </record>
 
