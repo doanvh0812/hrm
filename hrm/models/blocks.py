@@ -10,7 +10,7 @@ class Blocks(models.Model):
     has_change = fields.Boolean(default=True)
     name = fields.Char(string='Tên khối', required=True)
     description = fields.Text(string='Mô tả', default='')
-    status = fields.Boolean(string='Hoạt động', default=True)
+    active = fields.Boolean(string='Hoạt động', default=True)
 
     @api.model
     def _auto_init(self):

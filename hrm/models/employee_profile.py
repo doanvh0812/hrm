@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from odoo import models, fields, api
 from . import constraint
 
@@ -10,7 +12,7 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_())
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí')
     work_start_date = fields.Date(string='Ngày vào làm')
-    date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True)
+    date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
     employee_code = fields.Char(string='Mã nhân viên', required=True)
     email = fields.Char('Email công việc', required=True)
     phone_num = fields.Integer('Số điện thoại di động', required=True)
@@ -25,10 +27,10 @@ class EmployeeProfile(models.Model):
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
 
-    related = fields.Boolean()
+    related = fields.Boolean(compute='_compute_related_')
 
-    @api.onchange('block_id')
-    def _compute_related_field(self):
+    @api.depends('block_id')
+    def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
             if record.block_id.name == constraint.BLOCK_OFFICE_NAME:
@@ -38,5 +40,5 @@ class EmployeeProfile(models.Model):
 
     def _default_block_(self):
         # Đặt giá trị mặc định cho Khối
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_TRADE_NAME)], limit=1).id
+        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_TRADE_NAME)]).id
         return ids
