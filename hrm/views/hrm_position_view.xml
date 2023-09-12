@@ -1,0 +1,39 @@
+<odoo>
+    <data>
+        <record id="views_hrm_position_form" model="ir.ui.view">
+            <field name="name">views_hrm_position.form</field>
+            <field name="model">hrm.position</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="work_position"/>
+                            <field name="block"/>
+                            <field name="department" attrs ="{'invisible': [('block', '=', 'commerce')]}"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="views_hrm_position_tree" model="ir.ui.view">
+            <field name="name">views_hrm_position_tree</field>
+            <field name="model">hrm.position</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="work_position"/>
+                    <field name="block"/>
+                    <field name="department"/>
+                </tree>
+            </field>
+        </record>
+
+
+        <record id="action_hrm_position" model="ir.actions.act_window">
+            <field name="name">Position</field>
+            <field name="res_model">hrm.position</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+    </data>
+</odoo>
