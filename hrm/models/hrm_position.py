@@ -8,4 +8,4 @@ class Position(models.Model):
     block = fields.Selection([('commerce', 'Thương Mại'), ('office', 'Văn Phòng')],
                              default='commerce', required=True)
     #TODO
-    department = fields.Char(string='HRM-Cấu Hình-Phòng/Ban')
+    department = fields.Many2one('hrm.departments')
