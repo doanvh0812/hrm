@@ -59,8 +59,8 @@
             <field name="name">Hệ thống</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.systems</field>
-<!--            <field name="search_view_id" ref="view_hrm_system_search"/>-->
-            <field name="search_view_id" ref="blocks_filter"/>
+<!--&lt;!&ndash;            <field name="search_view_id" ref="view_hrm_system_search"/>&ndash;&gt;-->
+<!--            <field name="search_view_id" ref="blocks_filter"/>-->
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_systems_tree')}),

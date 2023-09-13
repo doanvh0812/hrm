@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 from . import constraint
 
 
@@ -37,3 +38,16 @@ class Companies(models.Model):
             else:
                 name_display = f"{prefix}.{rec.name_company}"
                 rec.name = name_display
+
+    @api.model
+    def create(self, values):
+
+        # Kiểm tra xem chairperson và vice_president có trùng id hay không
+        chairperson_id = values.get('chairperson')
+        vice_president_id = values.get('vice_president')
+
+        if chairperson_id == vice_president_id:
+            raise ValidationError("Chủ tịch và Phó chủ tịch không thể trùng nhau.")
+
+        # Tiếp tục quá trình tạo bản ghi nếu không có trùng
+        return super(Companies, self).create(values)

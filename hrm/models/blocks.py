@@ -32,12 +32,12 @@ class Blocks(models.Model):
                 else:
                     self._default_value_office()
 
-    @api.constrains('active')
-    def _do_not_archive_(self):
-        # Chặn không cho lưu trữ khối 'Văn phòng' và 'Thương mại'
-        for line in self:
-            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_TRADE_NAME]:
-                raise ValidationError(constraint.DO_NOT_ARCHIVE)
+    # @api.constrains('active')
+    # def _do_not_archive_(self):
+    #     # Chặn không cho lưu trữ khối 'Văn phòng' và 'Thương mại'
+    #     for line in self:
+    #         if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_TRADE_NAME]:
+    #             raise ValidationError(constraint.DO_NOT_ARCHIVE)
 
     def unlink(self, context=None):
         # Chặn không cho xoá khối 'Văn phòng' và 'Thương mại'
