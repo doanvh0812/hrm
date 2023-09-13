@@ -15,6 +15,7 @@ class Systems(models.Model):
     chairperson = fields.Char(string="Chủ tịch")
     vice_president = fields.Char(string="Phó chủ tịch")
     active = fields.Boolean(string="Hoạt động", default=True)
+    company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
 
     @api.depends("parent_system", "name_system")
     def _compute_name(self):
