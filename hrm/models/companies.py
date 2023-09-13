@@ -1,11 +1,11 @@
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
 from . import constraint
 
 
 class Companies(models.Model):
     _name = "hrm.companies"
     _description = "Companies"
+    _rec_name = "name_company"
 
     name = fields.Char(string="Tên hiển thị")
     name_company = fields.Char(string="Tên công ty", required=True)
@@ -17,18 +17,24 @@ class Companies(models.Model):
     vice_president = fields.Many2one('res.users', string='Phó hộ')
 
     active = fields.Boolean(string='Hoạt động', default=True)
-    """
-    decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
-    """
+
     @api.onchange('system_id', 'type_company', 'name_company')
     def update_name_company(self):
-        for company in self:
+        """
+    decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
+    """
+        for rec in self:
             prefix = ""
-            if company.type_company == 'sale':
+            if rec.type_company == 'sale':
                 prefix = 'S'
-            else:
+            elif rec.type_company == 'upsale':
                 prefix = 'U'
-
-            name_display = f"{prefix}.{company.system_id.name}.{company.name_company}"
-
-            company.name = name_display
+            else:
+                rec.name = ""
+                return
+            if rec.system_id:
+                name_display = f"{prefix}.{rec.system_id.name}.{rec.name_company}"
+                rec.name = name_display
+            else:
+                name_display = f"{prefix}.{rec.name_company}"
+                rec.name = name_display

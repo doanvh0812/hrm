@@ -15,7 +15,9 @@ DEFAULT_TRADE = {
     'has_change': False
 }
 
-DO_NOT_DELETE = "Không thể xoá!"
+DO_NOT_DELETE = "Không thể xoá bản ghi này!"
+
+DO_NOT_ARCHIVE = "Không thể lưu trữ bản ghi này!"
 
 SELECT_TYPE_COMPANY = [
     ('sale', 'Sale'),

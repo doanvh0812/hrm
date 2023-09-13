@@ -7,11 +7,11 @@
                 <form string="Công ty">
                     <sheet>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1"/>
                         </group>
                         <group>
                             <group>
-                                <field name="name_company" />
+                                <field name="name_company"/>
                                 <field name="parent_company"/>
                                 <field name="type_company"/>
                                 <field name="system_id"/>
@@ -37,6 +37,7 @@
                     <field name="name_company"/>
                     <field name="parent_company"/>
                     <field name="type_company"/>
+                    <field name="system_id"/>
                     <field name="phone_num"/>
                     <field name="chairperson"/>
                     <field name="vice_president"/>

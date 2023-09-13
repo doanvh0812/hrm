@@ -19,11 +19,12 @@ class EmployeeProfile(models.Model):
     identifier = fields.Integer('Số căn cước công dân', required=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống')
-    company = fields.Many2one('hrm.systems', string='Công ty con')
+    company = fields.Many2one('hrm.companies', string='Công ty con')
     team_marketing = fields.Char(string='Đội ngũ marketing')
     team_sales = fields.Char(string='Đội ngũ bán hàng')
     department_id = fields.Many2one('hrm.departments', string='Phòng/Ban')
     manager_id = fields.Many2one('res.users', string='Quản lý')
+
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     active = fields.Boolean(string='Hoạt động', default=True)
@@ -42,3 +43,24 @@ class EmployeeProfile(models.Model):
         # Đặt giá trị mặc định cho Khối
         ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_TRADE_NAME)]).id
         return ids
+
+    """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
+    sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
+    @api.onchange('company')
+    def _onchange_company(self):
+        if self.company:
+            company_system = self.company.system_id
+            if company_system:
+                self.system_id = company_system
+            else:
+                self.system_id = False
+    """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+    khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
+    """
+    @api.onchange('system_id')
+    def _onchange_system_id(self):
+        if self.system_id:
+            companies = self.env['hrm.companies'].search([('system_id', '=', self.system_id.id)])
+            return {'domain': {'company': [('id', 'in', companies.ids)]}}
+        else:
+            return {'domain': {'company': []}}
