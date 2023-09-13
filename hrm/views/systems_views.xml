@@ -8,7 +8,7 @@
                 <form string="Hệ thống">
                     <sheet>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1"/>
                         </group>
                         <group>
                             <group>
