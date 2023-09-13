@@ -10,7 +10,7 @@ class Blocks(models.Model):
     has_change = fields.Boolean(default=True)
     name = fields.Char(string='Tên khối', required=True)
     description = fields.Text(string='Mô tả', default='')
-    status = fields.Boolean(string='Hoạt động', default=True)
+    active = fields.Boolean(string='Hoạt động', default=True)
 
     @api.model
     def _auto_init(self):
@@ -31,6 +31,13 @@ class Blocks(models.Model):
                     self._default_value_trade()
                 else:
                     self._default_value_office()
+
+    @api.constrains('active')
+    def _do_not_archive_(self):
+        # Chặn không cho lưu trữ khối 'Văn phòng' và 'Thương mại'
+        for line in self:
+            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_TRADE_NAME]:
+                raise ValidationError(constraint.DO_NOT_ARCHIVE)
 
     def unlink(self, context=None):
         # Chặn không cho xoá khối 'Văn phòng' và 'Thương mại'

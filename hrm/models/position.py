@@ -9,3 +9,4 @@ class Position(models.Model):
                              default='commerce', required=True)
 
     department = fields.Char(string='HRM-Cấu Hình-Phòng/Ban')
+    active = fields.Boolean(string='Hoạt động', default=True)

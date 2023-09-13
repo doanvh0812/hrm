@@ -28,10 +28,23 @@
             </field>
         </record>
 
+        <record id="blocks_filter" model="ir.ui.view">
+            <field name="name">hrm.blocks.select</field>
+            <field name="model">hrm.blocks</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm">
+                    <separator/>
+                    <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
+                    <separator/>
+                </search>
+            </field>
+        </record>
+
         <record id="blocks_action" model="ir.actions.act_window">
             <field name="name">Khối</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.blocks</field>
+            <field name="search_view_id" ref="blocks_filter"/>
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_blocks_tree')}),
