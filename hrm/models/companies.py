@@ -18,23 +18,26 @@ class Companies(models.Model):
 
     active = fields.Boolean(string='Hoạt động', default=True)
 
-    @api.onchange('system_id', 'type_company', 'name_company')
-    def update_name_company(self):
+    @api.depends('system_id', 'type_company', 'name_company')
+    def _compute_name_company(self):
         """
-    decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
-    """
+        decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
+        """
         for rec in self:
-            prefix = ""
-            if rec.type_company == 'sale':
-                prefix = 'S'
-            elif rec.type_company == 'upsale':
-                prefix = 'U'
+            if rec.name_company:
+                rec.name = rec.name_company
             else:
                 rec.name = ""
                 return
-            if rec.system_id:
-                name_display = f"{prefix}.{rec.system_id.name}.{rec.name_company}"
-                rec.name = name_display
+            prefix = ""
+            if rec.type_company == 'sale':
+                prefix = "S"
+            elif rec.type_company == 'upsale':
+                prefix = "U"
             else:
-                name_display = f"{prefix}.{rec.name_company}"
-                rec.name = name_display
+                rec.name = rec.name_company
+                return
+            if rec.system_id:
+                rec.name = f"{prefix}.{rec.system_id.name}.{rec.name_company}"
+            else:
+                rec.name = f"{prefix}.{rec.name_company}"

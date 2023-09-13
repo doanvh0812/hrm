@@ -29,7 +29,7 @@
         </record>
 
         <record id="blocks_filter" model="ir.ui.view">
-            <field name="name">hrm.blocks.select</field>
+            <field name="name">hrm.blocks.filter</field>
             <field name="model">hrm.blocks</field>
             <field name="arch" type="xml">
                 <search string="Tìm kiếm">
