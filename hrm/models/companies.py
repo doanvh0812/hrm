@@ -1,4 +1,7 @@
+import re
+
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 from . import constraint
 
 
@@ -40,3 +43,12 @@ class Companies(models.Model):
                 rec.name = f"{prefix}.{rec.system_id.name}.{rec.name_company}"
             else:
                 rec.name = f"{prefix}.{rec.name_company}"
+
+    @api.constrains("phone_num")
+    def _check_phone_valid(self):
+        """
+        hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
+        """
+        for rec in self:
+            if not re.match(r'^[0]\d+$', rec.phone_num):
+                raise ValidationError("Số điện thoại không hợp lệ")

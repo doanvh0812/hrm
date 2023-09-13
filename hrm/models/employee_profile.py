@@ -1,6 +1,8 @@
+import re
 from datetime import datetime
 
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 from . import constraint
 
 
@@ -15,8 +17,8 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
     employee_code = fields.Char(string='Mã nhân viên', required=True)
     email = fields.Char('Email công việc', required=True)
-    phone_num = fields.Integer('Số điện thoại di động', required=True)
-    identifier = fields.Integer('Số căn cước công dân', required=True)
+    phone_num = fields.Char('Số điện thoại di động', required=True)
+    identifier = fields.Char('Số căn cước công dân', required=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     company = fields.Many2one('hrm.companies', string='Công ty con')
@@ -64,3 +66,21 @@ class EmployeeProfile(models.Model):
             return {'domain': {'company': [('id', 'in', companies.ids)]}}
         else:
             return {'domain': {'company': []}}
+
+    @api.constrains("phone_num")
+    def _check_phone_valid(self):
+        """
+        hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
+        """
+        for rec in self:
+            if not re.match(r'^[0]\d+$', rec.phone_num):
+                raise ValidationError("Số điện thoại không hợp lệ")
+
+    @api.constrains("identifier")
+    def _check_identifier_valid(self):
+        """
+        hàm kiểm tra số căn cước không âm, không chứa ký tự chữ
+        """
+        for rec in self:
+            if not re.match(r'^\d+$', rec.identifier):
+                raise ValidationError("Số căn cước công dân không hợp lệ")
