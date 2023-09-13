@@ -5,11 +5,12 @@
             <field name="model">hrm.position</field>
             <field name="arch" type="xml">
                 <form>
-                    <sheet>
+                    <sheet style="max-width: 440px;">
                         <group>
+                            <field name="related" invisible="1"/>
                             <field name="work_position"/>
                             <field name="block"/>
-                            <field name="department" attrs ="{'invisible': [('block', '=', 'commerce')]}"/>
+                            <field name="department" attrs="{'invisible': [('related', '=', True)]}"/>
                         </group>
                     </sheet>
                 </form>
@@ -28,12 +29,26 @@
             </field>
         </record>
 
-
-        <record id="action_hrm_position" model="ir.actions.act_window">
-            <field name="name">Position</field>
-            <field name="res_model">hrm.position</field>
-            <field name="view_mode">tree,form</field>
+        <record id="position_filter" model="ir.ui.view">
+            <field name="name">hrm.position.filter</field>
+            <field name="model">hrm.position</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm">
+                    <separator/>
+                    <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
+                    <separator/>
+                    <group expand="1" name="group_by" string="Nhóm bởi">
+                        <filter name="block" string="Khối" context="{'group_by': 'block'}"/>
+                    </group>
+                </search>
+            </field>
         </record>
 
+        <record id="action_hrm_position" model="ir.actions.act_window">
+            <field name="name">Vị trí</field>
+            <field name="res_model">hrm.position</field>
+            <field name="search_view_id" ref="position_filter"/>
+            <field name="view_mode">tree,form</field>
+        </record>
     </data>
 </odoo>

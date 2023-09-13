@@ -11,7 +11,9 @@
                                 <field name="name"/>
                                 <field name="employee_id"/>
                                 <field name="block_id"/>
-<!--                                <field name="position_id"/>-->
+                                <field name="position_id"/>
+                            </group>
+                            <group>
                             </group>
                             <group>
                                 <field name="work_start_date"/>
@@ -22,15 +24,20 @@
                                 <field name="identifier"/>
                                 <field name="profile_status"/>
                             </group>
-                        </group>
-                        <group>
-<!--                            <field name="system_id"/>-->
-<!--                            <field name="company"/>-->
-<!--                            <field name="team_marketing"/>-->
-<!--                            <field name="team_sales"/>-->
-<!--                            <field name="department_id"/>-->
-                            <field name="manager_id"/>
-<!--                            <field name="rank_id"/>-->
+                            <group>
+                                <!--   related = true là đã chọn văn phòng -->
+                                <field name="related" invisible="1"/>
+                                <field name="system_id"
+                                       attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)]}"/>
+                                <field name="company"
+                                       attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)]}"/>
+                                <field name="team_marketing" attrs="{'invisible': [('related', '=', True)]}"/>
+                                <field name="team_sales" attrs="{'invisible': [('related', '=', True)]}"/>
+                                <field name="department_id"
+                                       attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
+                                <field name="manager_id" attrs="{'invisible': [('related', '=', False)]}"/>
+                                <field name="rank_id" attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
+                            </group>
                         </group>
                         <group>
                             <field name="auto_create_acc"/>
@@ -47,7 +54,7 @@
                 <tree>
                     <field name="name"/>
                     <field name="block_id"/>
-<!--                    <field name="position_id"/>-->
+                    <field name="position_id"/>
                     <field name="work_start_date"/>
                     <field name="date_receipt"/>
                     <field name="employee_code"/>
@@ -55,14 +62,14 @@
                     <field name="phone_num"/>
                     <field name="identifier"/>
                     <field name="profile_status"/>
-<!--                    <field name="system_id"/>-->
-<!--                    <field name="company"/>-->
-<!--                    <field name="team_marketing"/>-->
-<!--                    <field name="team_sales"/>-->
-<!--                    <field name="department_id"/>-->
+                    <field name="system_id"/>
+                    <field name="company"/>
+                    <field name="team_marketing"/>
+                    <field name="team_sales"/>
+                    <field name="department_id"/>
                     <field name="manager_id"/>
                     <field name="employee_id"/>
-<!--                    <field name="rank_id"/>-->
+                    <field name="rank_id"/>
                     <field name="auto_create_acc"/>
                 </tree>
             </field>
@@ -72,6 +79,7 @@
             <field name="name">Tạo mới hồ sơ</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.employee.profile</field>
+            <field name="search_view_id" ref="blocks_filter"/>
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_profile_tree')}),
