@@ -46,5 +46,6 @@ class Systems(models.Model):
         hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
         """
         for rec in self:
-            if not re.match(r'^[0]\d+$', rec.phone_number):
-                raise ValidationError("Số điện thoại không hợp lệ")
+            if rec.phone_number:
+                if not re.match(r'^[0]\d+$', rec.phone_number):
+                    raise ValidationError("Số điện thoại không hợp lệ")
