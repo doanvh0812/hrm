@@ -7,7 +7,6 @@ import re
 class Systems(models.Model):
     _name = "hrm.systems"
     _description = "System of Hrm"
-    _rec_name = "name_system"
 
     name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True)
     name_system = fields.Char(string="Tên hệ thống", required=True)

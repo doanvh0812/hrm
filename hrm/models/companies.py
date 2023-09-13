@@ -1,5 +1,4 @@
 import re
-
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 from . import constraint
@@ -8,7 +7,6 @@ from . import constraint
 class Companies(models.Model):
     _name = "hrm.companies"
     _description = "Companies"
-    _rec_name = "name_company"
 
     name = fields.Char(string="Tên hiển thị")
     name_company = fields.Char(string="Tên công ty", required=True)
