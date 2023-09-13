@@ -15,7 +15,6 @@ class EmployeeProfile(models.Model):
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí')
     work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
-    employee_code = fields.Char(string='Mã nhân viên', required=True)
     email = fields.Char('Email công việc', required=True)
     phone_num = fields.Integer('Số điện thoại di động', required=True, max_length=10)
     identifier = fields.Integer('Số căn cước công dân', required=True, max_length=10)
@@ -26,10 +25,9 @@ class EmployeeProfile(models.Model):
     team_sales = fields.Char(string='Đội ngũ bán hàng')
     department_id = fields.Many2one('hrm.departments', string='Phòng/Ban')
     manager_id = fields.Many2one('res.users', string='Quản lý')
-    # rank_id = chưa có model rank
+    rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
-    # employee_id = fields.Char(string="ID", copy=False, index=True)
-    employee_id = fields.Char(
+    employee_code = fields.Char(
         string="Mã nhân viên",
         required=True,
         copy=False,
@@ -40,10 +38,8 @@ class EmployeeProfile(models.Model):
     # lọc duy nhất mã nhân viên
 
     _sql_constraints = [
-        ('employee_id_uniq', 'unique(employee_id)', 'Mã nhân viên phải là duy nhất!'),
+        ('employee_code_uniq', 'unique(employee_code)', 'Mã nhân viên phải là duy nhất!'),
     ]
-
-    rank_id = fields.Char(string='Cấp bậc')
 
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
@@ -65,7 +61,7 @@ class EmployeeProfile(models.Model):
     # hiển thị mã nhân viên, nếu chọn 1 số bất kỳ tiếp tục nhảy tiếp từ số đó
     @api.model
     def _generate_employee_id(self):
-        last_employee = self.search([], order='employee_id desc', limit=1)
+        last_employee = self.search([], order='employee_code desc', limit=1)
         if last_employee:
             last_employee_id = last_employee.employee_id
             last_number = int(last_employee_id[3:])  # Trích xuất phần số
@@ -75,7 +71,7 @@ class EmployeeProfile(models.Model):
         return 'UNI0000'
 
     # Lọc nhân viên
-    @api.constrains('employee_id')
+    @api.constrains('employee_code')
     def check_employee_id_format(self):
         for record in self:
             if record.employee_id and not record.employee_id.startswith('UNI'):
