@@ -13,4 +13,5 @@ class Systems(models.Model):
     phone_number = fields.Char(string="Số điện thoại")
     chairperson = fields.Char(string="Chủ tịch")
     vice_president = fields.Char(string="Phó chủ tịch")
-    active = fields.Boolean(string='Hoạt động', default=True)
+    active = fields.Boolean(string="Hoạt động", default=True)
+    company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')

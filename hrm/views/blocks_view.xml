@@ -10,7 +10,6 @@
                             <field name="has_change" invisible="1"/>
                             <field name="name" attrs="{'readonly':[('has_change','=', False)]}"/>
                             <field name="description" attrs="{'readonly':[('has_change','=', False)]}"/>
-                            <field name="active" attrs="{'readonly':[('has_change','=', False)]}"/>
                         </group>
                     </sheet>
                 </form>
@@ -25,7 +24,6 @@
                     <field name="has_change" invisible="1"/>
                     <field name="name" attrs="{'readonly':[('has_change','=', False)]}"/>
                     <field name="description" attrs="{'readonly':[('has_change','=', False)]}"/>
-                    <field name="active" attrs="{'readonly':[('has_change','=', False)]}"/>
                 </tree>
             </field>
         </record>
