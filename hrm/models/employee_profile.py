@@ -17,7 +17,7 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
     email = fields.Char('Email công việc', required=True)
     phone_num = fields.Integer('Số điện thoại di động', required=True, max_length=10)
-    identifier = fields.Integer('Số căn cước công dân', required=True, max_length=10)
+    identifier = fields.Char('Số căn cước công dân', required=True, max_length=10)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     company = fields.Many2one('hrm.companies', string='Công ty con')
