@@ -33,7 +33,6 @@
             <field name="model">hrm.blocks</field>
             <field name="arch" type="xml">
                 <search string="Tìm kiếm">
-                    <separator/>
                     <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
                     <separator/>
                 </search>
