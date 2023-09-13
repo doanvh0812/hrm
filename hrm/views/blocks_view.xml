@@ -28,18 +28,16 @@
             </field>
         </record>
 
-<!--        <record id="blocks_filter" model="ir.ui.view">-->
-<!--            <field name="name">hrm.blocks.filter</field>-->
-<!--            <field name="model">hrm.blocks</field>-->
-<!--            <field name="arch" type="xml">-->
-<!--                <search string="Tìm kiếm">-->
-<!--                    <field name="name"/>-->
-<!--                    <separator/>-->
-<!--                    <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>-->
-<!--                    <separator/>-->
-<!--                </search>-->
-<!--            </field>-->
-<!--        </record>-->
+        <record id="blocks_filter" model="ir.ui.view">
+            <field name="name">hrm.blocks.filter</field>
+            <field name="model">hrm.blocks</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm">
+                    <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
+                    <separator/>
+                </search>
+            </field>
+        </record>
 
         <record id="blocks_action" model="ir.actions.act_window">
             <field name="name">Khối</field>

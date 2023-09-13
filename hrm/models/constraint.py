@@ -4,15 +4,17 @@ BLOCK_TRADE_NAME = "Thương mại"
 DEFAULT_OFFICE = {
     'name': 'Văn phòng',
     'description': 'Khối văn phòng',
-    # 'active': '1',
-    'has_change': False
+    'active': '1',
+    'has_change': False,
+    'create_new': True
 }
 
 DEFAULT_TRADE = {
     'name': 'Thương mại',
     'description': 'Khối thương mại',
-    # 'active': '1',
-    'has_change': False
+    'active': '1',
+    'has_change': False,
+    'create_new': True
 }
 
 DO_NOT_DELETE = "Không thể xoá bản ghi này!"
