@@ -4,14 +4,14 @@ BLOCK_TRADE_NAME = "Thương mại"
 DEFAULT_OFFICE = {
     'name': 'Văn phòng',
     'description': 'Khối văn phòng',
-    'active': '1',
+    # 'active': '1',
     'has_change': False
 }
 
 DEFAULT_TRADE = {
     'name': 'Thương mại',
     'description': 'Khối thương mại',
-    'active': '1',
+    # 'active': '1',
     'has_change': False
 }
 

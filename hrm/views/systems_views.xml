@@ -49,6 +49,13 @@
             <field name="model">hrm.systems</field>
             <field name="arch" type="xml">
                 <search string="Tìm kiếm">
+                    <field name="name"/>
+                    <field name="name_system"/>
+                    <field name="parent_system"/>
+                    <field name="type_system"/>
+                    <field name="phone_number"/>
+                    <field name="chairperson"/>
+                    <field name="vice_president"/>
                     <separator/>
                     <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
                     <separator/>
@@ -62,7 +69,7 @@
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.systems</field>
             <field name="search_view_id" ref="view_hrm_system_search"/>
-            <field name="search_view_id" ref="blocks_filter"/>
+<!--            <field name="search_view_id" ref="blocks_filter"/>-->
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_systems_tree')}),
