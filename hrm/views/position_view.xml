@@ -7,9 +7,10 @@
                 <form>
                     <sheet style="max-width: 440px;">
                         <group>
+                            <field name="related" invisible="1"/>
                             <field name="work_position"/>
                             <field name="block"/>
-                            <field name="department" attrs="{'invisible': [('block', '=', 'commerce')]}"/>
+                            <field name="department" attrs="{'invisible': [('related', '=', True)]}"/>
                         </group>
                     </sheet>
                 </form>
@@ -48,6 +49,5 @@
             <field name="search_view_id" ref="position_filter"/>
             <field name="view_mode">tree,form</field>
         </record>
-
     </data>
 </odoo>

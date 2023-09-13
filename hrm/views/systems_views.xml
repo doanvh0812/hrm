@@ -15,6 +15,7 @@
                                 <field name="name_system"/>
                                 <field name="parent_system"/>
                                 <field name="type_system"/>
+                                <field name="active"/>
                             </group>
                             <group>
                                 <field name="phone_number"/>
@@ -42,16 +43,6 @@
                 </tree>
             </field>
         </record>
-
-<!--        <record id="view_hrm_system_search" model="ir.ui.view">-->
-<!--            <field name="name">hrm.system.search</field>-->
-<!--            <field name="model">hrm.systems</field>-->
-<!--            <field name="arch" type="xml">-->
-<!--                <search string="Hệ thống HRM">-->
-<!--                    -->
-<!--                </search>-->
-<!--            </field>-->
-<!--        </record>-->
 
 
 
