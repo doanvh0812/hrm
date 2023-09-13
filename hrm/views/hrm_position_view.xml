@@ -29,12 +29,24 @@
             </field>
         </record>
 
+        <record id="position_view" model="ir.ui.view">
+            <field name="name">hrm.position.select</field>
+            <field name="model">hrm.position</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm">
+                    <separator/>
+                    <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
+                    <separator/>
+                </search>
+            </field>
+        </record>
+
+
         <record id="action_hrm_position" model="ir.actions.act_window">
             <field name="name">Vị trí</field>
             <field name="res_model">hrm.position</field>
-            <field name="search_view_id" ref="blocks_filter"/>
+            <field name="search_view_id" ref="position_view"/>
             <field name="view_mode">tree,form</field>
         </record>
-
     </data>
 </odoo>

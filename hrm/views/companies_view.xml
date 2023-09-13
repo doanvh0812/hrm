@@ -46,16 +46,16 @@
         </record>
 
         <record id="companies_filter" model="ir.ui.view">
-        <field name="name">hrm.companies.select</field>
-        <field name="model">hrm.companies</field>
-        <field name="arch" type="xml">
-            <search string="Tìm kiếm">
-                <separator/>
-                <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
-                <separator/>
-            </search>
-        </field>
-    </record>
+            <field name="name">hrm.companies.select</field>
+            <field name="model">hrm.companies</field>
+            <field name="arch" type="xml">
+                <search string="Tìm kiếm">
+                    <separator/>
+                    <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
+                    <separator/>
+                </search>
+            </field>
+        </record>
 
         <record id="companies_action" model="ir.actions.act_window">
             <field name="name">Công ty</field>
