@@ -38,6 +38,8 @@ class Companies(models.Model):
             elif rec.type_company == 'upsale':
                 prefix = "U"
             else:
+                name_display = f"{prefix}.{rec.name_company}"
+                rec.name = name_display
                 rec.name = rec.name_company
                 return
             if rec.system_id:
@@ -53,3 +55,16 @@ class Companies(models.Model):
         for rec in self:
             if not re.match(r'^[0]\d+$', rec.phone_num):
                 raise ValidationError("Số điện thoại không hợp lệ")
+
+
+    @api.model
+    def create(self, values):
+        # Kiểm tra xem chairperson và vice_president có trùng id hay không
+        chairperson_id = values.get('chairperson')
+        vice_president_id = values.get('vice_president')
+
+        if chairperson_id == vice_president_id:
+            raise ValidationError("Chủ tịch và Phó chủ tịch không thể trùng nhau.")
+
+        # Tiếp tục quá trình tạo bản ghi nếu không có trùng
+        return super(Companies, self).create(values)
