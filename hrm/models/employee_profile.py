@@ -57,7 +57,7 @@ class EmployeeProfile(models.Model):
             return new_employee_id
         return 'UNI0000'
 
-   # Lọc nhân viên 
+   # Lọc nhân viên
     @api.constrains('employee_id')
     def check_employee_id_format(self):
         for record in self:
