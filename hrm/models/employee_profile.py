@@ -48,6 +48,7 @@ class EmployeeProfile(models.Model):
 
     """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
     sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
+
     @api.onchange('company')
     def _onchange_company(self):
         if self.company:
@@ -56,9 +57,11 @@ class EmployeeProfile(models.Model):
                 self.system_id = company_system
             else:
                 self.system_id = False
+
     """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
     khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
     """
+
     @api.onchange('system_id')
     def _onchange_system_id(self):
         if self.system_id:
