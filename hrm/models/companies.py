@@ -1,5 +1,4 @@
 import re
-
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 from . import constraint
@@ -8,7 +7,6 @@ from . import constraint
 class Companies(models.Model):
     _name = "hrm.companies"
     _description = "Companies"
-    _rec_name = "name_company"
 
     name = fields.Char(string="Tên hiển thị")
     name_company = fields.Char(string="Tên công ty", required=True)
@@ -53,8 +51,9 @@ class Companies(models.Model):
         hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
         """
         for rec in self:
-            if not re.match(r'^[0]\d+$', rec.phone_num):
-                raise ValidationError("Số điện thoại không hợp lệ")
+            if rec.phone_num:
+                if not re.match(r'^[0]\d+$', rec.phone_num):
+                    raise ValidationError("Số điện thoại không hợp lệ")
 
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):
