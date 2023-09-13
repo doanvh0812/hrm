@@ -8,13 +8,13 @@ class Companies(models.Model):
     _description = "Companies"
 
     name = fields.Char(string="Tên hiển thị")
-    name_company = fields.Char(string="Tên Công ty", required=True)
+    name_company = fields.Char(string="Tên công ty", required=True)
     parent_company = fields.Many2one('hrm.companies', string="Công ty cha", domain=[])
-    type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại công ty", required=True)
+    type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại hình công ty", required=True)
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True)
     phone_num = fields.Char(string="Số điện thoại", required=True)
-    chairperson = fields.Many2one('res.users', string="Chủ tịch")
-    vice_president = fields.Many2one('res.users', string='Phó chủ tịch')
+    chairperson = fields.Many2one('res.users', string="Chủ hộ")
+    vice_president = fields.Many2one('res.users', string='Phó hộ')
 
     active = fields.Boolean(string='Hoạt động', default=True)
     """
