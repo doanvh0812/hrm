@@ -1,12 +1,13 @@
 from odoo import models, api, fields
 from odoo.exceptions import ValidationError
 from . import constraint
+import re
 
 
 class Systems(models.Model):
     _name = "hrm.systems"
     _description = "System of Hrm"
-    _rec_name = "name"
+    _rec_name = "name_system"
 
     name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True)
     name_system = fields.Char(string="Tên hệ thống", required=True)
@@ -38,3 +39,12 @@ class Systems(models.Model):
 
         # Tiếp tục quá trình tạo bản ghi nếu không có trùng
         return super(Systems, self).create(values)
+
+    @api.constrains("phone_number")
+    def _check_phone_valid(self):
+        """
+        hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
+        """
+        for rec in self:
+            if not re.match(r'^[0]\d+$', rec.phone_number):
+                raise ValidationError("Số điện thoại không hợp lệ")
