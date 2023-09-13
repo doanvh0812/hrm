@@ -47,11 +47,11 @@
             </field>
         </record>
 
-
         <record id="companies_action" model="ir.actions.act_window">
-            <field name="name">Companies</field>
+            <field name="name">Công ty</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.companies</field>
+            <field name="search_view_id" ref="blocks_filter"/>
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_company_tree')}),

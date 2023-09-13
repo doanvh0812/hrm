@@ -15,12 +15,13 @@ class Companies(models.Model):
     phone_num = fields.Char(string="Số điện thoại", required=True)
     chairperson = fields.Many2one('res.users', string="Chủ tịch")
     vice_president = fields.Many2one('res.users', string='Phó chủ tịch')
+    active = fields.Boolean(string='Hoạt động', default=True)
 
-    @api.depends('system_id', 'type_company', 'name_company')
-    def _compute_name_company(self):
+    @api.onchange('system_id', 'type_company', 'name_company')
+    def update_name_company(self):
         """
-        decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
-        """
+    decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
+    """
         for rec in self:
             prefix = ""
             if rec.type_company == 'sale':
