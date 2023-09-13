@@ -7,7 +7,6 @@ import re
 class Systems(models.Model):
     _name = "hrm.systems"
     _description = "System of Hrm"
-    _rec_name = "name_system"
 
     name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True)
     name_system = fields.Char(string="Tên hệ thống", required=True)
@@ -44,5 +43,30 @@ class Systems(models.Model):
         hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
         """
         for rec in self:
-            if not re.match(r'^[0]\d+$', rec.phone_number):
-                raise ValidationError("Số điện thoại không hợp lệ")
+            if rec.phone_number:
+                if not re.match(r'^[0]\d+$', rec.phone_number):
+                    raise ValidationError("Số điện thoại không hợp lệ")
+
+    list_name = []
+
+    @api.model
+    def __int__(self):
+        self.get_name()
+
+    def get_name(self):
+        """
+        Lấy tất cả tên của các bản ghi lưu vào list_name.
+        """
+        for line in self:
+            receive = str.lower(line.name)
+            self.list_name.append(receive)
+
+    @api.constrains('name')
+    def check_name(self):
+        """
+        Kiểm tra name tồn tại trong các bản ghi.
+        """
+        for line in self:
+            if str.lower(line.name) in self.list_name:
+                raise ValidationError("Dữ liệu đã tồn tại hệ thống này")
+        self.get_name()
