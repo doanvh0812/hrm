@@ -76,8 +76,9 @@ class EmployeeProfile(models.Model):
         hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
         """
         for rec in self:
-            if not re.match(r'^[0]\d+$', rec.phone_num):
-                raise ValidationError("Số điện thoại không hợp lệ")
+            if rec.phone_num:
+                if not re.match(r'^[0]\d+$', rec.phone_num):
+                    raise ValidationError("Số điện thoại không hợp lệ")
 
     @api.constrains("identifier")
     def _check_identifier_valid(self):
@@ -85,5 +86,6 @@ class EmployeeProfile(models.Model):
         hàm kiểm tra số căn cước không âm, không chứa ký tự chữ
         """
         for rec in self:
-            if not re.match(r'^\d+$', rec.identifier):
-                raise ValidationError("Số căn cước công dân không hợp lệ")
+            if rec.identifier:
+                if not re.match(r'^\d+$', rec.identifier):
+                    raise ValidationError("Số căn cước công dân không hợp lệ")

@@ -1,5 +1,4 @@
 import re
-
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 from . import constraint
@@ -8,7 +7,6 @@ from . import constraint
 class Companies(models.Model):
     _name = "hrm.companies"
     _description = "Companies"
-    _rec_name = "name_company"
 
     name = fields.Char(string="Tên hiển thị")
     name_company = fields.Char(string="Tên công ty", required=True)
@@ -53,18 +51,16 @@ class Companies(models.Model):
         hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
         """
         for rec in self:
-            if not re.match(r'^[0]\d+$', rec.phone_num):
-                raise ValidationError("Số điện thoại không hợp lệ")
+            if rec.phone_num:
+                if not re.match(r'^[0]\d+$', rec.phone_num):
+                    raise ValidationError("Số điện thoại không hợp lệ")
 
+    @api.constrains("chairperson", "vice_president")
+    def _check_chairperson_and_vice_president(self):
+        """ Kiểm tra xem chairperson và vice_president có trùng id không """
+        for rec in self:
+            chairperson_id = rec.chairperson.id if rec.chairperson else False
+            vice_president_id = rec.vice_president.id if rec.vice_president else False
 
-    @api.model
-    def create(self, values):
-        # Kiểm tra xem chairperson và vice_president có trùng id hay không
-        chairperson_id = values.get('chairperson')
-        vice_president_id = values.get('vice_president')
-
-        if chairperson_id == vice_president_id:
-            raise ValidationError("Chủ tịch và Phó chủ tịch không thể trùng nhau.")
-
-        # Tiếp tục quá trình tạo bản ghi nếu không có trùng
-        return super(Companies, self).create(values)
+            if chairperson_id and vice_president_id and chairperson_id == vice_president_id:
+                raise ValidationError("Chủ tịch và Phó chủ tịch không thể giống nhau.")

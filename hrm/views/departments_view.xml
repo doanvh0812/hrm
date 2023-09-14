@@ -33,6 +33,9 @@
         <field name="model">hrm.departments</field>
         <field name="arch" type="xml">
             <search string="Tìm kiếm">
+                <field name="name"/>
+                <field name="manager_id"/>
+                <field name="superior_department"/>
                 <separator/>
                 <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
                 <separator/>

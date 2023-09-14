@@ -34,6 +34,10 @@
             <field name="model">hrm.position</field>
             <field name="arch" type="xml">
                 <search string="Tìm kiếm">
+                    <field name="work_position"/>
+                    <field name="block"/>
+                    <field name="department"/>
+                    <separator/>
                     <filter string="Lưu trữ" name="inactive" domain="[('active', '=', False)]"/>
                     <separator/>
                     <group expand="1" name="group_by" string="Nhóm bởi">

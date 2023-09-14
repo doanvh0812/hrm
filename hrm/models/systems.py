@@ -7,7 +7,6 @@ import re
 class Systems(models.Model):
     _name = "hrm.systems"
     _description = "System of Hrm"
-    _rec_name = "name_system"
 
     name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True)
     name_system = fields.Char(string="Tên hệ thống", required=True)
@@ -28,17 +27,15 @@ class Systems(models.Model):
             elif rec.name_system:
                 rec.name = rec.name_system
 
-    @api.model
-    def create(self, values):
-        # Kiểm tra xem chairperson và vice_president có trùng id hay không
-        chairperson_id = values.get('chairperson')
-        vice_president_id = values.get('vice_president')
+    @api.constrains("chairperson", "vice_president")
+    def _check_chairperson_and_vice_president(self):
+        """ Kiểm tra xem chairperson và vice_president có trùng id không """
+        for rec in self:
+            chairperson_id = rec.chairperson.id if rec.chairperson else False
+            vice_president_id = rec.vice_president.id if rec.vice_president else False
 
-        if chairperson_id == vice_president_id:
-            raise ValidationError("Chủ tịch và Phó chủ tịch không thể trùng nhau.")
-
-        # Tiếp tục quá trình tạo bản ghi nếu không có trùng
-        return super(Systems, self).create(values)
+            if chairperson_id and vice_president_id and chairperson_id == vice_president_id:
+                raise ValidationError("Chủ tịch và Phó chủ tịch không thể giống nhau.")
 
     @api.constrains("phone_number")
     def _check_phone_valid(self):
@@ -46,5 +43,30 @@ class Systems(models.Model):
         hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
         """
         for rec in self:
-            if not re.match(r'^[0]\d+$', rec.phone_number):
-                raise ValidationError("Số điện thoại không hợp lệ")
+            if rec.phone_number:
+                if not re.match(r'^[0]\d+$', rec.phone_number):
+                    raise ValidationError("Số điện thoại không hợp lệ")
+
+    list_name = []
+
+    @api.model
+    def __int__(self):
+        self.get_name()
+
+    def get_name(self):
+        """
+        Lấy tất cả tên của các bản ghi lưu vào list_name.
+        """
+        for line in self:
+            receive = str.lower(line.name)
+            self.list_name.append(receive)
+
+    @api.constrains('name')
+    def check_name(self):
+        """
+        Kiểm tra name tồn tại trong các bản ghi.
+        """
+        for line in self:
+            if str.lower(line.name) in self.list_name:
+                raise ValidationError("Dữ liệu đã tồn tại hệ thống này")
+        self.get_name()
