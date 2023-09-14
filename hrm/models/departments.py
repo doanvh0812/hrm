@@ -15,7 +15,7 @@ class Department(models.Model):
     def _check_name_case_insensitive(self):
         for record in self:
             # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
-            if record.name:
-                duplicate_records = self.search([('id', '!=', record.id), ('name', 'ilike', record.name)])
-                if duplicate_records:
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % record.name)
