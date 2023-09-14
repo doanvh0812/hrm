@@ -13,23 +13,13 @@ class Blocks(models.Model):
     create_new = fields.Boolean(default=False)
     active = fields.Boolean(string='Hoạt động', default=True)
 
-    list_name = []
-
-    @api.model
-    def __int__(self):
-        self.get_name()
-
-    def get_name(self):
-        for line in self:
-            receive = str.lower(line.name)
-            self.list_name.append(receive)
-
     @api.constrains('name')
-    def check_name(self):
-        for line in self:
-            if str.lower(line.name) in self.list_name:
-                raise ValidationError("Dữ liệu đã tồn tại khối này")
-        self.get_name()
+    def _check_name_case_insensitive(self):
+        for record in self:
+            # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
+            duplicate_records = self.search([('id', '!=', record.id), ('name', 'ilike', record.name)])
+            if duplicate_records:
+                raise ValidationError(constraint.DUPLICATE_RECORD % record.name)
 
     @api.model
     def _auto_init(self):
@@ -51,18 +41,19 @@ class Blocks(models.Model):
                 else:
                     self._default_value_office()
 
-    @api.constrains('active')
-    def _do_not_archive_(self):
-        # Chặn không cho lưu trữ khối 'Văn phòng' và 'Thương mại'
+    def action_archive(self):
+        # Thực hiện kiểm tra điều kiện trước khi lưu trữ
         for line in self:
-            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_TRADE_NAME] and not line.create_new:
-                raise ValidationError(constraint.DO_NOT_ARCHIVE)
-            line.create_new = False
+            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_COMMERCE_NAME]:
+                raise ValidationError("Không thể lưu trữ bản ghi này.")
+            else:
+                # Tiến hành lưu trữ bản ghi
+                return super(Blocks, self).action_archive()
 
     def unlink(self, context=None):
         # Chặn không cho xoá khối 'Văn phòng' và 'Thương mại'
         for line in self:
-            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_TRADE_NAME]:
+            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_COMMERCE_NAME]:
                 raise ValidationError(constraint.DO_NOT_DELETE)
         return super(Blocks, self).unlink()
 
