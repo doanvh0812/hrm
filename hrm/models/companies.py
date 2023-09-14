@@ -25,25 +25,14 @@ class Companies(models.Model):
         decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
         """
         for rec in self:
-            if rec.name_company:
-                rec.name = rec.name_company
-            else:
-                rec.name = ""
-                return
-            prefix = ""
-            if rec.type_company == 'sale':
-                prefix = "S"
-            elif rec.type_company == 'upsale':
-                prefix = "U"
-            else:
-                name_display = f"{prefix}.{rec.name_company}"
-                rec.name = name_display
-                rec.name = rec.name_company
-                return
+            values = []
+            if rec.type_company:
+                values.append(rec.type_company[0].upper())
             if rec.system_id:
-                rec.name = f"{prefix}.{rec.system_id.name}.{rec.name_company}"
-            else:
-                rec.name = f"{prefix}.{rec.name_company}"
+                values.append(rec.system_id.name)
+            if rec.name_company:
+                values.append(rec.name_company)
+            rec.name = '.'.join(values)
 
     @api.constrains("phone_num")
     def _check_phone_valid(self):
