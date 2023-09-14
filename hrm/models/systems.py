@@ -49,6 +49,7 @@ class Systems(models.Model):
 
     list_name = []
 
+    @api.model
     def get_name(self):
         """
         Lấy tất cả tên của các bản ghi lưu vào list_name.
@@ -56,13 +57,14 @@ class Systems(models.Model):
         for line in self:
             receive = str.lower(line.name)
             self.list_name.append(receive)
+        print(self.list_name)
 
     @api.constrains('name')
     def check_name(self):
         """
         Kiểm tra name tồn tại trong các bản ghi.
         """
-        self.get_name()
         for line in self:
             if str.lower(line.name) in self.list_name:
                 raise ValidationError("Dữ liệu đã tồn tại hệ thống này")
+        self.get_name()
