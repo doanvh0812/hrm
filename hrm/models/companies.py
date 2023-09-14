@@ -8,7 +8,7 @@ class Companies(models.Model):
     _name = "hrm.companies"
     _description = "Companies"
 
-    name = fields.Char(string="Tên hiển thị")
+    name = fields.Char(string="Tên hiển thị", compute='_compute_name_company', store=True)
     name_company = fields.Char(string="Tên công ty", required=True)
     parent_company = fields.Many2one('hrm.companies', string="Công ty cha", domain=[])
     type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại hình công ty", required=True)
