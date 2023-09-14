@@ -15,10 +15,6 @@ class Blocks(models.Model):
 
     list_name = []
 
-    @api.model
-    def __int__(self):
-        self.get_name()
-
     def get_name(self):
         for line in self:
             receive = str.lower(line.name)
@@ -26,6 +22,7 @@ class Blocks(models.Model):
 
     @api.constrains('name')
     def check_name(self):
+        self.get_name()
         for line in self:
             if str.lower(line.name) in self.list_name:
                 raise ValidationError("Dữ liệu đã tồn tại khối này")
