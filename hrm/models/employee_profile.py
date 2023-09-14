@@ -16,7 +16,7 @@ class EmployeeProfile(models.Model):
     work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
     email = fields.Char('Email công việc', required=True)
-    phone_num = fields.Integer('Số điện thoại di động', required=True, max_length=10)
+    phone_num = fields.Char('Số điện thoại di động', required=True, max_length=10)
     identifier = fields.Char('Số căn cước công dân', required=True, max_length=10)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống')
@@ -33,7 +33,7 @@ class EmployeeProfile(models.Model):
         copy=False,
         index=True,
         size=7,
-        default=lambda self: self._generate_employee_id(),
+        default=lambda self: self._generate_employee_code(),
     )
     # lọc duy nhất mã nhân viên
 
@@ -60,22 +60,26 @@ class EmployeeProfile(models.Model):
 
     # hiển thị mã nhân viên, nếu chọn 1 số bất kỳ tiếp tục nhảy tiếp từ số đó
     @api.model
-    def _generate_employee_id(self):
+    def _generate_employee_code(self):
         last_employee = self.search([], order='employee_code desc', limit=1)
         if last_employee:
-            last_employee_id = last_employee.employee_id
-            last_number = int(last_employee_id[3:])  # Trích xuất phần số
+            last_employee_code = last_employee.employee_code
+            last_number = int(last_employee_code[3:])  # Trích xuất phần số
             new_number = last_number + 1
-            new_employee_id = f'UNI{str(new_number).zfill(4)}'
-            return new_employee_id
+            new_employee_code = f'UNI{str(new_number).zfill(4)}'
+            return new_employee_code
         return 'UNI0000'
 
     # Lọc nhân viên
     @api.constrains('employee_code')
-    def check_employee_id_format(self):
+    def check_employee_code_format(self):
         for record in self:
-            if record.employee_id and not record.employee_id.startswith('UNI'):
+            if record.employee_code and not record.employee_code.startswith('UNI'):
                 raise ValidationError(_("Mã nhân viên phải bắt đầu bằng 'UNI'."))
+
+
+
+
 
     """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
     sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
@@ -120,3 +124,12 @@ class EmployeeProfile(models.Model):
             if rec.identifier:
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
+
+    
+
+
+
+
+
+
+
