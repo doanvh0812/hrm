@@ -7,20 +7,16 @@ class Position(models.Model):
     _rec_name = "work_position"
 
     work_position = fields.Char(string='Tên Vị Trí', required=True)
-    block = fields.Many2one('hrm.blocks', string="Khối", required=True, default=lambda self: self._default_block_())
+    block = fields.Selection(selection=[
+        (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
+        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True)
     department = fields.Many2one("hrm.departments", string='Phòng/Ban')
     active = fields.Boolean(default=True)
 
-    related = fields.Boolean()
+    related = fields.Boolean(compute='_compute_related_field')
 
-    @api.onchange('block')
+    @api.depends('block')
     def _compute_related_field(self):
+        # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
-            if record.block.name == constraint.BLOCK_OFFICE_NAME:
-                record.related = False
-            else:
-                record.related = True
-
-    def _default_block_(self):
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_TRADE_NAME)], limit=1).id
-        return ids
+            record.related = record.block != constraint.BLOCK_OFFICE_NAME

@@ -1,6 +1,6 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
-
+from . import constraint
 
 class Department(models.Model):
     _name = "hrm.departments"
@@ -10,22 +10,10 @@ class Department(models.Model):
     superior_department = fields.Many2one("hrm.departments", string="Phòng/Ban cấp trên")
     active = fields.Boolean(string='Hoạt động', default=True)
 
-    list_name = []
-
-    def get_name(self):
-        """
-        Lấy tất cả tên của các bản ghi lưu vào list_name.
-        """
-        for line in self:
-            receive = str.lower(line.name)
-            self.list_name.append(receive)
-
     @api.constrains('name')
-    def check_name(self):
-        """
-        Kiểm tra name tồn tại trong các bản ghi.
-        """
-        self.get_name()
-        for line in self:
-            if str.lower(line.name) in self.list_name:
-                raise ValidationError("Dữ liệu đã tồn tại phòng ban này")
+    def _check_name_case_insensitive(self):
+        for record in self:
+            # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
+            duplicate_records = self.search([('id', '!=', record.id), ('name', 'ilike', record.name)])
+            if duplicate_records:
+                raise ValidationError(constraint.DUPLICATE_RECORD % record.name)

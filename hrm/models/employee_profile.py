@@ -15,7 +15,8 @@ class EmployeeProfile(models.Model):
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí')
     work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
-    employee_code = fields.Char(string='Mã nhân viên', required=True)
+    employee_code_old = fields.Char(string='Mã nhân viên cũ')
+    employee_code_new = fields.Char(string='Mã nhân viên mới', required=True)
     email = fields.Char('Email công việc', required=True)
     phone_num = fields.Char('Số điện thoại di động', required=True)
     identifier = fields.Char('Số căn cước công dân', required=True)
@@ -36,18 +37,17 @@ class EmployeeProfile(models.Model):
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
-            if record.block_id.name == constraint.BLOCK_OFFICE_NAME:
-                record.related = True
-            else:
-                record.related = False
+            record.related = record.block_id.name != constraint.BLOCK_OFFICE_NAME
 
     def _default_block_(self):
         # Đặt giá trị mặc định cho Khối
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_TRADE_NAME)]).id
+        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
         return ids
 
-    """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
-    sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
+    """
+        decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
+        sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+    """
 
     @api.onchange('company')
     def _onchange_company(self):
@@ -58,8 +58,9 @@ class EmployeeProfile(models.Model):
             else:
                 self.system_id = False
 
-    """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
-    khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
+    """ 
+        decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+        khi ta chọn công ty nó sẽ hiện ra tất cả những công ty có trong hệ thống đó
     """
 
     @api.onchange('system_id')
