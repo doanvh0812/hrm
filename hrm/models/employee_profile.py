@@ -37,7 +37,7 @@ class EmployeeProfile(models.Model):
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
-            record.related = record.block_id.name != constraint.BLOCK_OFFICE_NAME
+            record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
     def _default_block_(self):
         # Đặt giá trị mặc định cho Khối
