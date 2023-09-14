@@ -17,7 +17,7 @@
                             <group>
                                 <field name="work_start_date"/>
                                 <field name="date_receipt"/>
-                                <field name="employee_code"/>
+                                <field name="employee_code_new" readonly="1"/>
                                 <field name="email"/>
                                 <field name="phone_num"/>
                                 <field name="identifier"/>
@@ -56,7 +56,7 @@
                     <field name="position_id"/>
                     <field name="work_start_date"/>
                     <field name="date_receipt"/>
-                    <field name="employee_code"/>
+                    <field name="employee_code_new"/>
                     <field name="email"/>
                     <field name="phone_num"/>
                     <field name="identifier"/>

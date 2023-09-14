@@ -1,5 +1,5 @@
 BLOCK_OFFICE_NAME = "Văn phòng"
-BLOCK_TRADE_NAME = "Thương mại"
+BLOCK_COMMERCE_NAME = "Thương mại"
 
 DEFAULT_OFFICE = {
     'name': 'Văn phòng',
@@ -20,6 +20,8 @@ DEFAULT_TRADE = {
 DO_NOT_DELETE = "Không thể xoá bản ghi này!"
 
 DO_NOT_ARCHIVE = "Không thể lưu trữ bản ghi này!"
+
+DUPLICATE_RECORD = 'Có bản ghi trùng lặp %s'
 
 SELECT_TYPE_COMPANY = [
     ('sale', 'Sale'),
