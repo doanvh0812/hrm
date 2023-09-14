@@ -1,6 +1,6 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
-
+from . import constraint
 
 class Department(models.Model):
     _name = "hrm.departments"
