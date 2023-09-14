@@ -26,7 +26,6 @@ class Blocks(models.Model):
         for line in self:
             if str.lower(line.name) in self.list_name:
                 raise ValidationError("Dữ liệu đã tồn tại khối này")
-        self.get_name()
 
     @api.model
     def _auto_init(self):

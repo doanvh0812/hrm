@@ -49,10 +49,6 @@ class Systems(models.Model):
 
     list_name = []
 
-    @api.model
-    def __int__(self):
-        self.get_name()
-
     def get_name(self):
         """
         Lấy tất cả tên của các bản ghi lưu vào list_name.
@@ -66,7 +62,7 @@ class Systems(models.Model):
         """
         Kiểm tra name tồn tại trong các bản ghi.
         """
+        self.get_name()
         for line in self:
             if str.lower(line.name) in self.list_name:
                 raise ValidationError("Dữ liệu đã tồn tại hệ thống này")
-        self.get_name()
