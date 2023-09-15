@@ -7,44 +7,29 @@ class Blocks(models.Model):
     _name = 'hrm.blocks'
     _description = 'Block'
 
-    has_change = fields.Boolean(default=True)
     name = fields.Char(string='Tên khối', required=True)
-    description = fields.Text(string='Mô tả', default='')
-    create_new = fields.Boolean(default=False)
+    description = fields.Text(string='Mô tả')
     active = fields.Boolean(string='Hoạt động', default=True)
+    has_change = fields.Boolean(default=True)
 
     @api.constrains('name')
     def _check_name_case_insensitive(self):
         for record in self:
             # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
-            duplicate_records = self.search([('id', '!=', record.id), ('name', 'ilike', record.name)])
-            if duplicate_records:
-                raise ValidationError(constraint.DUPLICATE_RECORD % record.name)
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['name'].lower() == record.name.lower():
+                    raise ValidationError(constraint.DUPLICATE_RECORD % record.name)
 
-    @api.model
-    def _auto_init(self):
-        """
-            Tự tạo các bản ghi 'Văn phòng', 'Thương mại'
-            Duyệt qua bảng hrm.blocks
-            Nếu không có bản ghi nào có tên 'Văn phòng' hoặc 'Thương mại' thì tạo mới cả 2
-            Thiếu 1 bản ghi thì tạo mới bản ghi còn thiếu
-        """
-        super(Blocks, self)._auto_init()
-        existing_records = self.env['hrm.blocks'].search([('has_change', '=', False)])
-        if len(existing_records) == 0:
-            self._default_value_office()
-            self._default_value_trade()
-        elif len(existing_records) == 1:
-            for rec in existing_records:
-                if rec.name == constraint.BLOCK_OFFICE_NAME:
-                    self._default_value_trade()
-                else:
-                    self._default_value_office()
+    @api.onchange('name', 'description')
+    def _onchange_name(self):
+        if not self.has_change:
+            raise ValidationError("Bạn không có quyền chỉnh sửa bản ghi này.")
 
     def action_archive(self):
         # Thực hiện kiểm tra điều kiện trước khi lưu trữ
         for line in self:
-            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_COMMERCE_NAME]:
+            if not line.has_change:
                 raise ValidationError("Không thể lưu trữ bản ghi này.")
             else:
                 # Tiến hành lưu trữ bản ghi
@@ -53,14 +38,6 @@ class Blocks(models.Model):
     def unlink(self, context=None):
         # Chặn không cho xoá khối 'Văn phòng' và 'Thương mại'
         for line in self:
-            if line.name in [constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_COMMERCE_NAME]:
+            if not line.has_change:
                 raise ValidationError(constraint.DO_NOT_DELETE)
         return super(Blocks, self).unlink()
-
-    def _default_value_office(self):
-        # Tạo khối 'Văn phòng' mặc định
-        self.create(constraint.DEFAULT_OFFICE)
-
-    def _default_value_trade(self):
-        # Tạo khối 'Thương mại' mặc định
-        self.create(constraint.DEFAULT_TRADE)
