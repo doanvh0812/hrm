@@ -59,13 +59,12 @@ class EmployeeProfile(models.Model):
         ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
         return ids
 
-    """
-        decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
-        sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
-    """
-
     @api.onchange('company')
     def _onchange_company(self):
+        """
+            decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
+            sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+        """
         if self.company:
             company_system = self.company.system_id
             if company_system:
@@ -73,13 +72,12 @@ class EmployeeProfile(models.Model):
             else:
                 self.system_id = False
 
-    """ 
-        decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
-        khi ta chọn công ty nó sẽ hiện ra tất cả những công ty có trong hệ thống đó
-    """
-
     @api.onchange('system_id')
     def _onchange_system_id(self):
+        """
+            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+            khi ta chọn công ty nó sẽ hiện ra tất cả những công ty có trong hệ thống đó
+        """
         if self.system_id:
             companies = self.env['hrm.companies'].search([('system_id', '=', self.system_id.id)])
             return {'domain': {'company': [('id', 'in', companies.ids)]}}
