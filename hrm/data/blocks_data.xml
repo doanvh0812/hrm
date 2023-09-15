@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-
         <record id="hrm_blocks_office" model="hrm.blocks">
             <field name="name">Văn phòng</field>
             <field name="description">Khối văn phòng</field>
