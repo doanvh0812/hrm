@@ -57,42 +57,6 @@ class EmployeeProfile(models.Model):
         ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
         return ids
 
-        # hiển thị mã nhân viên, nếu chọn 1 số bất kỳ tiếp tục nhảy tiếp từ số đó
-        # @api.onchange('system_id')
-        # def _generate_employee_code(self):
-        # last_employee = self.search([], order='employee_code_new desc', limit=1)
-        # last_employee_code = last_employee.employee_code_new
-        # last_number = int(last_employee_code[3:])  # Trích xuất phần số
-        # new_number = last_number + 1
-        # print('-----------', self.get_name_systems())
-        # new_employee_code = f'UNI{str(new_number).zfill(4)}'
-        # return new_employee_code
-        # return 'UNI0001'
-
-    # Lọc nhân viên
-    # @api.constrains('employee_code_new')
-    # def check_employee_code_format(self):
-    #     for record in self:
-    #         if record.employee_code and not record.employee_code.startswith('UNI'):
-    #             raise ValidationError(_("Mã nhân viên phải bắt đầu bằng 'UNI'."))
-
-    #
-
-    # @api.depends('system_id')
-    # def render_code(self):
-    #     for rec in self:
-    #         if rec.system_id:
-    #             name = str.split(rec.system_id.name, '.')[0]
-    #             last_employee_code = self.env['hrm.employee.profile'].search([('employee_code_new', 'like', name)],
-    #                                                                          order='employee_code_new desc',
-    #                                                                          limit=1).employee_code_new
-    #             if last_employee_code:
-    #                 numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
-    #                 rec.employee_code_new = name + str(numbers).zfill(4)
-    #                 print(rec.employee_code_new)
-    #             else:
-    #                 rec.employee_code_new = str.upper(name) + '0001'
-
     """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
     sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
 
