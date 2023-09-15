@@ -1,12 +1,10 @@
 <odoo>
     <menuitem id="menu_field" name="HRM" sequence="-2"/>
-
     <menuitem id="config" name="Cấu hình" parent="menu_field" sequence="1"/>
     <menuitem id="block" name="Khối" parent="config" sequence="10" action='blocks_action'/>
     <menuitem id="companies" name="Công ty" parent="config" sequence="30" action="companies_action"/>
     <menuitem id="system" name="Hệ thống" parent="config" sequence="20" action='systems_action'/>
     <menuitem id="team" name="Đội ngũ" parent="config" sequence="40" action=""/>
-    <menuitem id="departments" name="Phòng ban" parent="config" sequence="50" action=""/>
     <menuitem id="position" name="Vị Trí" parent="config" sequence="60" action="action_hrm_position"/>
     <menuitem id="departments" name="Phòng ban" parent="config" sequence="50" action="departments_action"/>
     <menuitem id="employee" name="Nhân viên" parent="config" sequence="70" action=""/>
@@ -14,7 +12,6 @@
     <menuitem id="managers" name="Người quản lý" parent="config" sequence="100" action=""/>
     <menuitem id="document" name="Tài liệu" parent="config" sequence="110" action=""/>
     <menuitem id="approval_flow" name="Luồng phê duyệt" parent="config" sequence="120" action=""/>
-
     <menuitem id="employee" name="Nhân viên" parent="menu_field" sequence="2"/>
     <menuitem id="employee_profile" name="Tạo mới" parent="employee" sequence="10" action="employee_profile_action"/>
 </odoo>
