@@ -6,7 +6,7 @@ import re
 
 class Systems(models.Model):
     _name = "hrm.systems"
-    _description = "System of Hrm"
+    _description = "Hệ thống"
 
     name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True)
     name_system = fields.Char(string="Tên hệ thống", required=True)
@@ -51,7 +51,7 @@ class Systems(models.Model):
     def _check_name_case_insensitive(self):
         for record in self:
             # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
-            if record.name:
-                duplicate_records = self.search([('id', '!=', record.id), ('name', 'ilike', record.name)])
-                if duplicate_records:
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % record.name)
