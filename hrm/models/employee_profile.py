@@ -16,7 +16,7 @@ class EmployeeProfile(models.Model):
     work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
-    employee_code_new = fields.Char(string='Mã nhân viên mới')
+    employee_code_new = fields.Char(string='Mã nhân viên mới', compute='render_code', store=True)
     email = fields.Char('Email công việc', required=True)
     phone_num = fields.Char('Số điện thoại di động', required=True)
     identifier = fields.Char('Số căn cước công dân', required=True)
@@ -32,6 +32,21 @@ class EmployeeProfile(models.Model):
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
+
+    @api.depends('system_id')
+    def render_code(self):
+        for rec in self:
+            if rec.system_id:
+                name = str.split(rec.system_id.name, '.')[0]
+                last_employee_code = self.env['hrm.employee.profile'].search([('employee_code_new', 'like', name)],
+                                                                             order='employee_code_new desc',
+                                                                             limit=1).employee_code_new
+                if last_employee_code:
+                    numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
+                    rec.employee_code_new = name + str(numbers).zfill(4)
+                    print(rec.employee_code_new)
+                else:
+                    rec.employee_code_new = str.upper(name) + '0001'
 
     @api.depends('block_id')
     def _compute_related_(self):
