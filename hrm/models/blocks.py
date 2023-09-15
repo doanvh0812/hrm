@@ -22,25 +22,25 @@ class Blocks(models.Model):
                 if duplicate_records:
                     raise ValidationError(constraint.DUPLICATE_RECORD % record.name)
 
-    @api.model
-    def _auto_init(self):
-        """
-            Tự tạo các bản ghi 'Văn phòng', 'Thương mại'
-            Duyệt qua bảng hrm.blocks
-            Nếu không có bản ghi nào có tên 'Văn phòng' hoặc 'Thương mại' thì tạo mới cả 2
-            Thiếu 1 bản ghi thì tạo mới bản ghi còn thiếu
-        """
-        super(Blocks, self)._auto_init()
-        existing_records = self.env['hrm.blocks'].search([('has_change', '=', False)])
-        if len(existing_records) == 0:
-            self._default_value_office()
-            self._default_value_trade()
-        elif len(existing_records) == 1:
-            for rec in existing_records:
-                if rec.name == constraint.BLOCK_OFFICE_NAME:
-                    self._default_value_trade()
-                else:
-                    self._default_value_office()
+    # @api.model
+    # def _auto_init(self):
+    #     """
+    #         Tự tạo các bản ghi 'Văn phòng', 'Thương mại'
+    #         Duyệt qua bảng hrm.blocks
+    #         Nếu không có bản ghi nào có tên 'Văn phòng' hoặc 'Thương mại' thì tạo mới cả 2
+    #         Thiếu 1 bản ghi thì tạo mới bản ghi còn thiếu
+    #     """
+    #     super(Blocks, self)._auto_init()
+    #     existing_records = self.env['hrm.blocks'].search([('has_change', '=', False)])
+    #     if len(existing_records) == 0:
+    #         self._default_value_office()
+    #         self._default_value_trade()
+    #     elif len(existing_records) == 1:
+    #         for rec in existing_records:
+    #             if rec.name == constraint.BLOCK_OFFICE_NAME:
+    #                 self._default_value_trade()
+    #             else:
+    #                 self._default_value_office()
 
     def action_archive(self):
         # Thực hiện kiểm tra điều kiện trước khi lưu trữ
