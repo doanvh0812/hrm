@@ -1,4 +1,7 @@
+import re
+
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 from . import constraint
 
 
@@ -14,6 +17,26 @@ class Position(models.Model):
     active = fields.Boolean(default=True)
 
     related = fields.Boolean(compute='_compute_related_field')
+
+    @api.constrains('work_position')
+    def _check_name_case_insensitive(self):
+        """ Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường """
+        for record in self:
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['work_position'].lower() == record.work_position.lower():
+                    raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
+
+    @api.constrains("work_position")
+    def _check_valid_name(self):
+        """
+        kiểm tra trường name không có ký tự đặc biệt.
+        \W là các ký tự ko phải là chữ, dấu cách, _
+        """
+        for rec in self:
+            if rec.work_position:
+                if re.search(r"[\W]+", rec.work_position.replace(" ", "")) or "_" in rec.work_position:
+                    raise ValidationError(constraint.ERROR_NAME % 'vị trí')
 
     @api.depends('block')
     def _compute_related_field(self):
