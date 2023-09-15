@@ -19,9 +19,8 @@ class EmployeeProfile(models.Model):
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(
         string="Mã nhân viên mới",
-        readonly=True,
-        index=True
-        # ,default=lambda self: self.env['ir.sequence'].next_by_code('hrm.employee.profile')
+        compute ='render_code',
+        store=True
     )
 
     email = fields.Char('Email công việc', required=True)
@@ -46,9 +45,10 @@ class EmployeeProfile(models.Model):
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
 
-    @api.depends('system_id')
+    @api.depends('system_id', 'block_id')
     def render_code(self):
         for rec in self:
+            print(rec.block_id.name)
             if rec.system_id:
                 name = str.split(rec.system_id.name, '.')[0]
                 last_employee_code = self.env['hrm.employee.profile'].search([('employee_code_new', 'like', name)],
@@ -57,9 +57,18 @@ class EmployeeProfile(models.Model):
                 if last_employee_code:
                     numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
                     rec.employee_code_new = name + str(numbers).zfill(4)
-                    print(rec.employee_code_new)
                 else:
                     rec.employee_code_new = str.upper(name) + '0001'
+
+            elif rec.block_id.name == constraint.BLOCK_OFFICE_NAME:
+                last_employee_code = self.env['hrm.employee.profile'].search([('employee_code_new', 'like', 'BH')],
+                                                                             order='employee_code_new desc',
+                                                                             limit=1).employee_code_new
+                if last_employee_code:
+                    numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
+                    rec.employee_code_new = 'BH' + str(numbers).zfill(4)
+                else:
+                    rec.employee_code_new = 'BH0001'
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -124,14 +133,3 @@ class EmployeeProfile(models.Model):
             if rec.identifier:
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if vals.get('block_id') == 1:
-                sequence_code = 'hrm.employee.profile'
-            else:
-                break
-            sequence = self.env['ir.sequence'].sudo().next_by_code(sequence_code)
-            vals['employee_code_new'] = sequence or _('New')
-        return super(EmployeeProfile, self).create(vals_list)
