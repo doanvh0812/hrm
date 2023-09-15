@@ -20,7 +20,7 @@ class EmployeeProfile(models.Model):
     email = fields.Char('Email công việc', required=True)
     phone_num = fields.Char('Số điện thoại di động', required=True)
     identifier = fields.Char('Số căn cước công dân', required=True)
-    profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
+    profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete')
     system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     company = fields.Many2one('hrm.companies', string='Công ty con')
     team_marketing = fields.Char(string='Đội ngũ marketing')
