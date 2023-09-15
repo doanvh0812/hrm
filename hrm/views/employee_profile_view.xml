@@ -6,26 +6,22 @@
             <field name="arch" type="xml">
                 <form string="Tạo mới hồ sơ">
                     <sheet>
-                        <group>
+                        <group col="2">
                             <group>
+                                <field name="employee_code_new" readonly="1"/>
                                 <field name="name"/>
-                                <field name="block_id"/>
-                                <field name="position_id"/>
-                            </group>
-                            <group>
-                            </group>
-                            <group>
+                                <field name="phone_num"/>
+                                <field name="email"/>
+                                <field name="identifier"/>
                                 <field name="work_start_date"/>
                                 <field name="date_receipt"/>
-                                <field name="employee_code_new"/>
-                                <field name="email"/>
-                                <field name="phone_num"/>
-                                <field name="identifier"/>
                                 <field name="profile_status"/>
                             </group>
                             <group>
                                 <!--   related = true là đã chọn văn phòng -->
                                 <field name="related" invisible="1"/>
+                                <field name="block_id"/>
+                                <field name="position_id"/>
                                 <field name="system_id"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)]}"/>
                                 <field name="company"
@@ -55,18 +51,10 @@
                     <field name="name"/>
                     <field name="block_id"/>
                     <field name="employee_code_new"/>
-                    <field name="email"/>
-                    <field name="phone_num"/>
-                    <field name="identifier"/>
-                    <field name="profile_status"/>
                     <field name="system_id"/>
                     <field name="company"/>
-                    <field name="team_marketing"/>
-                    <field name="team_sales"/>
                     <field name="department_id"/>
-                    <field name="manager_id"/>
-                    <field name="rank_id"/>
-                    <field name="auto_create_acc"/>
+                    <field name="profile_status"/>
                 </tree>
             </field>
         </record>

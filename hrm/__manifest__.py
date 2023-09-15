@@ -3,20 +3,20 @@
     'name': "hrm",
 
     'summary': """
-        Short (1 phrase/line) summary of the module's purpose, used as
-        subtitle on modules listing or apps.openerp.com""",
+        Quản lý thông tin nhân viên.
+    """,
 
     'description': """
         Long description of module's purpose
     """,
 
-    'author': "My Company",
-    'website': "http://www.yourcompany.com",
+    'author': "TTS Big Holding",
+    'website': "http://dev.obd.life/",
 
     # Categories can be used to filter modules in modules listing
     # Check https://github.com/odoo/odoo/blob/14.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
-    'category': 'Uncategorized',
+    'category': 'Human Resources',
     'version': '0.1',
     'application': True,
     'sequence': -100,
@@ -27,6 +27,7 @@
     'data': [
         'data/ir_sequence_data.xml',
         'views/blocks_view.xml',
+        'data/blocks_data.xml',
         'views/systems_views.xml',
         'views/departments_view.xml',
         'views/companies_view.xml',
