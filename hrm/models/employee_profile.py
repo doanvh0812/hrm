@@ -103,3 +103,14 @@ class EmployeeProfile(models.Model):
             if rec.identifier:
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
+
+    @api.constrains("name")
+    def _check_valid_name(self):
+        """
+        kiểm tra trường name không có ký tự đặc biệt.
+        \W là các ký tự ko phải là chữ và dấu cách
+        """
+        for rec in self:
+            if rec.name:
+                if re.search(r"[\W]+", rec.name.replace(" ", "")) or "_" in rec.name:
+                    raise ValidationError("Tên không được chứa ký tự đặc biệt.")
