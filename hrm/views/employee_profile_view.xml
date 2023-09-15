@@ -8,8 +8,8 @@
                     <sheet>
                         <group col="2">
                             <group>
-                                <field name="name"/>
                                 <field name="employee_code_new" readonly="1"/>
+                                <field name="name"/>
                                 <field name="phone_num"/>
                                 <field name="email"/>
                                 <field name="identifier"/>
