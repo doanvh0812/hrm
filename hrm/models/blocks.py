@@ -14,8 +14,8 @@ class Blocks(models.Model):
 
     @api.constrains('name')
     def _check_name_case_insensitive(self):
+        """ Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường """
         for record in self:
-            # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
             name = self.search([('id', '!=', record.id)])
             for n in name:
                 if n['name'].lower() == record.name.lower():
@@ -27,7 +27,7 @@ class Blocks(models.Model):
             raise ValidationError("Bạn không có quyền chỉnh sửa bản ghi này.")
 
     def action_archive(self):
-        # Thực hiện kiểm tra điều kiện trước khi lưu trữ
+        """ Thực hiện kiểm tra điều kiện trước khi lưu trữ """
         for line in self:
             if not line.has_change:
                 raise ValidationError("Không thể lưu trữ bản ghi này.")
@@ -36,7 +36,7 @@ class Blocks(models.Model):
                 return super(Blocks, self).action_archive()
 
     def unlink(self, context=None):
-        # Chặn không cho xoá khối 'Văn phòng' và 'Thương mại'
+        """ Chặn không cho xoá khối 'Văn phòng' và 'Thương mại' """
         for line in self:
             if not line.has_change:
                 raise ValidationError(constraint.DO_NOT_DELETE)
