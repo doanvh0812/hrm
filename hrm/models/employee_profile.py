@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from . import constraint
 
@@ -15,11 +15,17 @@ class EmployeeProfile(models.Model):
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí')
     work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
+
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
-    employee_code_new = fields.Char(string='Mã nhân viên mới', compute='render_code', store=True)
+    employee_code_new = fields.Char(
+        string="Mã nhân viên mới",
+        compute ='render_code',
+        store=True
+    )
+
     email = fields.Char('Email công việc', required=True)
-    phone_num = fields.Char('Số điện thoại di động', required=True)
-    identifier = fields.Char('Số căn cước công dân', required=True)
+    phone_num = fields.Char('Số điện thoại di động', required=True, max_length=10)
+    identifier = fields.Char('Số căn cước công dân', required=True, max_length=10)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default=False)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     company = fields.Many2one('hrm.companies', string='Công ty con')
@@ -27,15 +33,22 @@ class EmployeeProfile(models.Model):
     team_sales = fields.Char(string='Đội ngũ bán hàng')
     department_id = fields.Many2one('hrm.departments', string='Phòng/Ban')
     manager_id = fields.Many2one('res.users', string='Quản lý')
-
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
+
+    # lọc duy nhất mã nhân viên
+
+    _sql_constraints = [
+        ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
+    ]
+
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
 
-    @api.depends('system_id')
+    @api.depends('system_id', 'block_id')
     def render_code(self):
         for rec in self:
+            print(rec.block_id.name)
             if rec.system_id:
                 name = str.split(rec.system_id.name, '.')[0]
                 last_employee_code = self.env['hrm.employee.profile'].search([('employee_code_new', 'like', name)],
@@ -44,9 +57,18 @@ class EmployeeProfile(models.Model):
                 if last_employee_code:
                     numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
                     rec.employee_code_new = name + str(numbers).zfill(4)
-                    print(rec.employee_code_new)
                 else:
                     rec.employee_code_new = str.upper(name) + '0001'
+
+            elif rec.block_id.name == constraint.BLOCK_OFFICE_NAME:
+                last_employee_code = self.env['hrm.employee.profile'].search([('employee_code_new', 'like', 'BH')],
+                                                                             order='employee_code_new desc',
+                                                                             limit=1).employee_code_new
+                if last_employee_code:
+                    numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
+                    rec.employee_code_new = 'BH' + str(numbers).zfill(4)
+                else:
+                    rec.employee_code_new = 'BH0001'
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -58,6 +80,14 @@ class EmployeeProfile(models.Model):
         # Đặt giá trị mặc định cho Khối
         ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
         return ids
+
+    """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
+    sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
+
+    """
+        decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
+        sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+    """
 
     @api.onchange('company')
     def _onchange_company(self):

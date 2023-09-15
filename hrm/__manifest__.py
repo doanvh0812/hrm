@@ -25,6 +25,7 @@
 
     # always loaded
     'data': [
+        # 'data/ir_sequence_data.xml',
         'views/blocks_view.xml',
         'data/blocks_data.xml',
         'views/systems_views.xml',
