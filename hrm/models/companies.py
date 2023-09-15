@@ -28,8 +28,6 @@ class Companies(models.Model):
             name_main = rec.name_company or ''
             type_company = rec.type_company and rec.type_company[0].capitalize() or ''
             name_system = rec.system_id and rec.system_id.name or ''
-            rec.name = f"{type_company}.{name_system}.{name_main}"
-
             name_parts = [part for part in [type_company, name_system, name_main] if part]  # Lọc các trường không rỗng
             rec.name = '.'.join(name_parts)
 
