@@ -17,7 +17,7 @@
                             <group>
                                 <field name="work_start_date"/>
                                 <field name="date_receipt"/>
-                                <field name="employee_code_new" readonly="1"/>
+                                <field name="employee_code_new"/>
                                 <field name="email"/>
                                 <field name="phone_num"/>
                                 <field name="identifier"/>
@@ -68,7 +68,7 @@
                     <field name="department_id"/>
                     <field name="manager_id"/>
                     <field name="rank_id"/>
-                    <field name="auto_create_acc"/>
+                    <field name="employee_code_old"/>
                 </tree>
             </field>
         </record>

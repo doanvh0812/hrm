@@ -16,7 +16,7 @@ class EmployeeProfile(models.Model):
     work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=datetime.now())
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
-    employee_code_new = fields.Char(string='Mã nhân viên mới', required=True)
+    employee_code_new = fields.Char(string='Mã nhân viên mới')
     email = fields.Char('Email công việc', required=True)
     phone_num = fields.Char('Số điện thoại di động', required=True)
     identifier = fields.Char('Số căn cước công dân', required=True)
@@ -37,7 +37,7 @@ class EmployeeProfile(models.Model):
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
-            record.related = record.block_id.name != constraint.BLOCK_OFFICE_NAME
+            record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
     def _default_block_(self):
         # Đặt giá trị mặc định cho Khối
@@ -90,3 +90,26 @@ class EmployeeProfile(models.Model):
             if rec.identifier:
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
+
+    @api.onchange('system_id')
+    def print_system(self):
+        for record in self:
+            if record.system_id.parent_system:
+                @api.depends('system_id')
+                def render_code(self):
+                    for rec in self:
+                        if rec.system_id:
+                            name = str.split(rec.system_id.name, '.')[0]
+                            last_employee_code = self.env['hrm.employee.profile'].search(
+                                [('employee_code_new', 'like', name)],
+                                order='employee_code_new desc',
+                                limit=1).employee_code_new
+                            if last_employee_code:
+                                numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
+                                rec.employee_code_new = name + str(numbers).zfill(4)
+                                print(rec.employee_code_new)
+                            else:
+                                rec.employee_code_new = str.upper(name) + '0001'
+            else:
+                print(record.system_id.name_system)
+
