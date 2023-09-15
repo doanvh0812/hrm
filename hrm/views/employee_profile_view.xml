@@ -4,9 +4,6 @@
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
             <field name="arch" type="xml">
-                <header>
-                    <button name="get_all_system_names" class="btn btn-primary" type="object">Button</button>
-                </header>
                 <form string="Tạo mới hồ sơ">
                     <sheet>
                         <group>
@@ -20,7 +17,7 @@
                             <group>
                                 <field name="work_start_date"/>
                                 <field name="date_receipt"/>
-                                <field name="employee_code_new" readonly="1"/>
+                                <field name="employee_code_new"/>
                                 <field name="email"/>
                                 <field name="phone_num"/>
                                 <field name="identifier"/>
@@ -57,9 +54,6 @@
                 <tree>
                     <field name="name"/>
                     <field name="block_id"/>
-                    <field name="position_id"/>
-                    <field name="work_start_date"/>
-                    <field name="date_receipt"/>
                     <field name="employee_code_new"/>
                     <field name="email"/>
                     <field name="phone_num"/>
