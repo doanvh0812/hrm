@@ -7,15 +7,16 @@ class Approval_flow_object(models.Model):
 
     name = fields.Char(string='Tên luồng phê duyệt', required=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True)
-    department_id = fields.One2many('hrm.departments', string='Phòng/Ban')
-    system_id = fields.One2many('hrm.systems', string='Hệ thống')
-    company = fields.One2many('hrm.companies', string='Công ty con')
-    approval_flow_link = fields.One2many()
+    department_id = fields.One2many('hrm.departments', 'approval_id', string='Phòng/Ban')
+    system_id = fields.One2many('hrm.systems', 'approval_id', string='Hệ thống')
+    company = fields.One2many('hrm.companies', 'approval_id', string='Công ty con')
+    approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id')
 
 
 class Approver(models.Model):
     _name = 'hrm.approval.flow'
 
+    approval_id = fields.Many2one('hrm.approval.flow.object')
     step = fields.Integer(string='Bước duyệt', default=1)
     approver = fields.Many2one('res.users', string='Người phê duyệt')
     obligatory = fields.Boolean(string='Vượt cấp')
