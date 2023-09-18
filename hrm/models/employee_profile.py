@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 from . import constraint
 
@@ -55,7 +55,7 @@ class EmployeeProfile(models.Model):
             # Ngược lại không phải khối văn phòng
             else:
                 # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-                if record.system_id:
+                if record.system_id.name:
                     name = str.split(record.system_id.name, '.')[0]
                     last_employee_code = self._get_last_employee_code('like', name)
                     record.employee_code_new = self._generate_employee_code(name, last_employee_code)
@@ -100,14 +100,6 @@ class EmployeeProfile(models.Model):
         ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
         return ids
 
-    """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
-    sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
-
-    """
-        decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó 
-        sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
-    """
-
     @api.onchange('company')
     def _onchange_company(self):
         """
@@ -128,20 +120,34 @@ class EmployeeProfile(models.Model):
             khi ta chọn công ty nó sẽ hiện ra tất cả những công ty có trong hệ thống đó
         """
         if self.system_id:
-            companies = self.env['hrm.companies'].search([('system_id', '=', self.system_id.id)])
+            companies = self.env['hrm.companies'].search([('block_id', '=', self.system_id.id)])
             return {'domain': {'company': [('id', 'in', companies.ids)]}}
         else:
             return {'domain': {'company': []}}
 
+    @api.onchange('block_id')
+    def _onchange_system_id(self):
+        """
+            decorator này khi tạo hồ sơ nhân viên, chọn 1 vị trí nào đó
+            khi ta vị trí nó sẽ hiện ra tất cả những vị trí có trong khối đó
+        """
+        self.position_id = self.system_id = self.company = self.team_sales = self.team_marketing = self.department_id = self.manager_id = self.rank_id = ''
+
+        if self.block_id:
+            position = self.env['hrm.position'].search([('block', '=', self.block_id.name)])
+            return {'domain': {'position_id': [('id', 'in', position.ids)]}}
+        else:
+            return {'domain': {'position_id': []}}
+
     @api.constrains("phone_num")
     def _check_phone_valid(self):
         """
-        hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
+            hàm kiểm tra số điện thoại: không âm, không có ký tự, có số 0 ở đầu
         """
         for rec in self:
             if rec.phone_num:
                 if not re.match(r'^[0]\d+$', rec.phone_num):
-                    raise ValidationError("Số điện thoại không hợp lệ")
+                    raise ValidationError(constraint.ERROR_PHONE)
 
     @api.constrains("identifier")
     def _check_identifier_valid(self):
@@ -152,3 +158,49 @@ class EmployeeProfile(models.Model):
             if rec.identifier:
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
+
+    @api.onchange('system_id')
+    def print_system(self):
+        for record in self:
+            if record.system_id.parent_system:
+                @api.depends('system_id')
+                def render_code(self):
+                    for rec in self:
+                        if rec.system_id:
+                            name = str.split(rec.system_id.name, '.')[0]
+                            last_employee_code = self.env['hrm.employee.profile'].search(
+                                [('employee_code_new', 'like', name)],
+                                order='employee_code_new desc',
+                                limit=1).employee_code_new
+                            if last_employee_code:
+                                numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
+                                rec.employee_code_new = name + str(numbers).zfill(4)
+                                print(rec.employee_code_new)
+                            else:
+                                rec.employee_code_new = str.upper(name) + '0001'
+            else:
+                print(record.system_id.name_system)
+
+    @api.onchange('email')
+    def validate_mail(self):
+        if self.email:
+            match = re.match(r'^[\w.-]+@[\w.-]+\.\w+$', self.email)
+            if not match:
+                raise ValidationError('Email không hợp lệ')
+
+    @api.constrains("name")
+    def _check_valid_name(self):
+        """
+            kiểm tra trường name không có ký tự đặc biệt.
+            \W là các ký tự ko phải là chữ, dấu cách, _
+        """
+        for rec in self:
+            if rec.name:
+                if re.search(r"[\W]+", rec.name.replace(" ", "")) or "_" in rec.name:
+                    raise ValidationError(constraint.ERROR_NAME % '')
+
+    @api.onchange('position_id')
+    def onchange_position_id(self):
+        # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
+        if self.position_id.block != self.block_id.name:
+            self.position_id = ''

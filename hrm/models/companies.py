@@ -31,6 +31,15 @@ class Companies(models.Model):
             name_parts = [part for part in [type_company, name_system, name_main] if part]  # Lọc các trường không rỗng
             rec.name = '.'.join(name_parts)
 
+    @api.constrains('name_company')
+    def _check_name_case_insensitive(self):
+        """ Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường """
+        for record in self:
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['name_company'].lower() == record.name_company.lower():
+                    raise ValidationError(constraint.DUPLICATE_RECORD % 'Công ty')
+
     @api.constrains("phone_num")
     def _check_phone_valid(self):
         """
@@ -39,7 +48,7 @@ class Companies(models.Model):
         for rec in self:
             if rec.phone_num:
                 if not re.match(r'^[0]\d+$', rec.phone_num):
-                    raise ValidationError("Số điện thoại không hợp lệ")
+                    raise ValidationError(constraint.ERROR_PHONE)
 
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):

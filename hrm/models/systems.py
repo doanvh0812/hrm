@@ -47,11 +47,11 @@ class Systems(models.Model):
                 if not re.match(r'^[0]\d+$', rec.phone_number):
                     raise ValidationError("Số điện thoại không hợp lệ")
 
-    @api.constrains('name')
+    @api.constrains('name_system')
     def _check_name_case_insensitive(self):
         for record in self:
             # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
             name = self.search([('id', '!=', record.id)])
             for n in name:
-                if n['name'].lower() == record.name.lower():
-                    raise ValidationError(constraint.DUPLICATE_RECORD % record.name)
+                if n['name_system'].lower() == record.name_system.lower():
+                    raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")

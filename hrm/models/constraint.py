@@ -14,8 +14,8 @@ TYPE_SYSTEM = [
     ('resale', 'Resale')
 ]
 
+ERROR_NAME = "Tên %s không được chứa ký tự đặc biệt."
+ERROR_PHONE = "Số điện thoại không hợp lệ"
 DO_NOT_DELETE = "Không thể xoá bản ghi này!"
-
 DO_NOT_ARCHIVE = "Không thể lưu trữ bản ghi này!"
-
-DUPLICATE_RECORD = 'Có bản ghi trùng lặp : %s'
+DUPLICATE_RECORD = '%s đã tồn tại!'
