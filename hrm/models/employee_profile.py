@@ -159,28 +159,6 @@ class EmployeeProfile(models.Model):
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
 
-    @api.onchange('system_id')
-    def print_system(self):
-        for record in self:
-            if record.system_id.parent_system:
-                @api.depends('system_id')
-                def render_code(self):
-                    for rec in self:
-                        if rec.system_id:
-                            name = str.split(rec.system_id.name, '.')[0]
-                            last_employee_code = self.env['hrm.employee.profile'].search(
-                                [('employee_code_new', 'like', name)],
-                                order='employee_code_new desc',
-                                limit=1).employee_code_new
-                            if last_employee_code:
-                                numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
-                                rec.employee_code_new = name + str(numbers).zfill(4)
-                                print(rec.employee_code_new)
-                            else:
-                                rec.employee_code_new = str.upper(name) + '0001'
-            else:
-                print(record.system_id.name_system)
-
     @api.onchange('email')
     def validate_mail(self):
         if self.email:
