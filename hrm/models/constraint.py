@@ -9,6 +9,16 @@ PROFILE_STATUS = [
     ('incomplete', 'Chưa hoàn thiện'),
     ('complete', 'Hoàn thiện')]
 
+STATE = [
+    ('draft', 'Nháp'),
+    ('pending', 'Chờ duyệt'),
+    ('approved', 'Đã duyệt')]
+
+APPROVE_STATUS = [
+    ('pending', 'Chờ duyệt'),
+    ('confirm', 'Đã duyệt'),
+    ('refuse', 'Từ chối')]
+
 TYPE_SYSTEM = [
     ('sale', 'Sale'),
     ('resale', 'Resale')
