@@ -43,6 +43,10 @@ class EmployeeProfile(models.Model):
 
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
+    state = fields.Selection(constraint.STATE, default='draft')
+
+    # Các trường trong tab
+    approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id')
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -159,30 +163,9 @@ class EmployeeProfile(models.Model):
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
 
-    @api.onchange('system_id')
-    def print_system(self):
-        for record in self:
-            if record.system_id.parent_system:
-                @api.depends('system_id')
-                def render_code(self):
-                    for rec in self:
-                        if rec.system_id:
-                            name = str.split(rec.system_id.name, '.')[0]
-                            last_employee_code = self.env['hrm.employee.profile'].search(
-                                [('employee_code_new', 'like', name)],
-                                order='employee_code_new desc',
-                                limit=1).employee_code_new
-                            if last_employee_code:
-                                numbers = int(re.search(r'\d+', last_employee_code).group(0)) + 1
-                                rec.employee_code_new = name + str(numbers).zfill(4)
-                                print(rec.employee_code_new)
-                            else:
-                                rec.employee_code_new = str.upper(name) + '0001'
-            else:
-                print(record.system_id.name_system)
-
     @api.onchange('email')
     def validate_mail(self):
+        # Hàm kiểm tra định dạng email
         if self.email:
             match = re.match(r'^[\w.-]+@[\w.-]+\.\w+$', self.email)
             if not match:
@@ -204,3 +187,55 @@ class EmployeeProfile(models.Model):
         # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
         if self.position_id.block != self.block_id.name:
             self.position_id = ''
+
+    def action_confirm(self):
+        # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
+        orders = self.filtered(lambda s: s.state in ['pending'])
+        id_access = self.env.user.id
+        for rec in orders.approved_link:
+            if rec.approve.id == id_access:
+                rec.approve_status = 'confirm'
+                rec.time = datetime.now()
+
+        return orders.write({
+            'state': 'approved'
+        })
+
+    def action_refuse(self):
+        # Khi ấn button Từ chối sẽ chuyển từ pending sang draft
+        orders = self.filtered(lambda s: s.state in ['pending'])
+        # Lấy id người đăng nhập
+        id_access = self.env.user.id
+        # Duyệt qua bản ghi trong luồng (là những người được duyệt)
+        for rec in orders.approved_link:
+            # Tìm người trong luồng có id = người đang đăng nhập
+            # Thay trạng thái của người đó trong bản ghi thành refuse
+            if rec.approve.id == id_access:
+                rec.approve_status = 'refuse'
+                rec.time = datetime.now()
+
+        return orders.write({
+            'state': 'draft'
+        })
+
+    def action_send(self):
+        # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
+        orders = self.filtered(lambda s: s.state in ['draft'])
+        # Tìm khối trùng với khối của hồ sơ
+        approved_id = self.env['hrm.approval.flow.object'].search([('block_id.name', 'like', orders.block_id.name)])
+
+        if approved_id:
+            for rec in approved_id.approval_flow_link:
+                self.approved_link.create({
+                    'profile_id': self.id,
+                    'step': rec.step,
+                    'approve': rec.approve.id,
+                    'obligatory': rec.obligatory,
+                    'excess_level': rec.excess_level,
+                    'approve_status': 'pending',
+                    'time': False,
+                })
+
+        return orders.write({
+            'state': 'pending'
+        })

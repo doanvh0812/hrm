@@ -1,3 +1,4 @@
+from . import constraint
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 
@@ -12,12 +13,29 @@ class Approval_flow_object(models.Model):
     company = fields.One2many('hrm.companies', 'approval_id', string='Công ty con')
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id')
 
+    related = fields.Boolean(compute='_compute_related_')
 
-class Approver(models.Model):
+    @api.depends('block_id')
+    def _compute_related_(self):
+        # Lấy giá trị của trường related để check điều kiện hiển thị
+        for record in self:
+            record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
+
+
+class Approve(models.Model):
     _name = 'hrm.approval.flow'
 
     approval_id = fields.Many2one('hrm.approval.flow.object')
-    step = fields.Integer(string='Bước duyệt', default=1)
-    approver = fields.Many2one('res.users', string='Người phê duyệt')
-    obligatory = fields.Boolean(string='Vượt cấp')
-    excess_level = fields.Boolean(string='Duyệt vượt cấp')
+    step = fields.Integer(string='Bước', default=1)
+    approve = fields.Many2one('res.users', string='Người phê duyệt')
+    obligatory = fields.Boolean(string='Bắt buộc')
+    excess_level = fields.Boolean(string='Vượt cấp')
+
+
+class ApproveProfile(models.Model):
+    _name = 'hrm.approval.flow.profile'
+    _inherit = 'hrm.approval.flow'
+
+    profile_id = fields.Many2one('hrm.employee.profile')
+    approve_status = fields.Selection(constraint.APPROVE_STATUS, default='pending', string="Trạng thái")
+    time = fields.Datetime(string="Thời gian")
