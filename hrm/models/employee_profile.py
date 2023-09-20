@@ -155,6 +155,7 @@ class EmployeeProfile(models.Model):
         else:
             return {'domain': {'position_id': []}}
 
+
     @api.constrains("phone_num")
     def _check_phone_valid(self):
         """
