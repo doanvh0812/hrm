@@ -41,6 +41,22 @@ class Companies(models.Model):
                 if n['name_company'].lower() == record.name_company.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Công ty')
 
+    @api.onchange('parent_company')
+    def _onchange_parent_company(self):
+        """decorator này  chọn cty cha
+             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
+        company_system = self.parent_company.system_id
+        if company_system:
+            self.system_id = company_system
+        else:
+            self.system_id = False
+
+    @api.onchange('system_id')
+    def _onchange_company(self):
+        """decorator này  chọn lại hệ thống sẽ clear công ty cha"""
+        if self.system_id != self.parent_company.system_id:
+            self.parent_company = False
+
     @api.constrains("phone_num")
     def _check_phone_valid(self):
         """

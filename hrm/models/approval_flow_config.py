@@ -23,6 +23,21 @@ class Approval_flow_object(models.Model):
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
+    @api.onchange('block_id')
+    def _onchange_block(self):
+        self.company = self.department_id = self.system_id = False
+
+    @api.onchange('system_id')
+    def _onchange_system_id(self):
+        """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+            khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
+            """
+        if self.system_id:
+            companies = self.env['hrm.companies'].search([('system_id', '=', self.system_id.id)])
+            return {'domain': {'company': [('id', 'in', companies.ids)]}}
+        else:
+            return {'domain': {'company': []}}
+
 
 class Approve(models.Model):
     _name = 'hrm.approval.flow'
