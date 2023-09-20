@@ -33,10 +33,6 @@
                     <field name="activity_ids"/>
                     <field name="message_ids"/>
                 </div>
-<!--                <footer>-->
-<!--                    <button name="action_open_lost_reason_popup" string="Lý do từ chối" type="object"-->
-<!--                            class="oe_highlight"/>-->
-<!--                </footer>-->
             </form>
         </field>
     </record>
@@ -65,19 +61,4 @@
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_approval_flow_object_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_approval_flow_object_form')})]"/>
     </record>
-
-<!--    <record id="view_lost_reason_popup_form" model="ir.ui.view">-->
-<!--        <field name="name">hrm.approval.lost.reason.popup.form</field>-->
-<!--        <field name="model">hrm.approval.flow.object</field>-->
-<!--        <field name="arch" type="xml">-->
-<!--            <form string="Lý do từ chối">-->
-<!--                <field name="lost_reason" widget="text" options="{'readonly': False}"/>-->
-<!--                <footer>-->
-<!--                    <button string="Lưu" type="object" class="oe_highlight" name="action_save_lost_reason"/>-->
-<!--                    <button string="Hủy" class="oe_link" special="cancel"/>-->
-<!--                </footer>-->
-<!--            </form>-->
-<!--        </field>-->
-<!--    </record>-->
-
 </odoo>
