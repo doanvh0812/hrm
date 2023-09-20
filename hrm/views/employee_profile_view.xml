@@ -46,7 +46,7 @@
                         <notebook attrs="{'invisible': [('name', '=', False)]}">
                             <page string="Trạng thái phê duyệt">
                                 <field name="approved_link" readonly="1">
-                                    <tree>
+                                    <tree default_order="step ASC">
                                         <field name="step"/>
                                         <field name="approve"/>
                                         <field name="obligatory"/>

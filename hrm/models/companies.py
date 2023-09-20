@@ -17,6 +17,7 @@ class Companies(models.Model):
     chairperson = fields.Many2one('res.users', string="Chủ hộ")
     vice_president = fields.Many2one('res.users', string='Phó hộ')
     active = fields.Boolean(string='Hoạt động', default=True)
+    approval_id = fields.Many2one('hrm.approval.flow.object')
 
     @api.depends('system_id', 'type_company', 'name_company')
     def _compute_name_company(self):

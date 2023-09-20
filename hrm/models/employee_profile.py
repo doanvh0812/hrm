@@ -106,10 +106,8 @@ class EmployeeProfile(models.Model):
 
     @api.onchange('company')
     def _onchange_company(self):
-        """
-            decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
-            sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
-        """
+        """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
+             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
         if self.company:
             company_system = self.company.system_id
             if company_system:
@@ -119,18 +117,19 @@ class EmployeeProfile(models.Model):
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
-        """
-            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
-            khi ta chọn công ty nó sẽ hiện ra tất cả những công ty có trong hệ thống đó
-        """
+        """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+            khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
+            """
         if self.system_id:
-            companies = self.env['hrm.companies'].search([('block_id', '=', self.system_id.id)])
-            return {'domain': {'company': [('id', 'in', companies.ids)]}}
+            companies = self.env['hrm.companies'].search([('system_id', '=', self.system_id.id)])
+            a = {'domain': {'company': [('id', 'in', companies.ids)]}}
+            print(a)
+            return a
         else:
             return {'domain': {'company': []}}
 
     @api.onchange('block_id')
-    def _onchange_system_id(self):
+    def _onchange_block_id(self):
         """
             decorator này khi tạo hồ sơ nhân viên, chọn 1 vị trí nào đó
             khi ta vị trí nó sẽ hiện ra tất cả những vị trí có trong khối đó
@@ -142,6 +141,7 @@ class EmployeeProfile(models.Model):
             return {'domain': {'position_id': [('id', 'in', position.ids)]}}
         else:
             return {'domain': {'position_id': []}}
+
 
     @api.constrains("phone_num")
     def _check_phone_valid(self):

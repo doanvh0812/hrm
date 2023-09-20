@@ -13,7 +13,6 @@ class Approval_flow_object(models.Model):
     company = fields.One2many('hrm.companies', 'approval_id', string='Công ty con')
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id')
     related = fields.Boolean(compute='_compute_related_')
-
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
@@ -25,10 +24,22 @@ class Approve(models.Model):
     _name = 'hrm.approval.flow'
 
     approval_id = fields.Many2one('hrm.approval.flow.object')
-    step = fields.Integer(string='Bước', default=1)
-    approve = fields.Many2one('res.users', string='Người phê duyệt')
+    step = fields.Integer(string='Bước', default=1, order='step')
+    approve = fields.Many2one('res.users', string='Người phê duyệt', required=True)
     obligatory = fields.Boolean(string='Bắt buộc')
     excess_level = fields.Boolean(string='Vượt cấp')
+
+    @api.constrains('approval_id', 'step')
+    def _check_duplicate_approval(self):
+        for record in self:
+            if record.approval_id and record.step:
+                duplicate_approval = self.env['hrm.approval.flow'].search([
+                    ('approval_id', '=', record.approval_id.id),
+                    ('id', '!=', record.id)  # To exclude the current record from the search
+                ])
+                if duplicate_approval:
+                    raise ValidationError('Bước phê duyệt đã tồn tại cho đối tượng này.')
+
 
 
 class ApproveProfile(models.Model):
