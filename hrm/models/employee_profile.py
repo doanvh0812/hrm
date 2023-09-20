@@ -239,3 +239,43 @@ class EmployeeProfile(models.Model):
         return orders.write({
             'state': 'pending'
         })
+
+    def process_block(self):
+        orders = self.filtered(lambda s: s.state in ['draft'])
+        records = self.env['hrm.approval.flow.object'].search([])
+        list_department = [record.department_id for record in records]
+
+        name_department = []
+        for rec in records:
+            for dept in rec.department_id:
+                if dept:
+                    name_department.append(dept)
+
+        for i in name_department:
+            print(i.name)
+
+        # if not self.check_department(self.department_id, list_department):
+        #     if not self.check_department(self.department_id.superior_department, list_department):
+        #         blocks = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
+        #         if not blocks:
+        #             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
+        #             return
+        #         else:
+        #             approved_id = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
+        #             print('Lấy theo khối')
+        #     else:
+        #         approved_id = self.env['hrm.approval.flow.object'].search(
+        #             [('department_id', '=', self.department_id.superior_department.id)])
+        #         print('Lấy theo phòng ban cha')
+        # else:
+        #     approved_id = self.env['hrm.approval.flow.object'].search([('department_id', '=', self.department_id.id)])
+        #     print('Lấy theo phòng ban con')
+
+    def check_department(self, department, list_department):
+        for rec in list_department:
+            if rec:
+                if department in rec:
+                    return True
+
+    def name_configure(self, lst, list2):
+        ...
