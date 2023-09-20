@@ -7,13 +7,14 @@ from . import constraint
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-    name = fields.Char(string='Họ và tên nhân sự', required=True)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_())
-    position_id = fields.Many2one('hrm.position', required=True, string='Vị trí')
-    work_start_date = fields.Date(string='Ngày vào làm')
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=fields.Datetime.now())
-
+    name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_(),
+                               tracking=True)
+    position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
+    work_start_date = fields.Date(string='Ngày vào làm',tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(
         string="Mã nhân viên mới",
@@ -21,16 +22,17 @@ class EmployeeProfile(models.Model):
         store=True
     )
 
-    email = fields.Char('Email công việc', required=True)
-    phone_num = fields.Char('Số điện thoại di động', required=True)
+    email = fields.Char('Email công việc', required=True,tracking=True)
+    phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True)
-    profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete')
-    system_id = fields.Many2one('hrm.systems', string='Hệ thống')
-    company = fields.Many2one('hrm.companies', string='Công ty con')
-    team_marketing = fields.Char(string='Đội ngũ marketing')
-    team_sales = fields.Char(string='Đội ngũ bán hàng')
-    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban')
-    manager_id = fields.Many2one('res.users', string='Quản lý')
+    profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
+                                      tracking=True)
+    system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
+    company = fields.Many2one('hrm.companies', string='Công ty con', tracking=True)
+    team_marketing = fields.Char(string='Đội ngũ marketing',tracking=True)
+    team_sales = fields.Char(string='Đội ngũ bán hàng',tracking=True)
+    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý',tracking=True)
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
 
@@ -285,7 +287,6 @@ class EmployeeProfile(models.Model):
                     'approve_status': 'pending',
                     'time': False,
                 })
-
         # return orders.write({
         #     'state': 'pending'
         # })
@@ -296,3 +297,12 @@ class EmployeeProfile(models.Model):
                 if list1[i] in str2:
                     return list1[i]
         return None
+
+    # hàm này để hiển thị lịch sử lưu trữ
+    def toggle_active(self):
+        for record in self:
+            record.active = not record.active
+            if not record.active:
+                record.message_post(body="Đã lưu trữ")
+            else:
+                record.message_post(body="Bỏ lưu trữ")
