@@ -6,7 +6,7 @@
             <field name="arch" type="xml">
                 <form string="Tạo mới hồ sơ">
                     <header attrs="{'invisible': [('name', '=', False)]}">
-                        <button name="action_send" string="Gửi duyệt" type="object"
+                        <button name="process_block" string="Gửi duyệt" type="object"
                                 attrs="{'invisible': [('state', 'in', ('pending','approved'))]}"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
