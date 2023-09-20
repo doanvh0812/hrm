@@ -42,7 +42,7 @@ class Companies(models.Model):
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Công ty')
 
     @api.onchange('parent_company')
-    def _onchange_company(self):
+    def _onchange_parent_company(self):
         """decorator này  chọn cty cha
              sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
         company_system = self.parent_company.system_id
