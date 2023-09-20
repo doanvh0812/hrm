@@ -8,10 +8,11 @@ from . import constraint
 class Blocks(models.Model):
     _name = 'hrm.blocks'
     _description = 'Block'
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-    name = fields.Char(string='Tên khối', required=True)
+    name = fields.Char(string='Tên khối', required=True, tracking=True)
     description = fields.Text(string='Mô tả')
-    active = fields.Boolean(string='Hoạt động', default=True)
+    active = fields.Boolean(string='Hoạt Động', default=True)
     has_change = fields.Boolean(default=True)
 
     @api.constrains('name')
@@ -54,3 +55,12 @@ class Blocks(models.Model):
             if rec.name:
                 if re.search(r"[\W]+", rec.name.replace(" ", "")) or "_" in rec.name:
                     raise ValidationError(constraint.ERROR_NAME % 'khối')
+
+    # hàm này để hiển thị lịch sử lưu trữ
+    def toggle_active(self):
+        for record in self:
+            record.active = not record.active
+            if not record.active:
+                record.message_post(body="Đã lưu trữ")
+            else:
+                record.message_post(body="Bỏ lưu trữ")
