@@ -49,6 +49,11 @@ class EmployeeProfile(models.Model):
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id')
     approved_name = fields.Many2one('hrm.approval.flow.object')
 
+    # lý do từ chối
+    reason_refusal = fields.Many2one(
+        'approval.reason.refusal', string='Lý do từ chối',
+        index=True, ondelete='restrict', tracking=True)
+
     @api.depends('system_id', 'block_id')
     def render_code(self):
         # Chạy qua tất cả bản ghi
@@ -213,8 +218,10 @@ class EmployeeProfile(models.Model):
             'state': 'approved'
         })
 
-    def action_refuse(self):
+    def action_refuse(self, reason_refusal=None):
         # Khi ấn button Từ chối sẽ chuyển từ pending sang draft
+        if reason_refusal:
+            self.reason_refusal = reason_refusal.id
         orders = self.filtered(lambda s: s.state in ['pending'])
         # Lấy id người đăng nhập
         id_access = self.env.user.id
@@ -290,7 +297,6 @@ class EmployeeProfile(models.Model):
         # return orders.write({
         #     'state': 'pending'
         # })
-
 
     def process_block(self):
         orders = self.filtered(lambda s: s.state in ['draft'])

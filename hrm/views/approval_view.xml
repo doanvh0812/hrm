@@ -5,7 +5,7 @@
         <field name="arch" type="xml">
             <form string="Phê duyệt" create="false" edit="false" delete="false">
                 <header>
-                    <button name="action_refuse" string="Từ chối" type="object"
+                    <button name="%(hrm.approval_reason_refusal_action)d" string="Từ chối" type="object"
                             attrs="{'invisible': [('state', 'in', ('draft','approved'))]}"/>
                     <button name="action_confirm" string="Phê duyệt" type="object"
                             attrs="{'invisible': [('state', 'in', ('draft','approved'))]}"/>
