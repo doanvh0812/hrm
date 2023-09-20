@@ -7,17 +7,19 @@ import re
 class Systems(models.Model):
     _name = "hrm.systems"
     _description = "Hệ thống"
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-    name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True)
-    name_system = fields.Char(string="Tên hệ thống", required=True)
+    name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True,tracking=True)
+    name_system = fields.Char(string="Tên hệ thống", required=True,tracking=True)
     parent_system = fields.Many2one("hrm.systems", string="Hệ thống cha")
-    type_system = fields.Selection(constraint.TYPE_SYSTEM, string="Loại hệ thống", required=True)
-    phone_number = fields.Char(string="Số điện thoại")
+    type_system = fields.Selection(constraint.TYPE_SYSTEM, string="Loại hệ thống", required=True,tracking=True)
+    phone_number = fields.Char(string="Số điện thoại",tracking=True)
     chairperson = fields.Many2one('res.users', string="Chủ tịch")
     vice_president = fields.Many2one('res.users', string='Phó chủ tịch')
-    active = fields.Boolean(string="Hoạt động", default=True)
+    active = fields.Boolean( string='Hoạt Động',default=True)
     company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
-    approval_id = fields.Many2one('hrm.approval.flow.object')
+    approval_id = fields.Many2one('hrm.approval.flow.object',tracking=True)
+
     @api.depends("parent_system", "name_system")
     def _compute_name(self):
         """ Tính toán logic tên hiển thị """
@@ -55,3 +57,12 @@ class Systems(models.Model):
             for n in name:
                 if n['name_system'].lower() == record.name_system.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
+
+    # hàm này để hiển thị lịch sử lưu trữ
+    def toggle_active(self):
+        for record in self:
+            record.active = not record.active
+            if not record.active:
+                record.message_post(body="Đã lưu trữ")
+            else:
+                record.message_post(body="Bỏ lưu trữ")

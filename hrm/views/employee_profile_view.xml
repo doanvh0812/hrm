@@ -30,11 +30,11 @@
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)]}"/>
                                 <field name="company"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)]}"/>
-                                <field name="team_marketing" attrs="{'invisible': [('related', '=', True)]}"/>
-                                <field name="team_sales" attrs="{'invisible': [('related', '=', True)]}"/>
-                                <field name="position_id"/>
                                 <field name="department_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
+                                <field name="position_id"/>
+                                <field name="team_marketing" attrs="{'invisible': [('related', '=', True)]}"/>
+                                <field name="team_sales" attrs="{'invisible': [('related', '=', True)]}"/>
                                 <field name="manager_id" attrs="{'invisible': [('related', '=', False)]}"/>
                                 <field name="rank_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
@@ -45,6 +45,7 @@
                         </group>
                         <notebook attrs="{'invisible': [('name', '=', False)]}">
                             <page string="Trạng thái phê duyệt">
+                                <field name="approved_name"/>
                                 <field name="approved_link" readonly="1">
                                     <tree default_order="step ASC">
                                         <field name="step"/>
@@ -58,6 +59,11 @@
                             </page>
                         </notebook>
                     </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
                 </form>
             </field>
         </record>
