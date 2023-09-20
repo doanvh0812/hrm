@@ -16,7 +16,7 @@ class Companies(models.Model):
     phone_num = fields.Char(string="Số điện thoại", required=True)
     chairperson = fields.Many2one('res.users', string="Chủ hộ")
     vice_president = fields.Many2one('res.users', string='Phó hộ')
-    approval_id = fields.Many2one('hrm.approval.flow.object')
+    # approval_id = fields.Many2one('hrm.approval.flow.object')
     active = fields.Boolean(string='Hoạt động', default=True)
 
     @api.depends('system_id', 'type_company', 'name_company')

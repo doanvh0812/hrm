@@ -12,7 +12,7 @@ class Department(models.Model):
     manager_id = fields.Many2one("res.users", string="Quản lý", required=True)
     superior_department = fields.Many2one("hrm.departments", string="Phòng/Ban cấp trên")
     active = fields.Boolean(string='Hoạt động', default=True)
-    approval_id = fields.Many2one('hrm.approval.flow.object')
+    # approval_id = fields.Many2one('hrm.approval.flow.object')
 
     @api.constrains('name')
     def _check_name_case_insensitive(self):
