@@ -21,7 +21,7 @@
     'application': True,
     'sequence': -100,
     # any module necessary for this one to work correctly
-    'depends': ['base'],
+    'depends': ['base','utm', 'mail'],
 
     # always loaded
     'data': [
@@ -32,10 +32,15 @@
         'views/companies_view.xml',
         'views/position_view.xml',
         'views/employee_profile_view.xml',
+        'views/approval_view.xml',
+        'views/approval_flow_config.xml',
         'views/menu.xml',
     ],
     # only loaded in demonstration mode
     'demo': [
         'demo/demo.xml',
+    ],
+    'css': [
+        'static/src/css/style.css',
     ],
 }

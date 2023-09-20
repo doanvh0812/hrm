@@ -8,13 +8,14 @@ from . import constraint
 class Position(models.Model):
     _name = 'hrm.position'
     _rec_name = "work_position"
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-    work_position = fields.Char(string='Tên Vị Trí', required=True)
+    work_position = fields.Char(string='Tên Vị Trí', required=True, tracking=True)
     block = fields.Selection(selection=[
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
-        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True)
-    department = fields.Many2one("hrm.departments", string='Phòng/Ban')
-    active = fields.Boolean(default=True)
+        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True, tracking=True)
+    department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True)
+    active = fields.Boolean(string='Hoạt Động',default=True)
 
     related = fields.Boolean(compute='_compute_related_field')
 
@@ -43,3 +44,12 @@ class Position(models.Model):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
             record.related = record.block != constraint.BLOCK_OFFICE_NAME
+
+    # hàm này để hiển thị lịch sử lưu trữ
+    def toggle_active(self):
+        for record in self:
+            record.active = not record.active
+            if not record.active:
+                record.message_post(body="Đã lưu trữ")
+            else:
+                record.message_post(body="Bỏ lưu trữ")
