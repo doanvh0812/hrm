@@ -21,7 +21,7 @@
     'application': True,
     'sequence': -100,
     # any module necessary for this one to work correctly
-    'depends': ['base'],
+    'depends': ['base','utm', 'mail'],
 
     # always loaded
     'data': [

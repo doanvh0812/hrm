@@ -7,17 +7,18 @@ from . import constraint
 class Companies(models.Model):
     _name = "hrm.companies"
     _description = "Companies"
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string="Tên hiển thị", compute='_compute_name_company', store=True)
-    name_company = fields.Char(string="Tên công ty", required=True)
-    parent_company = fields.Many2one('hrm.companies', string="Công ty cha", domain=[])
-    type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại hình công ty", required=True)
-    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True)
-    phone_num = fields.Char(string="Số điện thoại", required=True)
+    name_company = fields.Char(string="Tên công ty", required=True, tracking=True)
+    parent_company = fields.Many2one('hrm.companies', string="Công ty cha", domain=[], tracking=True)
+    type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại hình công ty", required=True,tracking=True)
+    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True)
+    phone_num = fields.Char(string="Số điện thoại", required=True, tracking=True)
     chairperson = fields.Many2one('res.users', string="Chủ hộ")
     vice_president = fields.Many2one('res.users', string='Phó hộ')
-    approval_id = fields.Many2one('hrm.approval.flow.object')
-    active = fields.Boolean(string='Hoạt động', default=True)
+    approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    active = fields.Boolean(string='Hoạt Động',default=True)
 
     @api.depends('system_id', 'type_company', 'name_company')
     def _compute_name_company(self):
@@ -59,3 +60,18 @@ class Companies(models.Model):
 
             if chairperson_id and vice_president_id and chairperson_id == vice_president_id:
                 raise ValidationError("Chủ tịch và Phó chủ tịch không thể giống nhau.")
+
+
+    # hàm này để hiển thị lịch sử lưu trữ
+    def toggle_active(self):
+        for record in self:
+            record.active = not record.active
+            if not record.active:
+                record.message_post(body="Đã lưu trữ")
+            else:
+                record.message_post(body="Bỏ lưu trữ")
+
+
+
+
+
