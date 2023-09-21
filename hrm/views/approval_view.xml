@@ -5,8 +5,7 @@
         <field name="arch" type="xml">
             <form string="Phê duyệt" create="false" edit="false" delete="false">
                 <header>
-                    <button name="action_refuse" string="Từ chối" type="object"
-                            attrs="{'invisible': [('state', 'in', ('draft','approved'))]}"/>
+                    <button name="%(hrm.approval_reason_refusal_action)d" string="Từ chối" type="action"/>
                     <button name="action_confirm" string="Phê duyệt" type="object"
                             attrs="{'invisible': [('state', 'in', ('draft','approved'))]}"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
@@ -22,6 +21,8 @@
                             <field name="work_start_date"/>
                             <field name="date_receipt"/>
                             <field name="profile_status"/>
+                            <field name="reason"  attrs="{'invisible':[('reason','=',False)]}"/>
+
                         </group>
                         <group>
                             <!--   related = true là đã chọn văn phòng -->
@@ -44,8 +45,9 @@
                     <group>
                         <field name="auto_create_acc"/>
                     </group>
-                    <notebook attrs="{'invisible': [('name', '=', False)]}">
+                    <notebook attrs="{'invisible': [('approved_name', '=', False)]}">
                         <page string="Trạng thái phê duyệt">
+                            <field name="approved_name" readonly="1"/>
                             <field name="approved_link" readonly="1">
                                 <tree>
                                     <field name="step"/>

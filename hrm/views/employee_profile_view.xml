@@ -6,7 +6,7 @@
             <field name="arch" type="xml">
                 <form string="Tạo mới hồ sơ">
                     <header attrs="{'invisible': [('name', '=', False)]}">
-                        <button name="process_block" string="Gửi duyệt" type="object"
+                        <button name="action_send" string="Gửi duyệt" type="object"
                                 attrs="{'invisible': [('state', 'in', ('pending','approved'))]}"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
@@ -43,11 +43,11 @@
                         <group>
                             <field name="auto_create_acc"/>
                         </group>
-                        <notebook attrs="{'invisible': [('name', '=', False)]}">
+                        <notebook attrs="{'invisible': [('approved_name', '=', False)]}">
                             <page string="Trạng thái phê duyệt">
-                                <field name="approved_name"/>
+                                <field name="approved_name" readonly="1"/>
                                 <field name="approved_link" readonly="1">
-                                    <tree>
+                                    <tree default_order="step ASC">
                                         <field name="step"/>
                                         <field name="approve"/>
                                         <field name="obligatory"/>

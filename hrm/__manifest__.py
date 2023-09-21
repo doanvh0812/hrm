@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     'name': "hrm",
 
@@ -21,10 +20,12 @@
     'application': True,
     'sequence': -100,
     # any module necessary for this one to work correctly
-    'depends': ['base','utm', 'mail'],
+    'depends': ['base', 'utm', 'mail'],
 
     # always loaded
     'data': [
+        'wizard/approval_reason_refusal.xml',
+
         'views/blocks_view.xml',
         'data/blocks_data.xml',
         'views/systems_views.xml',
@@ -35,6 +36,7 @@
         'views/approval_view.xml',
         'views/approval_flow_config.xml',
         'views/menu.xml',
+
     ],
     # only loaded in demonstration mode
     'demo': [
@@ -44,3 +46,4 @@
         'static/src/css/style.css',
     ],
 }
+# -*- coding: utf-8 -*-
