@@ -46,7 +46,7 @@ class Systems(models.Model):
         """
         for rec in self:
             if rec.phone_number:
-                if not re.match(r'^[0]\d+$', rec.phone_number):
+                if not re.match(r'^\d+$', rec.phone_number):
                     raise ValidationError("Số điện thoại không hợp lệ")
 
     @api.constrains('name')
