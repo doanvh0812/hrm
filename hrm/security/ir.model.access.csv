@@ -1,1 +1,2 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_approval_reason_refusal,approval_reason_refusal,model_approva_reason_refusal,base.group_user,1,1,1,1

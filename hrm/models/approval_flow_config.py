@@ -5,17 +5,16 @@ from odoo.exceptions import ValidationError
 
 class Approval_flow_object(models.Model):
     _name = "hrm.approval.flow.object"
+    _description = "Luồng phê duyệt"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string='Tên luồng phê duyệt', required=True, tracking=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True)
-    department_id = fields.One2many('hrm.departments', 'approval_id', string='Phòng/Ban', tracking=True)
-    system_id = fields.One2many('hrm.systems', 'approval_id', string='Hệ thống', tracking=True)
-    company = fields.One2many('hrm.companies', 'approval_id', string='Công ty con', tracking=True)
+    department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True)
+    system_id = fields.Many2many('hrm.systems', string='Hệ thống', tracking=True)
+    company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
-
-    # lost_reason = fields.Text(string='Lý do từ chối', tracking=True)
 
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
@@ -84,6 +83,44 @@ class Approval_flow_object(models.Model):
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
+    @api.constrains("block_id", "department_id", "system_id", "company")
+    def _check_duplicate_config_office(self):
+        """ Kiểm tra trùng lặp cấu hình """
+
+        def get_list_configured(data):
+            """ Trả về danh sách id các đối tượng được cấu hình trong danh sách tất cả id """
+            return [i.id for d in data if d for i in d]
+
+        def check_duplicate_for_object(objects, field_name):
+            """ kiểm tra trùng lặp cấu hình cho một đối tượng """
+            configured_objects = [rec[field_name] for rec in
+                                  self.env["hrm.approval.flow.object"].search([("id", "!=", self.id)])]
+            for obj in objects:
+                if obj.id in get_list_configured(configured_objects):
+                    raise ValidationError(f"Luồng phê duyệt cho {obj.name} đã tồn tại.")
+
+        if self.department_id:
+            # Nếu có chọn cấu hình phòng ban thì chỉ cần check theo phòng ban
+            check_duplicate_for_object(self.department_id, "department_id")
+        elif self.company:
+            # Nếu có chọn cấu hình công ty thì chỉ cần check theo công ty
+            check_duplicate_for_object(self.company, "company")
+        elif self.block_id and self.system_id and not self.company:
+            # Nếu cấu hình cho hệ thống thì trường công ty không được chọn
+            check_duplicate_for_object(self.system_id, "system_id")
+        elif self.block_id:
+            # Kiểm tra bản ghi cấu hình cho khối văn phòng hoặc thương mại đã được cấu hình hay chưa
+            # nếu có thì block_configured sẽ có kết quả sau đó raise thông báo
+            block_configured = self.env["hrm.approval.flow.object"].search([
+                ("id", "!=", self.id),
+                ("block_id", "=", self.block_id.id),
+                ("department_id", "=", False),
+                ("company", "=", False),
+                ("system_id", "=", False)
+            ])
+            if block_configured:
+                raise ValidationError(f"Luồng phê duyệt cho {self.block_id.name} đã tồn tại.")
+
     @api.onchange('block_id')
     def _onchange_block(self):
         self.company = self.department_id = self.system_id = False
@@ -106,8 +143,10 @@ class Approval_flow_object(models.Model):
             list_company_id = []
             list_systems_id = []
             for sys in self.system_id:
+                # Lấy tất cả các hệ thống có quan hệ cha con
                 self._cr.execute(
-                    'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
+                    'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
+                    'where hrm1.name ILIKE %s;',
                     (sys.name + '%',))
                 for item in self._cr.fetchall():
                     list_systems_id.append(item[0])

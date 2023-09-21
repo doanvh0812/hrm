@@ -1,6 +1,5 @@
-import re, pytz
-from datetime import datetime
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+import re
 from odoo.exceptions import ValidationError
 from . import constraint
 
@@ -37,6 +36,7 @@ class EmployeeProfile(models.Model):
     manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
+    reason = fields.Char(string='Lý Do Từ Chối')
 
     # lọc duy nhất mã nhân viên
     _sql_constraints = [
@@ -48,13 +48,17 @@ class EmployeeProfile(models.Model):
     state = fields.Selection(constraint.STATE, default='draft')
 
     # Các trường trong tab
-    approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id')
-    approved_name = fields.Many2one('hrm.approval.flow.object')
+    approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
+    approved_name = fields.Many2one('hrm.approval.flow.object', tracking=True)
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
         server_date = fields.Datetime.now()
         return server_date
+
+    # lý do từ chối
+    reason_refusal = fields.Char(string='Lý do từ chối',
+                                 index=True, ondelete='restrict', tracking=True)
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -162,7 +166,6 @@ class EmployeeProfile(models.Model):
         else:
             return {'domain': {'position_id': []}}
 
-
     @api.constrains("phone_num")
     def _check_phone_valid(self):
         """
@@ -221,8 +224,11 @@ class EmployeeProfile(models.Model):
             'state': 'approved'
         })
 
-    def action_refuse(self):
+    def action_refuse(self, reason_refusal=None):
         # Khi ấn button Từ chối sẽ chuyển từ pending sang draft
+        if reason_refusal:
+            # nếu có lý do từ chối thì gán lý do từ chối vào trường reason_refusal
+            self.reason_refusal = reason_refusal
         orders = self.filtered(lambda s: s.state in ['pending'])
         # Lấy id người đăng nhập
         id_access = self.env.user.id
@@ -239,6 +245,7 @@ class EmployeeProfile(models.Model):
         })
 
     def action_send(self):
+        # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
         orders = self.filtered(lambda s: s.state == 'draft')
 
         records = self.env['hrm.approval.flow.object'].search([])
@@ -277,7 +284,6 @@ class EmployeeProfile(models.Model):
 
         return orders.write({'state': 'pending'})
 
-
     def process_block(self):
         orders = self.filtered(lambda s: s.state in ['draft'])
         records = self.env['hrm.approval.flow.object'].search([])
@@ -292,31 +298,11 @@ class EmployeeProfile(models.Model):
         for i in name_department:
             print(i.name)
 
-        # if not self.check_department(self.department_id, list_department):
-        #     if not self.check_department(self.department_id.superior_department, list_department):
-        #         blocks = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
-        #         if not blocks:
-        #             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
-        #             return
-        #         else:
-        #             approved_id = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
-        #             print('Lấy theo khối')
-        #     else:
-        #         approved_id = self.env['hrm.approval.flow.object'].search(
-        #             [('department_id', '=', self.department_id.superior_department.id)])
-        #         print('Lấy theo phòng ban cha')
-        # else:
-        #     approved_id = self.env['hrm.approval.flow.object'].search([('department_id', '=', self.department_id.id)])
-        #     print('Lấy theo phòng ban con')
-
     def check_department(self, department, list_department):
         for rec in list_department:
             if rec:
                 if department in rec:
                     return True
-
-    def name_configure(self, lst, list2):
-        ...
 
     def find_common_elements(self, list1, list2):
         common_elements = set(list1) & set(list2)
@@ -326,22 +312,24 @@ class EmployeeProfile(models.Model):
 
     def find_company_hierarchy(self, company_id):
         query = """
-            WITH RECURSIVE CompanyHierarchy AS (
-                SELECT id, parent_company FROM hrm_companies WHERE id = %s
-                UNION ALL
-                SELECT c.id, c.parent_company FROM hrm_companies c
-                INNER JOIN CompanyHierarchy ch ON c.id = ch.parent_company
-            )
-            SELECT id FROM CompanyHierarchy;
-        """
+                WITH RECURSIVE CompanyHierarchy AS (
+                    SELECT id, parent_company FROM hrm_companies WHERE id = %s
+                    UNION ALL
+                    SELECT c.id, c.parent_company FROM hrm_companies c
+                    INNER JOIN CompanyHierarchy ch ON c.id = ch.parent_company
+                )
+                SELECT id FROM CompanyHierarchy;
+            """
         self._cr.execute(query, (company_id,))
         return self._cr.fetchall()
+
 
     def find_last_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
                 if company_id[0] == cf.company.id:
                     return cf
+
 
     def find_last_system(self, records, system_last):
         for rec in records:
@@ -350,11 +338,13 @@ class EmployeeProfile(models.Model):
                 if system_last in list_name:
                     return rec
 
+
     def find_block(self, records, block_id):
         approved_list = self.env['hrm.approval.flow.object'].search([('block_id', '=', block_id.id)])
         for approved in approved_list:
             if not approved.department_id and not approved.system_id:
                 return approved
+
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
