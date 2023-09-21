@@ -9,16 +9,16 @@ class Systems(models.Model):
     _description = "Hệ thống"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-    name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True,tracking=True)
-    name_system = fields.Char(string="Tên hệ thống", required=True,tracking=True)
+    name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True, tracking=True)
+    name_system = fields.Char(string="Tên hệ thống", required=True, tracking=True)
     parent_system = fields.Many2one("hrm.systems", string="Hệ thống cha")
-    type_system = fields.Selection(constraint.TYPE_SYSTEM, string="Loại hệ thống", required=True,tracking=True)
-    phone_number = fields.Char(string="Số điện thoại",tracking=True)
+    type_system = fields.Selection(constraint.TYPE_SYSTEM, string="Loại hệ thống", required=True, tracking=True)
+    phone_number = fields.Char(string="Số điện thoại", tracking=True)
     chairperson = fields.Many2one('res.users', string="Chủ tịch")
     vice_president = fields.Many2one('res.users', string='Phó chủ tịch')
-    active = fields.Boolean( string='Hoạt Động',default=True)
+    active = fields.Boolean(string='Hoạt Động', default=True)
     company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
-    approval_id = fields.Many2one('hrm.approval.flow.object',tracking=True)
+    approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
 
     @api.depends("parent_system", "name_system")
     def _compute_name(self):
@@ -28,6 +28,7 @@ class Systems(models.Model):
                 rec.name = f"{rec.parent_system.name}.{rec.name_system}"
             elif rec.name_system:
                 rec.name = rec.name_system
+
 
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):

@@ -20,6 +20,7 @@ class Companies(models.Model):
     vice_president = fields.Many2one('res.users', string='Phó hộ')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
+    change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
 
     @api.depends('system_id', 'type_company', 'name_company')
     def _compute_name_company(self):
@@ -49,12 +50,15 @@ class Companies(models.Model):
         company_system = self.parent_company.system_id
         if company_system:
             self.system_id = company_system
+        elif self.change_system_id:
+            self.system_id = self.change_system_id
         else:
             self.system_id = False
 
     @api.onchange('system_id')
     def _onchange_company(self):
         """decorator này  chọn lại hệ thống sẽ clear công ty cha"""
+        self.change_system_id = self.system_id
         if self.system_id != self.parent_company.system_id:
             self.parent_company = False
 
