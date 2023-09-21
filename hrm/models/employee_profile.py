@@ -155,6 +155,7 @@ class EmployeeProfile(models.Model):
         else:
             return {'domain': {'position_id': []}}
 
+
     @api.constrains("phone_num")
     def _check_phone_valid(self):
         """
@@ -181,7 +182,7 @@ class EmployeeProfile(models.Model):
         if self.email:
             match = re.match(r'^[\w.-]+@[\w.-]+\.\w+$', self.email)
             if not match:
-                raise ValidationError('Email không hợp lệ')
+                raise ValidationError('Email phải đúng định dạng: email@example.com!!!')
 
     @api.constrains("name")
     def _check_valid_name(self):
@@ -207,7 +208,7 @@ class EmployeeProfile(models.Model):
         for rec in orders.approved_link:
             if rec.approve.id == id_access:
                 rec.approve_status = 'confirm'
-                rec.time = datetime.now()
+                rec.time = fields.Datetime.now()
 
         return orders.write({
             'state': 'approved'
@@ -224,7 +225,7 @@ class EmployeeProfile(models.Model):
             # Thay trạng thái của người đó trong bản ghi thành refuse
             if rec.approve.id == id_access:
                 rec.approve_status = 'refuse'
-                rec.time = datetime.now()
+                rec.time = fields.Datetime.now()
 
         return orders.write({
             'state': 'draft'
@@ -290,6 +291,47 @@ class EmployeeProfile(models.Model):
         # return orders.write({
         #     'state': 'pending'
         # })
+
+
+    def process_block(self):
+        orders = self.filtered(lambda s: s.state in ['draft'])
+        records = self.env['hrm.approval.flow.object'].search([])
+        list_department = [record.department_id for record in records]
+
+        name_department = []
+        for rec in records:
+            for dept in rec.department_id:
+                if dept:
+                    name_department.append(dept)
+
+        for i in name_department:
+            print(i.name)
+
+        # if not self.check_department(self.department_id, list_department):
+        #     if not self.check_department(self.department_id.superior_department, list_department):
+        #         blocks = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
+        #         if not blocks:
+        #             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
+        #             return
+        #         else:
+        #             approved_id = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
+        #             print('Lấy theo khối')
+        #     else:
+        #         approved_id = self.env['hrm.approval.flow.object'].search(
+        #             [('department_id', '=', self.department_id.superior_department.id)])
+        #         print('Lấy theo phòng ban cha')
+        # else:
+        #     approved_id = self.env['hrm.approval.flow.object'].search([('department_id', '=', self.department_id.id)])
+        #     print('Lấy theo phòng ban con')
+
+    def check_department(self, department, list_department):
+        for rec in list_department:
+            if rec:
+                if department in rec:
+                    return True
+
+    def name_configure(self, lst, list2):
+        ...
 
     def find_common_elements(self, list1, list2):
         for i in range(len(list1) - 1, 0, -1):
