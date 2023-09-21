@@ -11,7 +11,7 @@ class Systems(models.Model):
 
     name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True, tracking=True)
     name_system = fields.Char(string="Tên hệ thống", required=True, tracking=True)
-    parent_system = fields.Many2one("hrm.systems", string="Hệ thống cha")
+    parent_system = fields.Many2one("hrm.systems", string="Hệ thống cha", tracking=True)
     type_system = fields.Selection(constraint.TYPE_SYSTEM, string="Loại hệ thống", required=True, tracking=True)
     phone_number = fields.Char(string="Số điện thoại", tracking=True)
     chairperson = fields.Many2one('res.users', string="Chủ tịch")
@@ -20,7 +20,7 @@ class Systems(models.Model):
     company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
 
-    @api.depends("parent_system", "name_system")
+    @api.depends("parent_system.name", "name_system")
     def _compute_name(self):
         """ Tính toán logic tên hiển thị """
         for rec in self:
@@ -28,7 +28,6 @@ class Systems(models.Model):
                 rec.name = f"{rec.parent_system.name}.{rec.name_system}"
             elif rec.name_system:
                 rec.name = rec.name_system
-
 
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):
@@ -47,16 +46,16 @@ class Systems(models.Model):
         """
         for rec in self:
             if rec.phone_number:
-                if not re.match(r'^[0]\d+$', rec.phone_number):
+                if not re.match(r'^\d+$', rec.phone_number):
                     raise ValidationError("Số điện thoại không hợp lệ")
 
-    @api.constrains('name_system')
+    @api.constrains('name')
     def _check_name_case_insensitive(self):
         for record in self:
             # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
             name = self.search([('id', '!=', record.id)])
             for n in name:
-                if n['name_system'].lower() == record.name_system.lower():
+                if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
 
     # hàm này để hiển thị lịch sử lưu trữ
@@ -67,3 +66,13 @@ class Systems(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
+    # @api.depends("name_system")
+    # def compute_list_parent(self, vals):
+    #     sort_lst = []
+    #     self._cr.execute(
+    #         "SELECT LENGTH(name) - LENGTH(REPLACE(name, '.', '')) as count_dots, id FROM hrm_systems ORDER BY count_dots ASC")
+    #     for item in self._cr.fetchall():
+    #         sort_lst.append(self.env["hrm.systems"].browse(item[1]))
+    #     print(sort_lst)
+    #     return sort_lst
