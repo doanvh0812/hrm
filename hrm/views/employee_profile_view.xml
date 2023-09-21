@@ -43,9 +43,9 @@
                         <group>
                             <field name="auto_create_acc"/>
                         </group>
-                        <notebook attrs="{'invisible': [('name', '=', False)]}">
+                        <notebook attrs="{'invisible': [('approved_name', '=', False)]}">
                             <page string="Trạng thái phê duyệt">
-                                <field name="approved_name"/>
+                                <field name="approved_name" readonly="1"/>
                                 <field name="approved_link" readonly="1">
                                     <tree>
                                         <field name="step"/>

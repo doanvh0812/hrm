@@ -1,4 +1,5 @@
-import re
+import re, pytz
+from datetime import datetime
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 from . import constraint
@@ -9,12 +10,13 @@ class EmployeeProfile(models.Model):
     _description = 'Bảng thông tin nhân viên'
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-    date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True, default=fields.Datetime.now())
+    date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
+                               default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
-    work_start_date = fields.Date(string='Ngày vào làm',tracking=True)
+    work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(
         string="Mã nhân viên mới",
@@ -22,17 +24,17 @@ class EmployeeProfile(models.Model):
         store=True
     )
 
-    email = fields.Char('Email công việc', required=True,tracking=True)
+    email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
     company = fields.Many2one('hrm.companies', string='Công ty con', tracking=True)
-    team_marketing = fields.Char(string='Đội ngũ marketing',tracking=True)
-    team_sales = fields.Char(string='Đội ngũ bán hàng',tracking=True)
+    team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
+    team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
     department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True)
-    manager_id = fields.Many2one('res.users', string='Quản lý',tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
 
@@ -48,6 +50,11 @@ class EmployeeProfile(models.Model):
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id')
     approved_name = fields.Many2one('hrm.approval.flow.object')
+
+    def _get_server_date(self):
+        # Lấy ngày hiện tại theo múi giờ của máy chủ
+        server_date = fields.Datetime.now()
+        return server_date
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -207,7 +214,7 @@ class EmployeeProfile(models.Model):
         for rec in orders.approved_link:
             if rec.approve.id == id_access:
                 rec.approve_status = 'confirm'
-                rec.time = datetime.now()
+                rec.time = fields.Datetime.now()
 
         return orders.write({
             'state': 'approved'
@@ -224,79 +231,88 @@ class EmployeeProfile(models.Model):
             # Thay trạng thái của người đó trong bản ghi thành refuse
             if rec.approve.id == id_access:
                 rec.approve_status = 'refuse'
-                rec.time = datetime.now()
+                rec.time = fields.Datetime.now()
 
         return orders.write({
             'state': 'draft'
         })
 
     def action_send(self):
-        # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
-        orders = self.filtered(lambda s: s.state in ['draft'])
-        # Tìm công ty trùng với công ty của hồ sơ
+        orders = self.filtered(lambda s: s.state == 'draft')
+
         records = self.env['hrm.approval.flow.object'].search([])
+        if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
+            name_system_configured = []
+            for rec in records:
+                for sys in rec.system_id:
+                    if sys:
+                        name_system_configured.append(sys.name_system)
 
-        # Lấy tên tất cả công ty, hệ thống được cấu hình
-        name_company_configured = []
-        name_system_configured = []
-        for rec in records:
-            for sys in rec.system_id:
-                if sys:
-                    name_system_configured.append(sys.name_system)
-            for comp in rec.company:
-                if comp:
-                    name_company_configured.append(comp.name_company)
+            system_last = self.find_common_elements(self.system_id.name.split('.'), name_system_configured)
 
-        # Lấy tên hệ thống, công ty trong quan hệ cha con
-        list_name_system = self.system_id.name.split('.')
-        list_name_company = self.company.name.split('.')
-        system_last = self.find_common_elements(list_name_system[2:], name_system_configured)
-        company_last = self.find_common_elements(list_name_company, name_company_configured)
-        approval_list = self.env['hrm.approval.flow.object'].search([])
-        if company_last:
-            # Duyệt qua tất cả bản ghi
-            for rec in approval_list:
-                list_name = []
-                for i in rec.company:
-                    list_name.append(rec.company.name_company)
-                if company_last in list_name:
-                    approved_id = rec
+            lis_company = self.find_company_hierarchy(self.company.id)
 
-        elif system_last:
-            for rec in approval_list:
-                list_name = []
-                for i in rec.company:
-                    list_name.append(rec.company.name_company)
-                if system_last in list_name:
-                    approved_id = rec
-        else:
-            approved_id = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
+            approved_id = self.find_last_company(records, lis_company)
+            if not approved_id:
+                approved_id = self.find_last_system(records, system_last)
+                if not approved_id:
+                    approved_id = self.find_block(records, self.block_id)
 
-        if not approved_id:
-            raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
-        print(approved_id.id)
-        if approved_id:
+            if not approved_id:
+                raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
             self.approved_name = approved_id.id
-            for rec in approved_id.approval_flow_link:
-                self.approved_link.create({
-                    'profile_id': self.id,
-                    'step': rec.step,
-                    'approve': rec.approve.id,
-                    'obligatory': rec.obligatory,
-                    'excess_level': rec.excess_level,
-                    'approve_status': 'pending',
-                    'time': False,
-                })
-        # return orders.write({
-        #     'state': 'pending'
-        # })
+
+        self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
+        for rec in approved_id.approval_flow_link:
+            self.approved_link.create({
+                'profile_id': self.id,
+                'step': rec.step,
+                'approve': rec.approve.id,
+                'obligatory': rec.obligatory,
+                'excess_level': rec.excess_level,
+                'approve_status': 'pending',
+                'time': False,
+            })
+
+        return orders.write({'state': 'pending'})
 
     def find_common_elements(self, list1, list2):
-        for i in range(len(list1) - 1, 0, -1):
-            for str2 in list2:
-                if list1[i] in str2:
-                    return list1[i]
+        common_elements = set(list1) & set(list2)
+        if common_elements:
+            return common_elements.pop()
         return None
+
+    def find_company_hierarchy(self, company_id):
+        query = """
+            WITH RECURSIVE CompanyHierarchy AS (
+                SELECT id, parent_company FROM hrm_companies WHERE id = %s
+                UNION ALL
+                SELECT c.id, c.parent_company FROM hrm_companies c
+                INNER JOIN CompanyHierarchy ch ON c.id = ch.parent_company
+            )
+            SELECT id FROM CompanyHierarchy;
+        """
+        self._cr.execute(query, (company_id,))
+        return self._cr.fetchall()
+
+    def find_last_company(self, records, lis_company):
+        for company_id in lis_company:
+            for cf in records:
+                if company_id[0] == cf.company.id:
+                    return cf
+
+    def find_last_system(self, records, system_last):
+        for rec in records:
+            if not rec.company:
+                list_name = [i.name_system for i in rec.system_id]
+                if system_last in list_name:
+                    return rec
+
+    def find_block(self, records, block_id):
+        approved_list = self.env['hrm.approval.flow.object'].search([('block_id', '=', block_id.id)])
+        for approved in approved_list:
+            if not approved.department_id and not approved.system_id:
+                return approved
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
