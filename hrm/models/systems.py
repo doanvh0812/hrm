@@ -29,7 +29,6 @@ class Systems(models.Model):
             elif rec.name_system:
                 rec.name = rec.name_system
 
-
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):
         """ Kiểm tra xem chairperson và vice_president có trùng id không """
@@ -56,7 +55,7 @@ class Systems(models.Model):
             # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
             name = self.search([('id', '!=', record.id)])
             for n in name:
-                if n['name_system'].lower() == record.name_system.lower():
+                if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
 
     # hàm này để hiển thị lịch sử lưu trữ

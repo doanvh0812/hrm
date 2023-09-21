@@ -57,26 +57,6 @@ class Approval_flow_object(models.Model):
                     raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
         return super(Approval_flow_object, self).write(vals)
 
-    # def action_open_lost_reason_popup(self):
-    #     self.ensure_one()
-    #     return {
-    #         'name': ('Lý do từ chối'),
-    #         'type': 'ir.actions.act_window',
-    #         'res_model': 'hrm.approval.flow.object',
-    #         'view_mode': 'form',
-    #         'view_id': self.env.ref('hrm.view_blocks_form').id,
-    #         'target': 'new',
-    #         'context': {
-    #             'default_lost_reason': self.lost_reason,  # Truyền giá trị hiện tại của lý do từ chối (nếu có)
-    #         },
-    #     }
-    #
-    # def action_save_lost_reason(self):
-    #     self.ensure_one()
-    #     # Lưu lý do từ chối vào trường 'lost_reason'
-    #     self.write({'lost_reason': self.lost_reason})
-    #     return {'type': 'ir.actions.act_window_close'}
-
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
