@@ -15,7 +15,6 @@ class Approval_flow_object(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
-
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
         """decorator này để check trùng nhân viên tham gia luồng phê duyệt"""
