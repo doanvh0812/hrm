@@ -227,19 +227,9 @@ class EmployeeProfile(models.Model):
                 rec.approve_status = 'refuse'
                 rec.time = fields.Datetime.now()
 
-        self.state = 'pending'
-
-        return {
-            'name': _("Reason"),
-            'type': 'ir.actions.act_window',
-            'res_model': 'hrm.employee.profile',
-            'view_mode': 'form',
-            'view_id': self.env.ref('hrm.reason_hrm_employee_profile_form').id,
-            'target': 'new',
-            'res_id': self.id,
-            'context': {'default_reason': self.reason},
-        }
-
+        return orders.write({
+            'state': 'draft'
+        })
 
     def action_send(self):
         # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
@@ -349,5 +339,13 @@ class EmployeeProfile(models.Model):
                     return list1[i]
         return None
 
-    def save_reason(self):
-        pass
+    # hàm này để hiển thị lịch sử lưu trữ
+    def toggle_active(self):
+        for record in self:
+            record.active = not record.active
+            if not record.active:
+                record.message_post(body="Đã lưu trữ")
+            else:
+                record.message_post(body="Bỏ lưu trữ")
+
+   

@@ -96,23 +96,4 @@
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_approval_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_approval_form')})]"/>
     </record>
-
-
-    <record id="reason_hrm_employee_profile_form" model="ir.ui.view">
-        <field name="name">reason_hrm_employee_profile_form</field>
-        <field name="model">hrm.employee.profile</field>
-        <field name="arch" type="xml">
-            <form>
-                <sheet>
-                    <group>
-                        <field name="reason"/>
-                        <footer>
-                            <button name="save_reason" type="object" string="Save"/>
-                            <button string="Cancel" class="btn-secondary" special="cancel"/>
-                        </footer>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
 </odoo>
