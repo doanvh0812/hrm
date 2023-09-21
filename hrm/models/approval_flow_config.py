@@ -45,6 +45,7 @@ class Approval_flow_object(models.Model):
     def write(self, vals):
         if 'approval_flow_link' in vals:
             approval_flow_link = vals['approval_flow_link']
+            print(approval_flow_link)
             if approval_flow_link == []:
                 raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
             else:
