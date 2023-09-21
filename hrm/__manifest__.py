@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     'name': "hrm",
 
@@ -25,8 +24,9 @@
 
     # always loaded
     'data': [
+        'wizard/approval_reason_refusal.xml',
+
         'views/blocks_view.xml',
-        'views/approval_reason_refusal.xml',
         'data/blocks_data.xml',
         'views/systems_views.xml',
         'views/departments_view.xml',
@@ -36,6 +36,7 @@
         'views/approval_view.xml',
         'views/approval_flow_config.xml',
         'views/menu.xml',
+
     ],
     # only loaded in demonstration mode
     'demo': [
@@ -45,3 +46,4 @@
         'static/src/css/style.css',
     ],
 }
+# -*- coding: utf-8 -*-

@@ -48,9 +48,9 @@
             <tree>
                 <field name="name"/>
                 <field name="block_id"/>
-                <field name="department_id"/>
-                <field name="system_id"/>
-                <field name="company"/>
+                <field name="department_id" widget="many2many_tags"/>
+                <field name="system_id" widget="many2many_tags"/>
+                <field name="company" widget="many2many_tags"/>
             </tree>
         </field>
     </record>

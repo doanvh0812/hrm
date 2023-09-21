@@ -14,7 +14,7 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
-    work_start_date = fields.Date(string='Ngày vào làm',tracking=True)
+    work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(
         string="Mã nhân viên mới",
@@ -22,17 +22,17 @@ class EmployeeProfile(models.Model):
         store=True
     )
 
-    email = fields.Char('Email công việc', required=True,tracking=True)
+    email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
     company = fields.Many2one('hrm.companies', string='Công ty con', tracking=True)
-    team_marketing = fields.Char(string='Đội ngũ marketing',tracking=True)
-    team_sales = fields.Char(string='Đội ngũ bán hàng',tracking=True)
+    team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
+    team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
     department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True)
-    manager_id = fields.Many2one('res.users', string='Quản lý',tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
 
@@ -50,9 +50,8 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
 
     # lý do từ chối
-    reason_refusal = fields.Many2one(
-        'approval.reason.refusal', string='Lý do từ chối',
-        index=True, ondelete='restrict', tracking=True)
+    reason_refusal = fields.Char(string='Lý do từ chối',
+                                 index=True, ondelete='restrict', tracking=True)
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -160,7 +159,6 @@ class EmployeeProfile(models.Model):
         else:
             return {'domain': {'position_id': []}}
 
-
     @api.constrains("phone_num")
     def _check_phone_valid(self):
         """
@@ -222,7 +220,8 @@ class EmployeeProfile(models.Model):
     def action_refuse(self, reason_refusal=None):
         # Khi ấn button Từ chối sẽ chuyển từ pending sang draft
         if reason_refusal:
-            self.reason_refusal = reason_refusal.id
+            # nếu có lý do từ chối thì gán lý do từ chối vào trường reason_refusal
+            self.reason_refusal = reason_refusal
         orders = self.filtered(lambda s: s.state in ['pending'])
         # Lấy id người đăng nhập
         id_access = self.env.user.id
