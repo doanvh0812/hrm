@@ -7,6 +7,7 @@ from . import constraint
 
 class Department(models.Model):
     _name = "hrm.departments"
+    _description = "Phòng/Ban"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string="Tên Phòng/Ban", required=True, tracking=True)

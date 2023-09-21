@@ -11,7 +11,9 @@
                         <field name="block_id"/>
                         <field name="department_id" attrs="{'invisible': [('related', '!=', True)]}"
                                widget="many2many_tags"/>
-                        <field name="system_id" attrs="{'invisible': [('related', '=', True)]}"
+                        <field name="system_id"
+                               options="{'limit': 10, 'create': false, 'create_edit': false}"
+                               attrs="{'invisible': [('related', '=', True)]}"
                                widget="many2many_tags"/>
                         <field name="company" attrs="{'invisible': [('related', '=', True)]}" widget="many2many_tags"/>
                     </group>
