@@ -4,7 +4,7 @@
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
             <field name="arch" type="xml">
-                <form string="Tạo mới hồ sơ">
+                <form string="Tạo mới hồ sơ" create="false">
                     <header attrs="{'invisible': [('name', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object"
                                 attrs="{'invisible': [('state', 'in', ('pending','approved'))]}"/>

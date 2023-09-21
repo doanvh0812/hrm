@@ -249,6 +249,7 @@ class EmployeeProfile(models.Model):
         orders = self.filtered(lambda s: s.state == 'draft')
 
         records = self.env['hrm.approval.flow.object'].search([])
+        approved_id = None
         if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
             name_system_configured = []
             for rec in records:
@@ -265,56 +266,40 @@ class EmployeeProfile(models.Model):
                 approved_id = self.find_last_system(records, system_last)
                 if not approved_id:
                     approved_id = self.find_block(records, self.block_id)
-
-            if not approved_id:
-                raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
-            self.approved_name = approved_id.id
-
-        self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
-        for rec in approved_id.approval_flow_link:
-            self.approved_link.create({
-                'profile_id': self.id,
-                'step': rec.step,
-                'approve': rec.approve.id,
-                'obligatory': rec.obligatory,
-                'excess_level': rec.excess_level,
-                'approve_status': 'pending',
-                'time': False,
-            })
-
-        return orders.write({'state': 'pending'})
-
-    def process_block(self):
-        orders = self.filtered(lambda s: s.state in ['draft'])
-        records = self.env['hrm.approval.flow.object'].search([])
-        list_dept = []
-        name_department = []
-        self._cr.execute(
-            'WITH RECURSIVE search AS (SELECT id, superior_department, name FROM hrm_departments WHERE name = %s ' +
-            'UNION ALL SELECT d.id, d.superior_department, d.name FROM hrm_departments d ' +
-            ' INNER JOIN search ch ON d.id = ch.superior_department ) ' +
-            ' SELECT id, name, superior_department  FROM search;', (self.department_id.name,))
-
-        for item in self._cr.fetchall():
-            list_dept.append(item[1])
-
-        for rec in records:
-            for dept in rec.department_id:
-                if dept:
-                    name_department.append(dept.name)
-
-        print(name_department)
-        print(list_dept)
-        if self.block_id.name == constraint.BLOCK_OFFICE_NAME:
-            for lst in list_dept:
-                for item in name_department:
-                    if lst in item:
-                        approved_id = lst
-                        print("Lấy luồng này", lst)
-                        return approved_id
-            print("Lấy luồng khối")
         else:
-            print("Không lấy luồng này")
+            list_dept = []
+            depart_id = []
+            self._cr.execute(
+                'WITH RECURSIVE search AS (SELECT id, superior_department, name FROM hrm_departments WHERE name = %s ' +
+                'UNION ALL SELECT d.id, d.superior_department, d.name FROM hrm_departments d ' +
+                ' INNER JOIN search ch ON d.id = ch.superior_department ) ' +
+                ' SELECT id, name, superior_department  FROM search;', (self.department_id.name,))
+
+            # List id của phòng ban cha con
+            for item in self._cr.fetchall():
+                list_dept.append(item[0])
+
+            approved_id = self.find_department(list_dept, records)
+            print(approved_id)
+            if not approved_id:
+                approved_id = self.find_block(records, self.block_id)
+
+        if approved_id:
+            self.approved_name = approved_id.id
+            self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
+            for rec in approved_id.approval_flow_link:
+                self.approved_link.create({
+                    'profile_id': self.id,
+                    'step': rec.step,
+                    'approve': rec.approve.id,
+                    'obligatory': rec.obligatory,
+                    'excess_level': rec.excess_level,
+                    'approve_status': 'pending',
+                    'time': False,
+                })
+            return orders.write({'state': 'pending'})
+        else:
+            raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
     def find_common_elements(self, list1, list2):
         common_elements = set(list1) & set(list2)
@@ -353,6 +338,14 @@ class EmployeeProfile(models.Model):
         for approved in approved_list:
             if not approved.department_id and not approved.system_id:
                 return approved
+
+    def find_department(self, list_dept, records):
+        for rec in records:
+            for dept in rec.department_id:
+                if dept:
+                    for i in list_dept:
+                        if i == dept.id:
+                            return rec
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
