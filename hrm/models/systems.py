@@ -9,7 +9,7 @@ class Systems(models.Model):
     _description = "Hệ thống"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-    name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True, tracking=True)
+    name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True,)
     name_system = fields.Char(string="Tên hệ thống", required=True, tracking=True)
     parent_system = fields.Many2one("hrm.systems", string="Hệ thống cha")
     type_system = fields.Selection(constraint.TYPE_SYSTEM, string="Loại hệ thống", required=True, tracking=True)
@@ -20,7 +20,9 @@ class Systems(models.Model):
     company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
 
-    @api.depends("parent_system", "name_system")
+
+
+    @api.depends("parent_system.name", "name_system")
     def _compute_name(self):
         """ Tính toán logic tên hiển thị """
         for rec in self:
@@ -67,3 +69,9 @@ class Systems(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
+
+
+
+
+
