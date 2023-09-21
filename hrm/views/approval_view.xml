@@ -22,6 +22,8 @@
                             <field name="work_start_date"/>
                             <field name="date_receipt"/>
                             <field name="profile_status"/>
+                            <field name="reason"  attrs="{'invisible':[('reason','=',False)]}"/>
+
                         </group>
                         <group>
                             <!--   related = true là đã chọn văn phòng -->

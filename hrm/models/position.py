@@ -7,6 +7,7 @@ from . import constraint
 
 class Position(models.Model):
     _name = 'hrm.position'
+    _description = 'Vị trí'
     _rec_name = "work_position"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
