@@ -297,7 +297,10 @@ class EmployeeProfile(models.Model):
         list_dept = []
         name_department = []
         self._cr.execute(
-            'SELECT * FROM hrm_departments d JOIN hrm_departments d1 ON d.superior_department = d1.id ORDER BY d.superior_department ASC')
+            'WITH RECURSIVE search AS (SELECT id, superior_department, name FROM hrm_departments WHERE name = %s ' +
+            'UNION ALL SELECT d.id, d.superior_department, d.name FROM hrm_departments d ' +
+            ' INNER JOIN search ch ON d.id = ch.superior_department ) ' +
+            ' SELECT id, name, superior_department  FROM search;', (self.department_id.name,))
 
         for item in self._cr.fetchall():
             list_dept.append(item[1])
@@ -307,76 +310,25 @@ class EmployeeProfile(models.Model):
                 if dept:
                     name_department.append(dept.name)
 
-        print(list_dept)
         print(name_department)
+        print(list_dept)
 
-    def check_duplicate_stream(self, list1, list2):
-        for i in list1:
-            for y in list2:
-                if i in y:
-                    return i
-            return None
-
-    #     self._cr.execute(
-    #         'select * from hrm_companies where hrm_companies.system_id in %s;',
-    #         (tuple(list_systems_id),))
-    #     list_systems_id.clear()
-    #     for item in self._cr.fetchall():
-    #         list_systems_id.append(item[0])
-    #     return {'domain': {'company': [('id', 'in', list_systems_id)]}}
-    # else:
-    #     return {'domain': {'company': []}}
-    # name_department = []
-    # for rec in records:
-    #     for dept in rec.department_id:
-    #         if dept:
-    #             name_department.append(dept)
-    #
-    # for i in name_department:
-    #     print(i.name)
-
-    # if not self.check_department(self.department_id, list_department):
-    #     if not self.check_department(self.department_id.superior_department, list_department):
-    #         blocks = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
-    #         if not blocks:
-    #             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
-    #             return
-    #         else:
-    #             approved_id = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
-    #             print('Lấy theo khối')
-    #     else:
-    #         approved_id = self.env['hrm.approval.flow.object'].search(
-    #             [('department_id', '=', self.department_id.superior_department.id)])
-    #         print('Lấy theo phòng ban cha')
-    # else:
-    #     approved_id = self.env['hrm.approval.flow.object'].search([('department_id', '=', self.department_id.id)])
-    #     print('Lấy theo phòng ban con')
-
-
-def check_department(self, department, list_department):
-    for rec in list_department:
-        if rec:
-            if department in rec:
-                return True
-
-
-def name_configure(self, lst, list2):
-    ...
-
-
-def find_common_elements(self, list1, list2):
-    for i in range(len(list1) - 1, 0, -1):
-        for str2 in list2:
-            if list1[i] in str2:
-                return list1[i]
-    return None
-
-
-# hàm này để hiển thị lịch sử lưu trữ
-def toggle_active(self):
-    for record in self:
-        record.active = not record.active
-        if not record.active:
-            record.message_post(body="Đã lưu trữ")
+        if self.block_id.name == constraint.BLOCK_OFFICE_NAME:
+            for lst in list_dept:
+                for item in name_department:
+                    if lst in item:
+                        approved_id = lst
+                        print("Lấy luồng này", lst)
+                        return approved_id
+            print("Lấy luồng khối")
         else:
-            record.message_post(body="Bỏ lưu trữ")
+            print("Không lấy luồng này")
+
+    # hàm này để hiển thị lịch sử lưu trữ
+    def toggle_active(self):
+        for record in self:
+            record.active = not record.active
+            if not record.active:
+                record.message_post(body="Đã lưu trữ")
+            else:
+                record.message_post(body="Bỏ lưu trữ")
