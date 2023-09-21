@@ -30,10 +30,12 @@ class Approval_flow_object(models.Model):
 
     @api.model
     def create(self, vals_list):
+        """Decorator này để check xem khi tạo luồng phê duyệt có người duyệt hay không"""
         if vals_list['approval_flow_link'] == []:
             raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
         else:
             list_check = []
+            # Đoạn này để check xem khi có ngươời duyệt thì đã được tích duyệt bắt buộc hay chưa
             for i in vals_list['approval_flow_link']:
                 list_check.append(i[2]['obligatory'])
             if True not in list_check:

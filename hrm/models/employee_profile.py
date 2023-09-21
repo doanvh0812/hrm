@@ -189,7 +189,7 @@ class EmployeeProfile(models.Model):
         if self.email:
             match = re.match(r'^[\w.-]+@[\w.-]+\.\w+$', self.email)
             if not match:
-                raise ValidationError('Email phải đúng định dạng: email@example.com!!!')
+                raise ValidationError('Email phải đúng định dạng: email@example.com!')
 
     @api.constrains("name")
     def _check_valid_name(self):
