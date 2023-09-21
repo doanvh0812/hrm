@@ -15,6 +15,7 @@ class Approval_flow_object(models.Model):
     company = fields.One2many('hrm.companies', 'approval_id', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
+
     # lost_reason = fields.Text(string='Lý do từ chối', tracking=True)
 
     @api.onchange('approval_flow_link')
@@ -58,15 +59,38 @@ class Approval_flow_object(models.Model):
     def _onchange_block(self):
         self.company = self.department_id = self.system_id = False
 
+    @api.onchange('company')
+    def _onchange_company(self):
+        if not self.system_id:
+            self.system_id = self.company.system_id
+
     @api.onchange('system_id')
     def _onchange_system_id(self):
-        """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
-            khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
+        """ decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
             """
+        selected_systems = self.system_id.ids  # Danh sách các hệ thống được chọn
+        company_to_remove = self.company.filtered(lambda c: c.system_id.id not in selected_systems)
+        # Bỏ chọn các công ty không thuộc các hệ thống đã chọn
+        company_to_remove.write({'approval_id': [(5, 0, 0)]})
+
         if self.system_id:
-            companies = self.env['hrm.companies'].search([('system_id', '=', self.system_id.id)])
-            return {'domain': {'company': [('id', 'in', companies.ids)]}}
+            list_company_id = []
+            list_systems_id = []
+            for sys in self.system_id:
+                self._cr.execute(
+                    'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
+                    (sys.name + '%',))
+                for item in self._cr.fetchall():
+                    list_systems_id.append(item[0])
+                self._cr.execute(
+                    'select * from hrm_companies where hrm_companies.system_id in %s;',
+                    (tuple(list_systems_id),))
+                for item in self._cr.fetchall():
+                    list_company_id.append(item[0])
+
+            return {'domain': {'company': [('id', 'in', list_company_id)]}}
         else:
+            self.company = False
             return {'domain': {'company': []}}
 
 
