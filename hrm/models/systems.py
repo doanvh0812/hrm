@@ -46,7 +46,7 @@ class Systems(models.Model):
         """
         for rec in self:
             if rec.phone_number:
-                if not re.match(r'^[0]\d+$', rec.phone_number):
+                if not re.match(r'^\d+$', rec.phone_number):
                     raise ValidationError("Số điện thoại không hợp lệ")
 
     @api.constrains('name')
@@ -55,7 +55,7 @@ class Systems(models.Model):
             # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
             name = self.search([('id', '!=', record.id)])
             for n in name:
-                if n['name'].lower() == record.name_system.lower():
+                if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
 
     # hàm này để hiển thị lịch sử lưu trữ
