@@ -8,7 +8,6 @@ class Approval_flow_object(models.Model):
     _description = "Luồng phê duyệt"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-
     name = fields.Char(string='Tên luồng phê duyệt', required=True, tracking=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True)
     department_id = fields.One2many('hrm.departments', 'approval_id', string='Phòng/Ban', tracking=True)
@@ -17,9 +16,6 @@ class Approval_flow_object(models.Model):
     company = fields.One2many('hrm.companies', 'approval_id', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
-
-
-    # lost_reason = fields.Text(string='Lý do từ chối', tracking=True)
 
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
@@ -30,28 +26,6 @@ class Approval_flow_object(models.Model):
                 raise ValidationError(f'Người dùng tên {item.name} đã có trong luồng duyệt')
             else:
                 seen.add(item)
-    # def action_open_lost_reason_popup(self):
-    #     self.ensure_one()
-    #     return {
-    #         'name': ('Lý do từ chối'),
-    #         'type': 'ir.actions.act_window',
-    #         'res_model': 'hrm.approval.flow.object',
-    #         'view_mode': 'form',
-    #         'view_id': self.env.ref('hrm.view_blocks_form').id,
-    #         'target': 'new',
-    #         'context': {
-    #             'default_lost_reason': self.lost_reason,  # Truyền giá trị hiện tại của lý do từ chối (nếu có)
-    #         },
-    #     }
-    #
-    # def action_save_lost_reason(self):
-    #     self.ensure_one()
-    #     # Lưu lý do từ chối vào trường 'lost_reason'
-    #     self.write({'lost_reason': self.lost_reason})
-    #     return {'type': 'ir.actions.act_window_close'}
-
-
-
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -81,8 +55,10 @@ class Approval_flow_object(models.Model):
             list_company_id = []
             list_systems_id = []
             for sys in self.system_id:
+                # Lấy tất cả các hệ thống có quan hệ cha con
                 self._cr.execute(
-                    'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
+                    'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
+                    'where hrm1.name ILIKE %s;',
                     (sys.name + '%',))
                 for item in self._cr.fetchall():
                     list_systems_id.append(item[0])
@@ -106,7 +82,6 @@ class Approve(models.Model):
     approve = fields.Many2one('res.users', string='Người phê duyệt', required=True)
     obligatory = fields.Boolean(string='Bắt buộc')
     excess_level = fields.Boolean(string='Vượt cấp')
-
 
 
 class ApproveProfile(models.Model):
