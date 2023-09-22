@@ -315,13 +315,14 @@ class EmployeeProfile(models.Model):
 
     def find_system(self, systems, records):
         # systems là danh sách id hệ thống có quan hệ cha con
+        # EX : systems = [(66,) (67,),(68,)]
         # records là danh sách bản ghi cấu hình luồng phê duyệt
         # Duyệt qua 2 danh sách
         for sys in systems:
             for rec in records:
                 # Nếu cấu hình không có công ty
                 # Hệ thống có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if not rec.company and sys[0] in rec.system_id.ids:
+                if sys[0] in rec.system_id.ids and self.find_child_company(rec):
                     return rec
 
     def find_department(self, list_dept, records):
@@ -339,6 +340,20 @@ class EmployeeProfile(models.Model):
             for cf in records:
                 if company_id[0] == cf.company.id:
                     return cf
+
+    def find_child_company(self,record):
+        # record là 1 hàng trong bảng cấu hình luồng phê duyệt
+        name_company_profile = self.company.name.split('.')
+        if record.company:
+            for comp in record.company:
+                names = comp.name.split('.')
+                for rec in record.system_id:
+                    name_in_rec = rec.name.split('.')
+                    if name_in_rec[0] == names[1] == name_company_profile[1]:
+                        return False
+                return True
+        else:
+            return True
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
