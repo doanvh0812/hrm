@@ -25,7 +25,7 @@ class EmployeeProfile(models.Model):
 
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
-    identifier = fields.Char('Số căn cước công dân', required=True)
+    identifier = fields.Char('Số căn cước công dân', required=True,tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
@@ -49,7 +49,7 @@ class EmployeeProfile(models.Model):
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
-    approved_name = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    approved_name = fields.Many2one('hrm.approval.flow.object')
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
@@ -220,6 +220,9 @@ class EmployeeProfile(models.Model):
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
 
+        message_body = f"Chờ Duyệt => Đã Phê Duyệt Tài Khoản - {self.name}"
+        self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+
         return orders.write({
             'state': 'approved'
         })
@@ -297,6 +300,10 @@ class EmployeeProfile(models.Model):
                     'approve_status': 'pending',
                     'time': False,
                 })
+                # đè base thay đổi lịch sử theo  mình
+            message_body = "Đã Gửi Phê Duyệt"
+            self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+
             return orders.write({'state': 'pending'})
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")

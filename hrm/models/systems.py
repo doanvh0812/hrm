@@ -9,7 +9,7 @@ class Systems(models.Model):
     _description = "Hệ thống"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
-    name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True, tracking=True)
+    name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True, )
     name_system = fields.Char(string="Tên hệ thống", required=True, tracking=True)
     parent_system = fields.Many2one("hrm.systems", string="Hệ thống cha", tracking=True)
     type_system = fields.Selection(constraint.TYPE_SYSTEM, string="Loại hệ thống", required=True, tracking=True)
@@ -49,14 +49,6 @@ class Systems(models.Model):
                 if not re.match(r'^[0]\d+$', rec.phone_number):
                     raise ValidationError("Số điện thoại không hợp lệ")
 
-    @api.constrains('name')
-    def _check_name_case_insensitive(self):
-        for record in self:
-            # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
-            name = self.search([('id', '!=', record.id)])
-            for n in name:
-                if n['name'].lower() == record.name_system.lower():
-                    raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
@@ -67,6 +59,22 @@ class Systems(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
+    @api.constrains('name', 'type_system')
+    def _check_name_block_combination(self):
+        # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+        for record in self:
+            duplicate_records = self.search([
+                ('id', '!=', record.id),
+                ('name', 'like', record.name),
+                ('type_system', '=', record.type_system),
+            ])
+            if duplicate_records:
+                raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
+
+
+
+
+
     # @api.depends("name_system")
     # def compute_list_parent(self, vals):
     #     sort_lst = []
@@ -76,3 +84,4 @@ class Systems(models.Model):
     #         sort_lst.append(self.env["hrm.systems"].browse(item[1]))
     #     print(sort_lst)
     #     return sort_lst
+
