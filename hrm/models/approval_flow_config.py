@@ -26,36 +26,26 @@ class Approval_flow_object(models.Model):
                 raise ValidationError(f'Người dùng tên {item.name} đã có trong luồng duyệt')
             else:
                 seen.add(item)
-
-    @api.model
-    def create(self, vals_list):
-        """Decorator này để check xem khi tạo luồng phê duyệt có người duyệt hay không"""
-        if vals_list['approval_flow_link'] == []:
-            raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
-        else:
-            list_check = []
-            # Đoạn này để check xem khi có ngươời duyệt thì đã được tích duyệt bắt buộc hay chưa
-            for i in vals_list['approval_flow_link']:
-                list_check.append(i[2]['obligatory'])
-            if True not in list_check:
-                raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
+    @api.constrains('approval_flow_link')
+    def check_approval_flow_link(self):
+        for record in self:
+            if not record.approval_flow_link:
+                raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
             else:
-                return super(Approval_flow_object, self).create(vals_list)
+                list_check = []
+
+                for item in record.approval_flow_link:
+                    if item.obligatory:
+                        list_check.append(True)
+
+                if not any(list_check):
+                    raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
 
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
-
-    @api.constrains('approval_flow_link')
-    def check_approval_flow_link(self):
-        has = False
-        for rec in self.approval_flow_link:
-            if rec.obligatory:
-                has = True
-        if not has:
-            raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
 
     @api.constrains("block_id", "department_id", "system_id", "company")
     def _check_duplicate_config_office(self):
