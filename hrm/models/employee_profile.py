@@ -25,7 +25,7 @@ class EmployeeProfile(models.Model):
 
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
-    identifier = fields.Char('Số căn cước công dân', required=True)
+    identifier = fields.Char('Số căn cước công dân', required=True,tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
@@ -49,7 +49,7 @@ class EmployeeProfile(models.Model):
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
-    approved_name = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    approved_name = fields.Many2one('hrm.approval.flow.object')
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
@@ -220,6 +220,9 @@ class EmployeeProfile(models.Model):
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
 
+        message_body = f"Chờ Duyệt => Đã Phê Duyệt Tài Khoản - {self.name}"
+        self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+
         return orders.write({
             'state': 'approved'
         })
@@ -276,6 +279,7 @@ class EmployeeProfile(models.Model):
             self.approved_name = approved_id.id
             # Clear cấu hình cũ
             self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
+
             # Tạo danh sách chứa giá trị dữ liệu từ approval_flow_link
             approved_link_data = approved_id.approval_flow_link.mapped(lambda rec: {
                 'profile_id': self.id,
@@ -289,6 +293,10 @@ class EmployeeProfile(models.Model):
 
             # Sử dụng phương thức create để chèn danh sách dữ liệu vào tab trạng thái
             self.approved_link.create(approved_link_data)
+
+            # đè base thay đổi lịch sử theo  mình
+            message_body = "Đã Gửi Phê Duyệt
+            self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
             return orders.write({'state': 'pending'})
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
@@ -302,7 +310,56 @@ class EmployeeProfile(models.Model):
                 INNER JOIN search ch ON t.id = ch.{parent}
             )
             SELECT id FROM search;
-        """
+        self._cr.execute(query)
+        result = self._cr.fetchall()
+        return result
+
+    def find_block(self, records):
+        for approved in records:
+            if not approved.department_id and not approved.system_id:
+                return approved
+
+    def find_system(self, systems, records):
+        # systems là danh sách id hệ thống có quan hệ cha con
+        # EX : systems = [(66,) (67,),(68,)]
+        # records là danh sách bản ghi cấu hình luồng phê duyệt
+        # Duyệt qua 2 danh sách
+        for sys in systems:
+            for rec in records:
+                # Nếu cấu hình không có công ty
+                # Hệ thống có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
+                if sys[0] in rec.system_id.ids and self.find_child_company(rec):
+                    return rec
+
+    def find_department(self, list_dept, records):
+        # list_dept là danh sách id hệ thống có quan hệ cha con
+        # records là danh sách bản ghi cấu hình luồng phê duyệt
+        # Duyệt qua 2 danh sách
+        for dept in list_dept:
+            for rec in records:
+                # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
+                if dept[0] in rec.department_id.ids:
+                    return rec
+
+    def find_company(self, records, lis_company):
+        for company_id in lis_company:
+            for cf in records:
+                if company_id[0] == cf.company.id:
+                    return cf
+
+    def find_child_company(self,record):
+        # record là 1 hàng trong bảng cấu hình luồng phê duyệt
+        name_company_profile = self.company.name.split('.')
+        if record.company:
+            for comp in record.company:
+                names = comp.name.split('.')
+                for rec in record.system_id:
+                    name_in_rec = rec.name.split('.')
+                    if name_in_rec[0] == names[1] == name_company_profile[1]:
+                        return False
+                return True
+        else:
+            return True
 
         self._cr.execute(query)
         result = self._cr.fetchall()
