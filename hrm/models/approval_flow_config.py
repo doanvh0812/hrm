@@ -26,6 +26,7 @@ class Approval_flow_object(models.Model):
                 raise ValidationError(f'Người dùng tên {item.name} đã có trong luồng duyệt')
             else:
                 seen.add(item)
+
     @api.constrains('approval_flow_link')
     def check_approval_flow_link(self):
         for record in self:
@@ -63,31 +64,15 @@ class Approval_flow_object(models.Model):
                 if obj.id in get_list_configured(configured_objects):
                     raise ValidationError(f"Luồng phê duyệt cho {obj.name} đã tồn tại.")
 
-        def check_duplicate_system(objects, field_name):
-            configured_objects = [rec[field_name] for rec in
-                                  self.env["hrm.approval.flow.object"].search([("id", "!=", self.id)])]
-            if self.company:
-                for record in configured_objects:
-                    for comp in record.company:
-                        names = comp.name.split('.')
-                        for rec in record.system_id:
-                            name_in_rec = rec.name.split('.')
-                            if name_in_rec[0] == names[1]:
-                                raise ValidationError(f"Luồng phê duyệt cho {rec.name} đã tồn tại.")
-            else:
-                for obj in objects:
-                    if obj.id in get_list_configured(configured_objects):
-                        raise ValidationError(f"Luồng phê duyệt cho {obj.name} đã tồn tại.")
-
         if self.department_id:
             # Nếu có chọn cấu hình phòng ban thì chỉ cần check theo phòng ban
             check_duplicate_for_object(self.department_id, "department_id")
         elif self.company:
             # Nếu có chọn cấu hình công ty thì chỉ cần check theo công ty
             check_duplicate_for_object(self.company, "company")
-        elif self.system_id:
+        if self.system_id:
             # Nếu cấu hình cho hệ thống thì trường công ty không được chọn
-            check_duplicate_system(self.system_id, 'system_id')
+            print("d")
         elif self.block_id:
             # Kiểm tra bản ghi cấu hình cho khối văn phòng hoặc thương mại đã được cấu hình hay chưa
             # nếu có thì block_configured sẽ có kết quả sau đó raise thông báo

@@ -83,7 +83,7 @@
                 <field name="system_id"/>
                 <field name="company"/>
                 <field name="department_id"/>
-                <field name="profile_status"/>
+                <field name="state"/>
             </tree>
         </field>
     </record>

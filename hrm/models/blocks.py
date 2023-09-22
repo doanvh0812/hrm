@@ -7,7 +7,7 @@ from . import constraint
 
 class Blocks(models.Model):
     _name = 'hrm.blocks'
-    _description = 'Block'
+    _description = 'Khối'
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string='Tên khối', required=True, tracking=True)
