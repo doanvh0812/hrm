@@ -295,7 +295,7 @@ class EmployeeProfile(models.Model):
             self.approved_link.create(approved_link_data)
 
             # đè base thay đổi lịch sử theo  mình
-            message_body = "Đã Gửi Phê Duyệt
+            message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
             return orders.write({'state': 'pending'})
         else:
@@ -309,7 +309,7 @@ class EmployeeProfile(models.Model):
                 SELECT t.id, t.{parent} FROM {table_name} t
                 INNER JOIN search ch ON t.id = ch.{parent}
             )
-            SELECT id FROM search;
+            SELECT id FROM search;"""
         self._cr.execute(query)
         result = self._cr.fetchall()
         return result
@@ -360,42 +360,6 @@ class EmployeeProfile(models.Model):
                 return True
         else:
             return True
-
-        self._cr.execute(query)
-        result = self._cr.fetchall()
-        return result
-
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
-
-    def find_system(self, systems, records):
-        # systems là danh sách id hệ thống có quan hệ cha con
-        # records là danh sách bản ghi cấu hình luồng phê duyệt
-        # Duyệt qua 2 danh sách
-        for sys in systems:
-            for rec in records:
-                # Nếu cấu hình không có công ty
-                # Hệ thống có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if not rec.company and sys[0] in rec.system_id.ids:
-                    return rec
-
-    def find_department(self, list_dept, records):
-        # list_dept là danh sách id hệ thống có quan hệ cha con
-        # records là danh sách bản ghi cấu hình luồng phê duyệt
-        # Duyệt qua 2 danh sách
-        for dept in list_dept:
-            for rec in records:
-                # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if dept[0] in rec.department_id.ids:
-                    return rec
-
-    def find_company(self, records, lis_company):
-        for company_id in lis_company:
-            for cf in records:
-                if company_id[0] == cf.company.id:
-                    return cf
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
