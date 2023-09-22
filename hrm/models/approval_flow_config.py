@@ -15,7 +15,6 @@ class Approval_flow_object(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
-
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
         """decorator này để check trùng nhân viên tham gia luồng phê duyệt"""
@@ -26,58 +25,21 @@ class Approval_flow_object(models.Model):
                 raise ValidationError(f'Người dùng tên {item.name} đã có trong luồng duyệt')
             else:
                 seen.add(item)
+    @api.constrains('approval_flow_link')
+    def check_approval_flow_link(self):
+        for record in self:
 
-    @api.model
-    def create(self, vals_list):
-        """Decorator này để check xem khi tạo luồng phê duyệt có người duyệt hay không"""
-        if vals_list['approval_flow_link'] == []:
-            raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
-        else:
-            list_check = []
-            # Đoạn này để check xem khi có ngươời duyệt thì đã được tích duyệt bắt buộc hay chưa
-            for i in vals_list['approval_flow_link']:
-                list_check.append(i[2]['obligatory'])
-            if True not in list_check:
-                raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
-            else:
-                return super(Approval_flow_object, self).create(vals_list)
-
-    def write(self, vals):
-        if 'approval_flow_link' in vals:
-            approval_flow_link = vals['approval_flow_link']
-            print(approval_flow_link)
-            if approval_flow_link == []:
+            if not record.approval_flow_link:
                 raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
             else:
                 list_check = []
-                print(approval_flow_link)
-                for item in approval_flow_link:
-                    if item[2] and 'obligatory' in item[2]:
-                        list_check.append(item[2]['obligatory'])
-                if True not in list_check:
+
+                for item in record.approval_flow_link:
+                    if item.obligatory:
+                        list_check.append(True)
+
+                if not any(list_check):
                     raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
-        return super(Approval_flow_object, self).write(vals)
-
-    # def action_open_lost_reason_popup(self):
-    #     self.ensure_one()
-    #     return {
-    #         'name': ('Lý do từ chối'),
-    #         'type': 'ir.actions.act_window',
-    #         'res_model': 'hrm.approval.flow.object',
-    #         'view_mode': 'form',
-    #         'view_id': self.env.ref('hrm.view_blocks_form').id,
-    #         'target': 'new',
-    #         'context': {
-    #             'default_lost_reason': self.lost_reason,  # Truyền giá trị hiện tại của lý do từ chối (nếu có)
-    #         },
-    #     }
-    #
-    # def action_save_lost_reason(self):
-    #     self.ensure_one()
-    #     # Lưu lý do từ chối vào trường 'lost_reason'
-    #     self.write({'lost_reason': self.lost_reason})
-    #     return {'type': 'ir.actions.act_window_close'}
-
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
