@@ -20,6 +20,7 @@ class Systems(models.Model):
     company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
 
+
     @api.depends("parent_system.name", "name_system")
     def _compute_name(self):
         """ Tính toán logic tên hiển thị """
@@ -28,6 +29,7 @@ class Systems(models.Model):
                 rec.name = f"{rec.parent_system.name}.{rec.name_system}"
             elif rec.name_system:
                 rec.name = rec.name_system
+
 
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):
