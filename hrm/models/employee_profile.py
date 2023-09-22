@@ -25,7 +25,7 @@ class EmployeeProfile(models.Model):
 
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
-    identifier = fields.Char('Số căn cước công dân', required=True)
+    identifier = fields.Char('Số căn cước công dân', required=True,tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
@@ -49,7 +49,7 @@ class EmployeeProfile(models.Model):
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
-    approved_name = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    approved_name = fields.Many2one('hrm.approval.flow.object')
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
@@ -220,6 +220,9 @@ class EmployeeProfile(models.Model):
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
 
+        message_body = f"Chờ Duyệt => Đã Phê Duyệt Tài Khoản - {self.name}"
+        self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+
         return orders.write({
             'state': 'approved'
         })
@@ -249,6 +252,7 @@ class EmployeeProfile(models.Model):
         orders = self.filtered(lambda s: s.state == 'draft')
 
         records = self.env['hrm.approval.flow.object'].search([])
+        approved_id = None
         if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
             name_system_configured = []
             for rec in records:
@@ -265,44 +269,44 @@ class EmployeeProfile(models.Model):
                 approved_id = self.find_last_system(records, system_last)
                 if not approved_id:
                     approved_id = self.find_block(records, self.block_id)
+        else:
+            list_dept = []
+            depart_id = []
+            self._cr.execute(
+                'WITH RECURSIVE search AS (SELECT id, superior_department, name FROM hrm_departments WHERE name = %s ' +
+                'UNION ALL SELECT d.id, d.superior_department, d.name FROM hrm_departments d ' +
+                ' INNER JOIN search ch ON d.id = ch.superior_department ) ' +
+                ' SELECT id, name, superior_department  FROM search;', (self.department_id.name,))
 
+            # List id của phòng ban cha con
+            for item in self._cr.fetchall():
+                list_dept.append(item[0])
+
+            approved_id = self.find_department(list_dept, records)
+            print(approved_id)
             if not approved_id:
-                raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
+                approved_id = self.find_block(records, self.block_id)
+
+        if approved_id:
             self.approved_name = approved_id.id
+            self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
+            for rec in approved_id.approval_flow_link:
+                self.approved_link.create({
+                    'profile_id': self.id,
+                    'step': rec.step,
+                    'approve': rec.approve.id,
+                    'obligatory': rec.obligatory,
+                    'excess_level': rec.excess_level,
+                    'approve_status': 'pending',
+                    'time': False,
+                })
+                # đè base thay đổi lịch sử theo  mình
+            message_body = "Đã Gửi Phê Duyệt"
+            self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
 
-        self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
-        for rec in approved_id.approval_flow_link:
-            self.approved_link.create({
-                'profile_id': self.id,
-                'step': rec.step,
-                'approve': rec.approve.id,
-                'obligatory': rec.obligatory,
-                'excess_level': rec.excess_level,
-                'approve_status': 'pending',
-                'time': False,
-            })
-
-        return orders.write({'state': 'pending'})
-
-    def process_block(self):
-        orders = self.filtered(lambda s: s.state in ['draft'])
-        records = self.env['hrm.approval.flow.object'].search([])
-        list_department = [record.department_id for record in records]
-
-        name_department = []
-        for rec in records:
-            for dept in rec.department_id:
-                if dept:
-                    name_department.append(dept)
-
-        for i in name_department:
-            print(i.name)
-
-    def check_department(self, department, list_department):
-        for rec in list_department:
-            if rec:
-                if department in rec:
-                    return True
+            return orders.write({'state': 'pending'})
+        else:
+            raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
     def find_common_elements(self, list1, list2):
         common_elements = set(list1) & set(list2)
@@ -323,13 +327,11 @@ class EmployeeProfile(models.Model):
         self._cr.execute(query, (company_id,))
         return self._cr.fetchall()
 
-
     def find_last_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
                 if company_id[0] == cf.company.id:
                     return cf
-
 
     def find_last_system(self, records, system_last):
         for rec in records:
@@ -338,13 +340,19 @@ class EmployeeProfile(models.Model):
                 if system_last in list_name:
                     return rec
 
-
     def find_block(self, records, block_id):
         approved_list = self.env['hrm.approval.flow.object'].search([('block_id', '=', block_id.id)])
         for approved in approved_list:
             if not approved.department_id and not approved.system_id:
                 return approved
 
+    def find_department(self, list_dept, records):
+        for rec in records:
+            for dept in rec.department_id:
+                if dept:
+                    for i in list_dept:
+                        if i == dept.id:
+                            return rec
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
@@ -354,4 +362,3 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
-

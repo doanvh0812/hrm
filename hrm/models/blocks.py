@@ -24,6 +24,7 @@ class Blocks(models.Model):
                 if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Khối')
 
+
     @api.onchange('name', 'description')
     def _onchange_name(self):
         if not self.has_change:
