@@ -45,7 +45,7 @@ class EmployeeProfile(models.Model):
 
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
-    state = fields.Selection(constraint.STATE, default='draft')
+    state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -295,7 +295,7 @@ class EmployeeProfile(models.Model):
             self.approved_link.create(approved_link_data)
 
             # đè base thay đổi lịch sử theo  mình
-            message_body = "Đã Gửi Phê Duyệt
+            message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
             return orders.write({'state': 'pending'})
         else:
@@ -310,6 +310,7 @@ class EmployeeProfile(models.Model):
                 INNER JOIN search ch ON t.id = ch.{parent}
             )
             SELECT id FROM search;
+            """
         self._cr.execute(query)
         result = self._cr.fetchall()
         return result
