@@ -1,3 +1,4 @@
+import random
 import re
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
@@ -22,7 +23,7 @@ class Companies(models.Model):
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
 
-    @api.depends('system_id', 'type_company', 'name_company')
+    @api.depends('system_id.name', 'type_company', 'name_company')
     def _compute_name_company(self):
         """
         decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
