@@ -15,6 +15,7 @@ class Approval_flow_object(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
+
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
         """decorator này để check trùng nhân viên tham gia luồng phê duyệt"""
@@ -28,7 +29,6 @@ class Approval_flow_object(models.Model):
     @api.constrains('approval_flow_link')
     def check_approval_flow_link(self):
         for record in self:
-
             if not record.approval_flow_link:
                 raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
             else:
@@ -40,6 +40,7 @@ class Approval_flow_object(models.Model):
 
                 if not any(list_check):
                     raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
+
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
@@ -62,15 +63,31 @@ class Approval_flow_object(models.Model):
                 if obj.id in get_list_configured(configured_objects):
                     raise ValidationError(f"Luồng phê duyệt cho {obj.name} đã tồn tại.")
 
+        def check_duplicate_system(objects, field_name):
+            configured_objects = [rec[field_name] for rec in
+                                  self.env["hrm.approval.flow.object"].search([("id", "!=", self.id)])]
+            if self.company:
+                for record in configured_objects:
+                    for comp in record.company:
+                        names = comp.name.split('.')
+                        for rec in record.system_id:
+                            name_in_rec = rec.name.split('.')
+                            if name_in_rec[0] == names[1]:
+                                raise ValidationError(f"Luồng phê duyệt cho {rec.name} đã tồn tại.")
+            else:
+                for obj in objects:
+                    if obj.id in get_list_configured(configured_objects):
+                        raise ValidationError(f"Luồng phê duyệt cho {obj.name} đã tồn tại.")
+
         if self.department_id:
             # Nếu có chọn cấu hình phòng ban thì chỉ cần check theo phòng ban
             check_duplicate_for_object(self.department_id, "department_id")
         elif self.company:
             # Nếu có chọn cấu hình công ty thì chỉ cần check theo công ty
             check_duplicate_for_object(self.company, "company")
-        elif self.block_id and self.system_id and not self.company:
+        elif self.system_id:
             # Nếu cấu hình cho hệ thống thì trường công ty không được chọn
-            check_duplicate_for_object(self.system_id, "system_id")
+            check_duplicate_system(self.system_id, 'system_id')
         elif self.block_id:
             # Kiểm tra bản ghi cấu hình cho khối văn phòng hoặc thương mại đã được cấu hình hay chưa
             # nếu có thì block_configured sẽ có kết quả sau đó raise thông báo
