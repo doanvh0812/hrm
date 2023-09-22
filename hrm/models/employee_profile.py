@@ -45,7 +45,7 @@ class EmployeeProfile(models.Model):
 
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
-    state = fields.Selection(constraint.STATE, default='draft')
+    state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
