@@ -29,7 +29,6 @@ class Systems(models.Model):
             elif rec.name_system:
                 rec.name = rec.name_system
 
-
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):
         """ Kiểm tra xem chairperson và vice_president có trùng id không """
@@ -50,14 +49,16 @@ class Systems(models.Model):
                 if not re.match(r'^[0]\d+$', rec.phone_number):
                     raise ValidationError("Số điện thoại không hợp lệ")
 
-    @api.constrains('name')
-    def _check_name_case_insensitive(self):
+    @api.constrains('name', 'type_system')
+    def _check_name_block_combination(self):
         for record in self:
-            # Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường
-            name = self.search([('id', '!=', record.id)])
-            for n in name:
-                if n['name'].lower() == record.name_system.lower():
-                    raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
+            duplicate_records = self.search([
+                ('id', '!=', record.id),
+                ('name', 'like', record.name),
+                ('type_system', '=', record.type_system),
+            ])
+            if duplicate_records:
+                raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
@@ -68,8 +69,8 @@ class Systems(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
-    # @api.depends("name_system")
-    # def compute_list_parent(self, vals):
+    # @api.depends("parent_system")
+    # def compute_list_parent(self):
     #     sort_lst = []
     #     self._cr.execute(
     #         "SELECT LENGTH(name) - LENGTH(REPLACE(name, '.', '')) as count_dots, id FROM hrm_systems ORDER BY count_dots ASC")
