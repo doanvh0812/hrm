@@ -16,18 +16,9 @@ class Position(models.Model):
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
         (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True, tracking=True)
     department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True)
-    active = fields.Boolean(string='Hoạt Động',default=True)
+    active = fields.Boolean(string='Hoạt Động', default=True)
 
     related = fields.Boolean(compute='_compute_related_field')
-
-    @api.constrains('work_position')
-    def _check_name_case_insensitive(self):
-        """ Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường """
-        for record in self:
-            name = self.search([('id', '!=', record.id)])
-            for n in name:
-                if n['work_position'].lower() == record.work_position.lower():
-                    raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
 
     @api.constrains("work_position")
     def _check_valid_name(self):
@@ -54,3 +45,17 @@ class Position(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
+    """ tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được """
+
+    @api.constrains('work_position', 'block')
+    def _check_name_block_combination(self):
+        # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+        for record in self:
+            duplicate_records = self.search([
+                ('id', '!=', record.id),
+                ('work_position', 'ilike', record.work_position),
+                ('block', '=', record.block),
+            ])
+            if duplicate_records:
+                raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")

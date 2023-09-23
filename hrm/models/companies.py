@@ -7,7 +7,7 @@ from . import constraint
 
 class Companies(models.Model):
     _name = "hrm.companies"
-    _description = "Companies"
+    _description = "Công ty"
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string="Tên hiển thị", compute='_compute_name_company', store=True)
@@ -62,6 +62,19 @@ class Companies(models.Model):
         self.change_system_id = self.system_id
         if self.system_id != self.parent_company.system_id:
             self.parent_company = False
+            list_systems_id = []
+            self._cr.execute(
+                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
+                (self.system_id.name + '%',))
+            for item in self._cr.fetchall():
+                list_systems_id.append(item[0])
+            self._cr.execute(
+                'select * from hrm_companies where hrm_companies.system_id in %s;',
+                (tuple(list_systems_id),))
+            list_systems_id.clear()
+            for item in self._cr.fetchall():
+                list_systems_id.append(item[0])
+            return {'domain': {'parent_company': [('id', 'in', list_systems_id)]}}
 
     @api.constrains("phone_num")
     def _check_phone_valid(self):
