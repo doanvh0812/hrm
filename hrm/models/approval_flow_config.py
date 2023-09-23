@@ -26,35 +26,7 @@ class Approval_flow_object(models.Model):
             else:
                 seen.add(item)
 
-    @api.model
-    def create(self, vals_list):
-        """Decorator này để check xem khi tạo luồng phê duyệt có người duyệt hay không"""
-        if vals_list['approval_flow_link'] == []:
-            raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
-        else:
-            list_check = []
-            # Đoạn này để check xem khi có ngươời duyệt thì đã được tích duyệt bắt buộc hay chưa
-            for i in vals_list['approval_flow_link']:
-                list_check.append(i[2]['obligatory'])
-            if True not in list_check:
-                raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
-            else:
-                return super(Approval_flow_object, self).create(vals_list)
 
-    def write(self, vals):
-        if 'approval_flow_link' in vals:
-            approval_flow_link = vals['approval_flow_link']
-            if approval_flow_link == []:
-                raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
-            else:
-                list_check = []
-                print(approval_flow_link)
-                for item in approval_flow_link:
-                    if item[2] and 'obligatory' in item[2]:
-                        list_check.append(item[2]['obligatory'])
-                if True not in list_check:
-                    raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
-        return super(Approval_flow_object, self).write(vals)
 
     @api.depends('block_id')
     def _compute_related_(self):
