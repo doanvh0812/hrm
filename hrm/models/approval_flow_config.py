@@ -15,6 +15,7 @@ class Approval_flow_object(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
+
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
         """decorator này để check trùng nhân viên tham gia luồng phê duyệt"""
@@ -80,11 +81,11 @@ class Approval_flow_object(models.Model):
             # Nếu hệ thống không có công ty con thì mới đc cấu hình
             system_configured = []
             for system in self.system_id:
-                # nếu hệ thống được chọn không có công ty con trong công ty đã chọn thì mới tiếp tục kiểm tra
                 list_name_company = [company.name for company in self.company]
                 # print("Công ty đã được chọn", list_name_company)
                 # print("công ty con của hệ thống đã chọn", system.name, "là", system_have_child_company(system.name))
                 # print("Hệ thống", system.name, "không được cấu hình trong bản ghi này", any(elem in system_have_child_company(system.name) for elem in list_name_company))
+                # nếu hệ thống được chọn không có công ty con trong công ty đã chọn thì mới tiếp tục kiểm tra
                 if not any(elem in system_have_child_company(system.name) for elem in list_name_company):
                     # tìm các cấu hình hệ thống đã có trong hệ thống được chọn
                     record_temp_configured = [(rec["name"], rec["system_id"], rec["company"]) for rec in
@@ -106,7 +107,7 @@ class Approval_flow_object(models.Model):
                 ("system_id", "=", False)
             ])
             if block_configured:
-                raise ValidationError(f"Luồng phê duyệt cho {self.block_id.name} đã tồn tại.")
+                raise ValidationError(f"Luồng phê duyệt cho {self.block_id.name} đã tồn tại trong {block_configured[0].name}.")
 
     @api.onchange('block_id')
     def _onchange_block(self):
