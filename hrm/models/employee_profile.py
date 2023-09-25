@@ -45,7 +45,7 @@ class EmployeeProfile(models.Model):
 
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
-    state = fields.Selection(constraint.STATE, default='draft')
+    state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -250,109 +250,117 @@ class EmployeeProfile(models.Model):
     def action_send(self):
         # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
         orders = self.filtered(lambda s: s.state == 'draft')
-
-        records = self.env['hrm.approval.flow.object'].search([])
+        records = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
         approved_id = None
-        if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
-            name_system_configured = []
-            for rec in records:
-                for sys in rec.system_id:
-                    if sys:
-                        name_system_configured.append(sys.name_system)
-
-            system_last = self.find_common_elements(self.system_id.name.split('.'), name_system_configured)
-
-            lis_company = self.find_company_hierarchy(self.company.id)
-
-            approved_id = self.find_last_company(records, lis_company)
-            if not approved_id:
-                approved_id = self.find_last_system(records, system_last)
+        if records:
+            # Nếu có ít nhất 1 cấu hình cho khối của hồ sơ đang thuộc
+            if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
+                # nếu là khối thương mại
+                # Danh sách công ty cha con
+                list_company = self.get_hierarchy('hrm_companies', 'parent_company', self.company.id)
+                approved_id = self.find_company(records, list_company)
+                # Nếu không có cấu hình cho công ty
                 if not approved_id:
-                    approved_id = self.find_block(records, self.block_id)
-        else:
-            list_dept = []
-            depart_id = []
-            self._cr.execute(
-                'WITH RECURSIVE search AS (SELECT id, superior_department, name FROM hrm_departments WHERE name = %s ' +
-                'UNION ALL SELECT d.id, d.superior_department, d.name FROM hrm_departments d ' +
-                ' INNER JOIN search ch ON d.id = ch.superior_department ) ' +
-                ' SELECT id, name, superior_department  FROM search;', (self.department_id.name,))
-
-            # List id của phòng ban cha con
-            for item in self._cr.fetchall():
-                list_dept.append(item[0])
-
-            approved_id = self.find_department(list_dept, records)
-            print(approved_id)
+                    # Danh sách hệ thống cha con
+                    list_system = self.get_hierarchy('hrm_systems', 'parent_system', self.system_id.id)
+                    # Trả về bản ghi là cấu hình cho hệ thống
+                    approved_id = self.find_system(list_system, records)
+            else:
+                # Nếu là khối văn phòng
+                # Danh sách các phòng ban cha con
+                list_dept = self.get_hierarchy('hrm_departments', 'superior_department', self.department_id.id)
+                # Trả về bản ghi là cấu hình cho phòng ban
+                approved_id = self.find_department(list_dept, records)
+            # Nếu không tìm thấy cấu hình nào từ phòng ban, hệ thống, công ty thì lấy khối
             if not approved_id:
-                approved_id = self.find_block(records, self.block_id)
-
+                approved_id = self.find_block(records)
+        # Nếu tìm được cấu hình
         if approved_id:
             self.approved_name = approved_id.id
+            # Clear cấu hình cũ
             self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
-            for rec in approved_id.approval_flow_link:
-                self.approved_link.create({
-                    'profile_id': self.id,
-                    'step': rec.step,
-                    'approve': rec.approve.id,
-                    'obligatory': rec.obligatory,
-                    'excess_level': rec.excess_level,
-                    'approve_status': 'pending',
-                    'time': False,
-                })
-                # đè base thay đổi lịch sử theo  mình
+
+            # Tạo danh sách chứa giá trị dữ liệu từ approval_flow_link
+            approved_link_data = approved_id.approval_flow_link.mapped(lambda rec: {
+                'profile_id': self.id,
+                'step': rec.step,
+                'approve': rec.approve.id,
+                'obligatory': rec.obligatory,
+                'excess_level': rec.excess_level,
+                'approve_status': 'pending',
+                'time': False,
+            })
+
+            # Sử dụng phương thức create để chèn danh sách dữ liệu vào tab trạng thái
+            self.approved_link.create(approved_link_data)
+
+            # đè base thay đổi lịch sử theo  mình
             message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
-
             return orders.write({'state': 'pending'})
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
-    def find_common_elements(self, list1, list2):
-        common_elements = set(list1) & set(list2)
-        if common_elements:
-            return common_elements.pop()
-        return None
-
-    def find_company_hierarchy(self, company_id):
-        query = """
-                WITH RECURSIVE CompanyHierarchy AS (
-                    SELECT id, parent_company FROM hrm_companies WHERE id = %s
-                    UNION ALL
-                    SELECT c.id, c.parent_company FROM hrm_companies c
-                    INNER JOIN CompanyHierarchy ch ON c.id = ch.parent_company
-                )
-                SELECT id FROM CompanyHierarchy;
+    def get_hierarchy(self, table_name, parent, starting_id):
+        query = f"""
+            WITH RECURSIVE search AS (
+                SELECT id, {parent} FROM {table_name} WHERE id = {starting_id}
+                UNION ALL
+                SELECT t.id, t.{parent} FROM {table_name} t
+                INNER JOIN search ch ON t.id = ch.{parent}
+            )
+            SELECT id FROM search;
             """
-        self._cr.execute(query, (company_id,))
-        return self._cr.fetchall()
+        self._cr.execute(query)
+        result = self._cr.fetchall()
+        return result
 
-    def find_last_company(self, records, lis_company):
+    def find_block(self, records):
+        for approved in records:
+            if not approved.department_id and not approved.system_id:
+                return approved
+
+    def find_system(self, systems, records):
+        # systems là danh sách id hệ thống có quan hệ cha con
+        # EX : systems = [(66,) (67,),(68,)]
+        # records là danh sách bản ghi cấu hình luồng phê duyệt
+        # Duyệt qua 2 danh sách
+        for sys in systems:
+            for rec in records:
+                # Nếu cấu hình không có công ty
+                # Hệ thống có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
+                if sys[0] in rec.system_id.ids and self.find_child_company(rec):
+                    return rec
+
+    def find_department(self, list_dept, records):
+        # list_dept là danh sách id hệ thống có quan hệ cha con
+        # records là danh sách bản ghi cấu hình luồng phê duyệt
+        # Duyệt qua 2 danh sách
+        for dept in list_dept:
+            for rec in records:
+                # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
+                if dept[0] in rec.department_id.ids:
+                    return rec
+
+    def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
                 if company_id[0] == cf.company.id:
                     return cf
 
-    def find_last_system(self, records, system_last):
-        for rec in records:
-            if not rec.company:
-                list_name = [i.name_system for i in rec.system_id]
-                if system_last in list_name:
-                    return rec
-
-    def find_block(self, records, block_id):
-        approved_list = self.env['hrm.approval.flow.object'].search([('block_id', '=', block_id.id)])
-        for approved in approved_list:
-            if not approved.department_id and not approved.system_id:
-                return approved
-
-    def find_department(self, list_dept, records):
-        for rec in records:
-            for dept in rec.department_id:
-                if dept:
-                    for i in list_dept:
-                        if i == dept.id:
-                            return rec
+    def find_child_company(self,record):
+        # record là 1 hàng trong bảng cấu hình luồng phê duyệt
+        name_company_profile = self.company.name.split('.')
+        if record.company:
+            for comp in record.company:
+                names = comp.name.split('.')
+                for rec in record.system_id:
+                    name_in_rec = rec.name.split('.')
+                    if name_in_rec[0] == names[1] == name_company_profile[1]:
+                        return False
+                return True
+        else:
+            return True
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):

@@ -29,6 +29,7 @@ class Systems(models.Model):
             elif rec.name_system:
                 rec.name = rec.name_system
 
+
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):
         """ Kiểm tra xem chairperson và vice_president có trùng id không """
@@ -46,9 +47,8 @@ class Systems(models.Model):
         """
         for rec in self:
             if rec.phone_number:
-                if not re.match(r'^[0]\d+$', rec.phone_number):
+                if not re.match(r'^\d+$', rec.phone_number):
                     raise ValidationError("Số điện thoại không hợp lệ")
-
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):

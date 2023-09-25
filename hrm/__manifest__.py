@@ -26,6 +26,8 @@
     'data': [
         'wizard/approval_reason_refusal.xml',
 
+        # 'security/security.xml',
+
         'views/blocks_view.xml',
         'data/blocks_data.xml',
         'views/systems_views.xml',
