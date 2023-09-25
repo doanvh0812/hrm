@@ -9,7 +9,7 @@ class Approval_flow_object(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string='Tên luồng phê duyệt', required=True, tracking=True)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True)
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,tracking=True)
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True)
     system_id = fields.Many2many('hrm.systems', string='Hệ thống', tracking=True)
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
@@ -150,6 +150,8 @@ class Approve(models.Model):
     obligatory = fields.Boolean(string='Bắt buộc')
     excess_level = fields.Boolean(string='Vượt cấp')
 
+""""""
+
 
 class ApproveProfile(models.Model):
     _name = 'hrm.approval.flow.profile'
@@ -158,3 +160,6 @@ class ApproveProfile(models.Model):
     profile_id = fields.Many2one('hrm.employee.profile')
     approve_status = fields.Selection(constraint.APPROVE_STATUS, default='pending', string="Trạng thái")
     time = fields.Datetime(string="Thời gian")
+
+
+

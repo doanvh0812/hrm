@@ -65,7 +65,7 @@ class Systems(models.Model):
         for record in self:
             duplicate_records = self.search([
                 ('id', '!=', record.id),
-                ('name', 'like', record.name),
+                ('name', 'ilike', record.name),
                 ('type_system', '=', record.type_system),
             ])
             if duplicate_records:
