@@ -186,6 +186,16 @@ class EmployeeProfile(models.Model):
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
 
+    @api.constrains("email")
+    def _check_email_valid(self):
+        """
+            hàm kiểm tra email có hợp lệ không
+        """
+        for rec in self:
+            if rec.email:
+                if not re.match(r'[a-z0-9]+', rec.email):
+                    raise ValidationError("Email chỉ được chứa chữ cái thường và số.")
+
     @api.constrains("name")
     def _check_valid_name(self):
         """
