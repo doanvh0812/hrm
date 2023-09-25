@@ -186,14 +186,6 @@ class EmployeeProfile(models.Model):
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
 
-    @api.onchange('email')
-    def validate_mail(self):
-        # Hàm kiểm tra định dạng email
-        if self.email:
-            match = re.match(r'^[\w.-]+@[\w.-]+\.\w+$', self.email)
-            if not match:
-                raise ValidationError('Email phải đúng định dạng: email@example.com!')
-
     @api.constrains("name")
     def _check_valid_name(self):
         """
