@@ -193,7 +193,7 @@ class EmployeeProfile(models.Model):
         """
         for rec in self:
             if rec.email:
-                if not re.match(r'[a-z0-9]+', rec.email):
+                if not re.match(r'^[a-z0-9]+$', rec.email):
                     raise ValidationError("Email chỉ được chứa chữ cái thường và số.")
 
     @api.constrains("name")

@@ -31,7 +31,7 @@
     <record id="hrm_employee_profile_create_edit_own" model="ir.rule">
         <field name="name">Tạo mới và chỉnh sửa bản ghi của mình</field>
         <field ref="model_hrm_employee_profile" name="model_id"/>
-        <field name="domain_force">[('id', '=', user.id)]</field>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('hrm_group_create_edit'))]"/>
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="True"/>
