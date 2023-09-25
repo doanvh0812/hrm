@@ -1,4 +1,3 @@
-import random
 import re
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
