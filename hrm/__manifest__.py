@@ -26,7 +26,7 @@
     'data': [
         'wizard/approval_reason_refusal.xml',
 
-        # 'security/security.xml',
+        'security/security.xml',
 
         'views/blocks_view.xml',
         'data/blocks_data.xml',
@@ -37,6 +37,7 @@
         'views/employee_profile_view.xml',
         'views/approval_view.xml',
         'views/approval_flow_config.xml',
+        'views/hrm_users_view.xml'
         'views/menu.xml',
 
     ],

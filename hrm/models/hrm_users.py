@@ -10,4 +10,4 @@ class Users(models.Model):
         (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True)
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True)
     system_id = fields.Many2many('hrm.systems', string='Hệ thống', tracking=True)
-    company = fields.Many2many('hrm.companies', string='Công ty', tracking=True)
+    company_id = fields.Many2many('hrm.companies', string='Công ty', tracking=True)
