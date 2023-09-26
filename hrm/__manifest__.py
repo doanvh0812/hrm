@@ -26,9 +26,6 @@
     'data': [
         'wizard/approval_reason_refusal.xml',
 
-        'security/security.xml',
-        'security/ir.model.access.csv',
-
         'views/blocks_view.xml',
         'data/blocks_data.xml',
         'views/systems_views.xml',
@@ -40,6 +37,9 @@
         'views/approval_flow_config.xml',
         'views/hrm_users_view.xml',
         'views/menu.xml',
+
+        'security/security.xml',
+        'security/ir.model.access.csv',
 
     ],
     # only loaded in demonstration mode

@@ -137,19 +137,19 @@ class EmployeeProfile(models.Model):
             self.position_id = self.company = self.team_sales = self.team_marketing = False
 
         if self.system_id:
-            list_systems_id = []
+            list_id = []
             self._cr.execute(
                 'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
                 (self.system_id.name + '%',))
             for item in self._cr.fetchall():
-                list_systems_id.append(item[0])
+                list_id.append(item[0])
             self._cr.execute(
                 'select * from hrm_companies where hrm_companies.system_id in %s;',
-                (tuple(list_systems_id),))
-            list_systems_id.clear()
+                (tuple(list_id),))
+            list_id.clear()
             for item in self._cr.fetchall():
-                list_systems_id.append(item[0])
-            return {'domain': {'company': [('id', 'in', list_systems_id)]}}
+                list_id.append(item[0])
+            return {'domain': {'company': [('id', 'in', list_id)]}}
         else:
             return {'domain': {'company': []}}
 
@@ -185,6 +185,16 @@ class EmployeeProfile(models.Model):
             if rec.identifier:
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
+
+    @api.constrains("email")
+    def _check_email_valid(self):
+        """
+            hàm kiểm tra email có hợp lệ không
+        """
+        for rec in self:
+            if rec.email:
+                if not re.match(r'^[a-z0-9]+$', rec.email):
+                    raise ValidationError("Email chỉ được chứa chữ cái thường và số.")
 
     @api.constrains("name")
     def _check_valid_name(self):
