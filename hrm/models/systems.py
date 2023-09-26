@@ -19,6 +19,7 @@ class Systems(models.Model):
     active = fields.Boolean(string='Hoạt Động', default=True)
     company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    res_user_id = fields.Many2one('res.users')
 
     @api.depends("parent_system.name", "name_system")
     def _compute_name(self):

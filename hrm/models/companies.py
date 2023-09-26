@@ -19,6 +19,7 @@ class Companies(models.Model):
     chairperson = fields.Many2one('res.users', string="Chủ hộ")
     vice_president = fields.Many2one('res.users', string='Phó hộ')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    res_user_id = fields.Many2one('res.users')
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
 
