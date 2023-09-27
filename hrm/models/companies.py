@@ -35,15 +35,6 @@ class Companies(models.Model):
             name_parts = [part for part in [type_company, name_system, name_main] if part]  # Lọc các trường không rỗng
             rec.name = '.'.join(name_parts)
 
-    @api.constrains('name_company')
-    def _check_name_case_insensitive(self):
-        """ Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường """
-        for record in self:
-            name = self.search([('id', '!=', record.id)])
-            for n in name:
-                if n['name_company'].lower() == record.name_company.lower():
-                    raise ValidationError(constraint.DUPLICATE_RECORD % 'Công ty')
-
     @api.onchange('parent_company')
     def _onchange_parent_company(self):
         """decorator này  chọn cty cha
@@ -107,3 +98,15 @@ class Companies(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
+    @api.constrains('name','type_company')
+    def _check_name_block_combination(self):
+        # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+        for record in self:
+            duplicate_records = self.search([
+                ('id', '!=', record.id),
+                ('name', 'ilike', record.name_company),
+                ('type_company', '=', record.type_company),
+            ])
+            if duplicate_records:
+                raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")

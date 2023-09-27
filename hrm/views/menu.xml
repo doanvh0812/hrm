@@ -17,5 +17,6 @@
     <menuitem id="approval" name="Phê duyệt" parent="employee" sequence="11" action="approval_action"/>
 
     <menuitem id="approve_flow" name="Luồng phê duyệt" parent="menu_field" sequence="3"/>
-    <menuitem id="create_approve_flow" name="Tạo" parent="approve_flow" sequence="10" action="approval_flow_object_action"/>
+    <menuitem id="create_approve_flow" name="Tạo" parent="approve_flow" sequence="10"
+              action="approval_flow_object_action"/>
 </odoo>

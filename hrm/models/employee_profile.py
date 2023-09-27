@@ -372,3 +372,5 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
+

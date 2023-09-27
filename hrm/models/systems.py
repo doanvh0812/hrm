@@ -80,4 +80,3 @@ class Systems(models.Model):
     #         sort_lst.append(self.env["hrm.systems"].browse(item[1]))
     #     print(sort_lst)
     #     return sort_lst
-
