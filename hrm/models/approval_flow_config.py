@@ -9,12 +9,18 @@ class Approval_flow_object(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string='Tên luồng phê duyệt', required=True, tracking=True)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True)
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True
+                               , default=lambda self: self._default_block())
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True)
     system_id = fields.Many2many('hrm.systems', string='Hệ thống', tracking=True)
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
+
+    def _default_block(self):
+        # Đặt giá trị mặc định cho Khối
+        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
+        return ids
 
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
@@ -85,17 +91,17 @@ class Approval_flow_object(models.Model):
             Nếu có thì trả về list tên công ty con
             """
             self._cr.execute(
-                r"""select * from hrm_companies where hrm_companies.system_id in 
+                r"""select hrm_companies.name from hrm_companies where hrm_companies.system_id in 
                     (select hrm1.id from hrm_systems as hrm1 left join hrm_systems as hrm2 
-	                on hrm2.parent_system = hrm1.id
-	                where hrm1.name ILIKE %s);""",
+                    on hrm2.parent_system = hrm1.id
+                    where hrm1.name ILIKE %s);""",
                 (system_name + '%',)
             )
             # kiểm tra company con của hệ thống cần tìm
             # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
-            list_company_id = self._cr.fetchall()
-            if len(list_company_id) > 0:
-                return [item[5] for item in list_company_id]
+            list_company = self._cr.fetchall()
+            if len(list_company) > 0:
+                return [com[0] for com in list_company]
             return []
 
         if self.department_id:
@@ -107,12 +113,8 @@ class Approval_flow_object(models.Model):
             check_duplicate_for_object(self.company, "company")
         if self.system_id:
             # Nếu hệ thống không có công ty con thì mới đc cấu hình
-            system_configured = []
             for system in self.system_id:
                 list_name_company = [company.name for company in self.company]
-                # print("Công ty đã được chọn", list_name_company)
-                # print("công ty con của hệ thống đã chọn", system.name, "là", system_have_child_company(system.name))
-                # print("Hệ thống", system.name, "không được cấu hình trong bản ghi này", any(elem in system_have_child_company(system.name) for elem in list_name_company))
                 # nếu hệ thống được chọn không có công ty con trong công ty đã chọn thì mới tiếp tục kiểm tra
                 if not any(elem in system_have_child_company(system.name) for elem in list_name_company):
                     # tìm các cấu hình hệ thống đã có trong hệ thống được chọn

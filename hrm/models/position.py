@@ -14,11 +14,24 @@ class Position(models.Model):
     work_position = fields.Char(string='Tên Vị Trí', required=True, tracking=True)
     block = fields.Selection(selection=[
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
-        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True, tracking=True)
+        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True, tracking=True
+        , default=lambda self: self._default_block_position())
     department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
 
     related = fields.Boolean(compute='_compute_related_field')
+    check_blocks = fields.Char(default=lambda self: self._default_block_position())
+
+    def _default_block_position(self):
+        return self.env.user.block_id
+
+    @api.onchange('block')
+    def _onchange_block(self):
+        if self.block == constraint.BLOCK_OFFICE_NAME and self.env.user.department_id:
+            list_department = self.get_all_child('hrm_departments', 'superior_department',
+                                                 self.env.user.department_id.id)
+            list_department = [depart[0] for depart in list_department]
+            return {'domain': {'department': [('id', 'in', list_department)]}}
 
     @api.constrains("work_position")
     def _check_valid_name(self):
@@ -59,3 +72,20 @@ class Position(models.Model):
             ])
             if duplicate_records:
                 raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
+
+    def get_all_child(self, table_name, parent, starting_id):
+        query = f"""
+                WITH RECURSIVE subordinates AS (
+                SELECT id, {parent}
+                FROM {table_name}
+                WHERE {starting_id}
+                UNION ALL
+                SELECT t.id, t.{parent}
+                FROM {table_name} t
+                INNER JOIN subordinates s ON t.{parent} = s.id
+            )
+            SELECT id FROM subordinates;
+            """
+        self._cr.execute(query)
+        result = self._cr.fetchall()
+        return result
