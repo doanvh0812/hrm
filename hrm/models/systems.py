@@ -29,7 +29,6 @@ class Systems(models.Model):
             elif rec.name_system:
                 rec.name = rec.name_system
 
-
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):
         """ Kiểm tra xem chairperson và vice_president có trùng id không """
@@ -71,10 +70,6 @@ class Systems(models.Model):
             if duplicate_records:
                 raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
 
-
-
-
-
     # @api.depends("name_system")
     # def compute_list_parent(self, vals):
     #     sort_lst = []
@@ -84,4 +79,3 @@ class Systems(models.Model):
     #         sort_lst.append(self.env["hrm.systems"].browse(item[1]))
     #     print(sort_lst)
     #     return sort_lst
-
