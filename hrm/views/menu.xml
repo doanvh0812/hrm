@@ -1,6 +1,6 @@
 <odoo>
     <menuitem id="menu_field" name="HRM" sequence="-2"/>
-    <menuitem id="config" name="Cấu hình" parent="menu_field" sequence="1"/>
+    <menuitem id="config" name="Cấu hình" parent="menu_field" sequence="1" groups="hrm_group_create_edit"/>
     <menuitem id="block" name="Khối" parent="config" sequence="10" action='blocks_action'/>
     <menuitem id="companies" name="Công ty" parent="config" sequence="30" action="companies_action"/>
     <menuitem id="system" name="Hệ thống" parent="config" sequence="20" action='systems_action'/>

@@ -25,7 +25,7 @@ class EmployeeProfile(models.Model):
 
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
-    identifier = fields.Char('Số căn cước công dân', required=True,tracking=True)
+    identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
@@ -259,18 +259,18 @@ class EmployeeProfile(models.Model):
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # nếu là khối thương mại
                 # Danh sách công ty cha con
-                list_company = self.get_hierarchy('hrm_companies', 'parent_company', self.company.id)
+                list_company = self.get_all_parent('hrm_companies', 'parent_company', self.company.id)
                 approved_id = self.find_company(records, list_company)
                 # Nếu không có cấu hình cho công ty
                 if not approved_id:
                     # Danh sách hệ thống cha con
-                    list_system = self.get_hierarchy('hrm_systems', 'parent_system', self.system_id.id)
+                    list_system = self.get_all_parent('hrm_systems', 'parent_system', self.system_id.id)
                     # Trả về bản ghi là cấu hình cho hệ thống
                     approved_id = self.find_system(list_system, records)
             else:
                 # Nếu là khối văn phòng
                 # Danh sách các phòng ban cha con
-                list_dept = self.get_hierarchy('hrm_departments', 'superior_department', self.department_id.id)
+                list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
                 # Trả về bản ghi là cấu hình cho phòng ban
                 approved_id = self.find_department(list_dept, records)
             # Nếu không tìm thấy cấu hình nào từ phòng ban, hệ thống, công ty thì lấy khối
@@ -303,7 +303,7 @@ class EmployeeProfile(models.Model):
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
-    def get_hierarchy(self, table_name, parent, starting_id):
+    def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
             WITH RECURSIVE search AS (
                 SELECT id, {parent} FROM {table_name} WHERE id = {starting_id}
@@ -350,7 +350,7 @@ class EmployeeProfile(models.Model):
                 if company_id[0] == cf.company.id:
                     return cf
 
-    def find_child_company(self,record):
+    def find_child_company(self, record):
         # record là 1 hàng trong bảng cấu hình luồng phê duyệt
         name_company_profile = self.company.name.split('.')
         if record.company:

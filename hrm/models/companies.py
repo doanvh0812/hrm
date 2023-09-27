@@ -60,11 +60,14 @@ class Companies(models.Model):
     def _onchange_company(self):
         """decorator này  chọn lại hệ thống sẽ clear công ty cha"""
         self.change_system_id = self.system_id
+        if not self.system_id.name:
+            self.parent_company = False
         if self.system_id != self.parent_company.system_id:
             self.parent_company = False
             list_systems_id = []
             self._cr.execute(
-                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
+                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
+                'where hrm1.name ILIKE %s;',
                 (self.system_id.name + '%',))
             for item in self._cr.fetchall():
                 list_systems_id.append(item[0])

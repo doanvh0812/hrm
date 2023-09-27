@@ -4,16 +4,26 @@
         <field name="model">res.users</field>
         <field name="inherit_id" ref="base.view_users_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//page[@name='access_rights']" position="inside">
-                <group>
+            <xpath expr="//page[@name='access_rights']" position="replace">
+                <page name="access_rights" string="Access Rights">
+                    <group string="Multi Companies" attrs="{'invisible': [('companies_count', '&lt;=', 1)]}">
+                        <field string="Allowed Companies" name="company_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                        <field string="Default Company" name="company_id" context="{'user_preference': 0}"/>
+                        <field string="Companies count" name="companies_count" invisible="1"/>
+                    </group>
                     <group string="Quyền HRMS">
                         <field name="related" invisible="1"/>
                         <field name="block_id"/>
-                        <field name="department_id" widget="many2many_tags" attrs="{'invisible': [('related', '!=', True)]}"/>
-                        <field name="system_id" widget="many2many_tags" attrs="{'invisible': [('related', '=', True)]}"/>
-                        <field name="company" widget="many2many_tags" attrs="{'invisible': [('related', '=', True)]}"/>
+                        <field name="department_id" widget="many2many_tags"
+                               attrs="{'invisible': ['|', ('related', '!=', True), ('block_id', '=', 'full')]}"/>
+                        <field name="system_id" widget="many2many_tags"
+                               attrs="{'invisible': ['|', ('related', '=', True), ('block_id', '=', 'full')]}"/>
+                        <field name="company" widget="many2many_tags"
+                               attrs="{'invisible': ['|', ('related', '=', True), ('block_id', '=', 'full')]}"/>
                     </group>
-                </group>
+                    <field name="groups_id"/>
+                </page>
             </xpath>
         </field>
     </record>
