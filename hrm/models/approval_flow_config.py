@@ -186,10 +186,11 @@ class Approval_flow_object(models.Model):
 
 class Approve(models.Model):
     _name = 'hrm.approval.flow'
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     approval_id = fields.Many2one('hrm.approval.flow.object')
     step = fields.Integer(string='Bước', default=1, order='step')
-    approve = fields.Many2one('res.users', string='Người phê duyệt', required=True)
+    approve = fields.Many2one('res.users', string='Người phê duyệt', required=True, tracking=True)
     obligatory = fields.Boolean(string='Bắt buộc')
     excess_level = fields.Boolean(string='Vượt cấp')
 
@@ -201,3 +202,4 @@ class ApproveProfile(models.Model):
     profile_id = fields.Many2one('hrm.employee.profile')
     approve_status = fields.Selection(constraint.APPROVE_STATUS, default='pending', string="Trạng thái")
     time = fields.Datetime(string="Thời gian")
+"tôi muốn khi xoá trường hệ thống thì công ty con thuộc hệ thống đó cũng bị xoá đi và ng"

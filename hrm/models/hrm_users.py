@@ -20,3 +20,7 @@ class Users(models.Model):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
             record.related = record.block_id == constraint.BLOCK_OFFICE_NAME
+
+    @api.onchange('block_id')
+    def _onchange_block_id(self):
+        self.department_id = self.system_id = self.company = False
