@@ -202,4 +202,5 @@ class ApproveProfile(models.Model):
     profile_id = fields.Many2one('hrm.employee.profile')
     approve_status = fields.Selection(constraint.APPROVE_STATUS, default='pending', string="Trạng thái")
     time = fields.Datetime(string="Thời gian")
-"tôi muốn khi xoá trường hệ thống thì công ty con thuộc hệ thống đó cũng bị xoá đi và ng"
+
+
