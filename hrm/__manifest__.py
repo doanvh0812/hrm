@@ -39,7 +39,7 @@
         'views/approval_view.xml',
         'views/approval_flow_config.xml',
         'views/hrm_users_view.xml',
-        'views/menu.xml',
+        'views/menu.xml'
     ],
     # only loaded in demonstration mode
     'demo': [

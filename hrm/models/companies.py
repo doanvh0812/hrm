@@ -110,22 +110,3 @@ class Companies(models.Model):
             ])
             if duplicate_records:
                 raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")
-
-    def _set_temp_field(self):
-        return ""
-
-    @api.model
-    def fields_view_get(self, view_id=None, view_type='form', toolbar=False,
-                        submenu=False):
-        res = super(Companies, self).fields_view_get(
-            view_id=view_id, view_type=view_type, toolbar=toolbar,
-            submenu=submenu)
-        print("triggered")
-        list_child_company = []
-        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            if self.env.user.company:
-                for com in self.env.user.company:
-                    data = self.env['hrm.position'].get_all_child('hrm_companies', 'parent_company', com.id)
-                    list_child_company += ([d for d in data])
-                self.env.user.write({'child_company': [(6, 0, list_child_company)]})
-        return res
