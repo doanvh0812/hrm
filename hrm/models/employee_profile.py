@@ -111,10 +111,7 @@ class EmployeeProfile(models.Model):
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
-    def _default_block_(self):
-        # Đặt giá trị mặc định cho Khối
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
-        return ids
+
 
     @api.onchange('company')
     def _onchange_company(self):
@@ -129,9 +126,10 @@ class EmployeeProfile(models.Model):
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
-        """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+        """
+            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
-            """
+        """
         # clear dữ liệu
         if self.system_id != self.company.system_id:
             self.position_id = self.company = self.team_sales = self.team_marketing = False

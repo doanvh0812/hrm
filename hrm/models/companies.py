@@ -13,7 +13,6 @@ class Companies(models.Model):
     name_company = fields.Char(string="Tên công ty", required=True, tracking=True)
     type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại hình công ty", required=True,
                                     tracking=True)
-    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True)
     phone_num = fields.Char(string="Số điện thoại", required=True, tracking=True)
     chairperson = fields.Many2one('res.users', string="Chủ hộ")
     vice_president = fields.Many2one('res.users', string='Phó hộ')
@@ -21,31 +20,63 @@ class Companies(models.Model):
     res_user_id = fields.Many2one('res.users')
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
+    check_company = fields.Char(default=lambda self: self.env.user.company.id)
+
+    def _system_have_child_company(self, system_name):
+        """
+        Kiểm tra hệ thống có công ty con hay không
+        Nếu có thì trả về list tên công ty con
+        """
+        self._cr.execute(
+            r"""select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
+                (select hrm1.id from hrm_systems as hrm1 left join hrm_systems as hrm2 
+                on hrm2.parent_system = hrm1.id
+                where hrm1.name ILIKE %s);""",
+            (system_name + '%',)
+        )
+        # kiểm tra company con của hệ thống cần tìm
+        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
+        list_company = self._cr.fetchall()
+        if len(list_company) > 0:
+            return [com[0] for com in list_company]
+        return []
 
     def _get_child_company(self):
-        """ lấy tất cả công ty user được cấu hình"""
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
         list_child_company = []
-        if self.env.user.company:
-            for company in self.env.user.company:
-                temp = self.env['hrm.position'].get_all_child('hrm_companies', 'parent_company', company.id)
-                temp = [com[0] for com in temp]
-                for t in temp:
-                    list_child_company.append(t)
+        if self.env.user.company.id:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+            list_child_company = [t for t in temp]
+        elif not self.env.user.company.id and self.env.user.system_id.id:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            for sys in self.env.user.system_id:
+                list_child_company += self._system_have_child_company(sys.name)
         return list_child_company
 
     def _default_company(self):
-        """ tạo bộ lọc cho trường công ty cha"""
-        list_child_company = self._get_child_company()
-        return [('id', 'in', list_child_company)]
+        return [('id', 'in', self._get_child_company())]
 
     parent_company = fields.Many2one('hrm.companies', string="Công ty cha", tracking=True, domain=_default_company)
 
-    @api.constrains('parent_company')
+    def _default_system(self):
+        """ tạo bộ lọc cho trường hệ thống """
+        if not self.env.user.company.id and self.env.user.system_id.id:
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            list_systems = [t for t in temp]
+            return [('id', 'in', list_systems)]
+        return [('id', '=', 0)]
+
+    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
+
+    @api.constrains('parent_company', 'system_id')
     def _check_parent_company(self):
         """ kiểm tra xem user có quyền cấu hình công ty được chọn không """
-        list_child_company = self._get_child_company()
-        if self.parent_company not in list_child_company:
-            return AccessDenied("Bạn không có quyền cấu hình công ty này")
+        if self.parent_company.id not in self._get_child_company():
+            raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.parent_company.name}")
+        elif self.block_id == constraint.BLOCK_OFFICE_NAME:
+            raise AccessDenied("Bạn không có quyền cấu hình hệ thống.")
 
     @api.depends('system_id.name', 'type_company', 'name_company')
     def _compute_name_company(self):
@@ -127,10 +158,7 @@ class Companies(models.Model):
     def _check_name_block_combination(self):
         # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
         for record in self:
-            duplicate_records = self.search([
-                ('id', '!=', record.id),
-                ('name', 'ilike', record.name),
-                ('type_company', '=', record.type_company),
-            ])
-            if duplicate_records:
-                raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['name'].lower() == record.name.lower() and n.type_company == self.type_company:
+                    raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")
