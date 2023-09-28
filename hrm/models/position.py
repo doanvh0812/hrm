@@ -16,7 +16,6 @@ class Position(models.Model):
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
         (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True, tracking=True
         , default=lambda self: self._default_block_position())
-    department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
 
     related = fields.Boolean(compute='_compute_related_field')
@@ -25,13 +24,17 @@ class Position(models.Model):
     def _default_block_position(self):
         return self.env.user.block_id
 
-    @api.onchange('block')
-    def _onchange_block(self):
-        if self.block == constraint.BLOCK_OFFICE_NAME and self.env.user.department_id:
-            list_department = self.get_all_child('hrm_departments', 'superior_department',
-                                                 self.env.user.department_id.id)
-            list_department = [depart[0] for depart in list_department]
-            return {'domain': {'department': [('id', 'in', list_department)]}}
+    def _default_department(self):
+        if self.env.user.department_id:
+            list_department = []
+            for department in self.env.user.department_id:
+                temp = self.get_all_child('hrm_departments', 'superior_department', department.id)
+                temp = [depart[0] for depart in temp]
+                for t in temp:
+                    list_department.append(t)
+            return [('id', 'in', list_department)]
+
+    department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True, domain=_default_department)
 
     @api.constrains("work_position")
     def _check_valid_name(self):
@@ -78,7 +81,7 @@ class Position(models.Model):
                 WITH RECURSIVE subordinates AS (
                 SELECT id, {parent}
                 FROM {table_name}
-                WHERE {starting_id}
+                WHERE id = {starting_id}
                 UNION ALL
                 SELECT t.id, t.{parent}
                 FROM {table_name} t
