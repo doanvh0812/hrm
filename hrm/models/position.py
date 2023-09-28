@@ -62,11 +62,12 @@ class Position(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
-    """ tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được """
 
     @api.constrains('work_position', 'block')
     def _check_name_block_combination(self):
-        # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+        """ tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được
+            Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+        """
         for record in self:
             duplicate_records = self.search([
                 ('id', '!=', record.id),

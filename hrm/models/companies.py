@@ -1,6 +1,6 @@
 import re
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 
 
@@ -11,7 +11,6 @@ class Companies(models.Model):
 
     name = fields.Char(string="Tên hiển thị", compute='_compute_name_company', store=True)
     name_company = fields.Char(string="Tên công ty", required=True, tracking=True)
-    parent_company = fields.Many2one('hrm.companies', string="Công ty cha", tracking=True)
     type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại hình công ty", required=True,
                                     tracking=True)
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True)
@@ -22,6 +21,31 @@ class Companies(models.Model):
     res_user_id = fields.Many2one('res.users')
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
+
+    def _get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình"""
+        list_child_company = []
+        if self.env.user.company:
+            for company in self.env.user.company:
+                temp = self.env['hrm.position'].get_all_child('hrm_companies', 'parent_company', company.id)
+                temp = [com[0] for com in temp]
+                for t in temp:
+                    list_child_company.append(t)
+        return list_child_company
+
+    def _default_company(self):
+        """ tạo bộ lọc cho trường công ty cha"""
+        list_child_company = self._get_child_company()
+        return [('id', 'in', list_child_company)]
+
+    parent_company = fields.Many2one('hrm.companies', string="Công ty cha", tracking=True, domain=_default_company)
+
+    @api.constrains('parent_company')
+    def _check_parent_company(self):
+        """ kiểm tra xem user có quyền cấu hình công ty được chọn không """
+        list_child_company = self._get_child_company()
+        if self.parent_company not in list_child_company:
+            return AccessDenied("Bạn không có quyền cấu hình công ty này")
 
     @api.depends('system_id.name', 'type_company', 'name_company')
     def _compute_name_company(self):
@@ -99,7 +123,7 @@ class Companies(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
-    @api.constrains('name','type_company')
+    @api.constrains('name', 'type_company')
     def _check_name_block_combination(self):
         # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
         for record in self:
