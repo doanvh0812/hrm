@@ -11,7 +11,7 @@ class Companies(models.Model):
 
     name = fields.Char(string="Tên hiển thị", compute='_compute_name_company', store=True)
     name_company = fields.Char(string="Tên công ty", required=True, tracking=True)
-    parent_company = fields.Many2one('hrm.companies', string="Công ty cha", domain=[], tracking=True)
+    parent_company = fields.Many2one('hrm.companies', string="Công ty cha", tracking=True)
     type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại hình công ty", required=True,
                                     tracking=True)
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True)
@@ -105,8 +105,27 @@ class Companies(models.Model):
         for record in self:
             duplicate_records = self.search([
                 ('id', '!=', record.id),
-                ('name', 'ilike', record.name_company),
+                ('name', 'ilike', record.name),
                 ('type_company', '=', record.type_company),
             ])
             if duplicate_records:
                 raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")
+
+    def _set_temp_field(self):
+        return ""
+
+    @api.model
+    def fields_view_get(self, view_id=None, view_type='form', toolbar=False,
+                        submenu=False):
+        res = super(Companies, self).fields_view_get(
+            view_id=view_id, view_type=view_type, toolbar=toolbar,
+            submenu=submenu)
+        print("triggered")
+        list_child_company = []
+        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            if self.env.user.company:
+                for com in self.env.user.company:
+                    data = self.env['hrm.position'].get_all_child('hrm_companies', 'parent_company', com.id)
+                    list_child_company += ([d for d in data])
+                self.env.user.write({'child_company': [(6, 0, list_child_company)]})
+        return res

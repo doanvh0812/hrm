@@ -78,7 +78,7 @@ class Position(models.Model):
                 WITH RECURSIVE subordinates AS (
                 SELECT id, {parent}
                 FROM {table_name}
-                WHERE {starting_id}
+                WHERE id = {starting_id}
                 UNION ALL
                 SELECT t.id, t.{parent}
                 FROM {table_name} t
