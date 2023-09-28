@@ -53,19 +53,26 @@ class Companies(models.Model):
             # lấy list id công ty con của hệ thống đã chọn
             for sys in self.env.user.system_id:
                 list_child_company += self._system_have_child_company(sys.name)
+        print(list_child_company)
         return list_child_company
 
     def _default_company(self):
+        """ tạo bộ lọc các công ty user có thể cấu hình """
+        if self.env.user.block_id != constraint.BLOCK_OFFICE_NAME and not self.env.user.company.id and not self.env.user.system_id.id:
+            # nếu user không cấu hình công ty và hệ thống, khối khác văn phòng thì hiển thị all
+            return []
         return [('id', 'in', self._get_child_company())]
 
     parent_company = fields.Many2one('hrm.companies', string="Công ty cha", tracking=True, domain=_default_company)
 
     def _default_system(self):
-        """ tạo bộ lọc cho trường hệ thống """
+        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
         if not self.env.user.company.id and self.env.user.system_id.id:
             temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
             list_systems = [t for t in temp]
             return [('id', 'in', list_systems)]
+        elif self.env.user.block_id != constraint.BLOCK_OFFICE_NAME:
+            return []
         return [('id', '=', 0)]
 
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
@@ -75,7 +82,7 @@ class Companies(models.Model):
         """ kiểm tra xem user có quyền cấu hình công ty được chọn không """
         if self.parent_company.id not in self._get_child_company():
             raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.parent_company.name}")
-        elif self.block_id == constraint.BLOCK_OFFICE_NAME:
+        elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             raise AccessDenied("Bạn không có quyền cấu hình hệ thống.")
 
     @api.depends('system_id.name', 'type_company', 'name_company')
@@ -92,8 +99,9 @@ class Companies(models.Model):
 
     @api.onchange('parent_company')
     def _onchange_parent_company(self):
-        """decorator này  chọn cty cha
-             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
+        """ decorator này  chọn cty cha
+            sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+        """
         company_system = self.parent_company.system_id
         if company_system:
             self.system_id = company_system
