@@ -25,6 +25,8 @@ class Position(models.Model):
         return self.env.user.block_id
 
     def _default_department(self):
+        # kiểm tra phòng ban mặc định của người dùng
+        # xây dựng danh sách phòng ban con và cháu
         if self.env.user.department_id:
             list_department = []
             for department in self.env.user.department_id:
@@ -32,6 +34,7 @@ class Position(models.Model):
                 temp = [depart[0] for depart in temp]
                 for t in temp:
                     list_department.append(t)
+            # xây dựng điều kiện tìm kiếm
             return [('id', 'in', list_department)]
 
     department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True, domain=_default_department)
@@ -77,6 +80,8 @@ class Position(models.Model):
                 raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
 
     def get_all_child(self, table_name, parent, starting_id):
+        # phương thức này được thiết kế để lấy tất cả các phần tử con của một phần
+        # tử cha được chỉ định trong bảng cơ sở dữ liệu bằng 1 câu truy vấn SQL
         query = f"""
                 WITH RECURSIVE subordinates AS (
                 SELECT id, {parent}
