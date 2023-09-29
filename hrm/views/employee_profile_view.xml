@@ -8,8 +8,7 @@
                     <field name="id" invisible="1"/>
                     <field name="create_uid" invisible="1"/>
                     <header attrs="{'invisible': [('id', '=', False)]}">
-                        <button name="action_send" string="Gửi duyệt" type="object"
-                                attrs="{'invisible': ['|', ('state', 'in', ('pending', 'approved')), ('create_uid', '!=', 'user.id')]}"/>
+                        <button name="action_send" string="Gửi duyệt" type="object"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
                     <sheet>
