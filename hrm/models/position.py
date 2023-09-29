@@ -22,9 +22,13 @@ class Position(models.Model):
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
 
     def _default_department(self):
+        """" kiểm tra phòng ban mặc định của người dùng
+            xây dựng danh sách phòng ban con và cháu"""
         if self.env.user.department_id:
+            # xây dựng điều kiện tìm k
             func = self.env['hrm.utils']
             list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
+
             return [('id', 'in', list_department)]
 
     department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True, domain=_default_department)
@@ -75,3 +79,4 @@ class Position(models.Model):
             raise AccessDenied(f"Bạn không có quyền truy cập với khối {self.block}")
         elif self.department and self.department.id not in list_department:
             raise AccessDenied(f"Bạn không có quyền truy cập với phòng ban {self.department.name}")
+
