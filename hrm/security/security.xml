@@ -1,7 +1,7 @@
 <odoo>
     <record id="module_hrm" model="ir.module.category">
         <field name="name">HRMS</field>
-        <field name="sequence">0</field>
+        <field name="sequence">-100</field>
     </record>
 
     <record id="hrm_group_read_only" model="res.groups">
@@ -28,6 +28,16 @@
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
+    <record id="rule_update_own_profile" model="ir.rule">
+        <field name="name">Cho phép cập nhật thông tin của mình</field>
+        <field name="model_id" ref="model_hrm_employee_profile"/>
+        <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>
+        <field name="domain_force">[('acc_id', '=', user.id)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
     <record id="hrm_employee_profile_create_edit_own" model="ir.rule">
         <field name="name">Tạo mới và chỉnh sửa bản ghi của mình</field>
         <field ref="model_hrm_employee_profile" name="model_id"/>
@@ -37,40 +47,5 @@
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="True"/>
         <field name="perm_read" eval="True"/>
-    </record>
-
-    <record id="rule_allow_group_access_blocks" model="ir.rule">
-        <field name="name">Access Blocks</field>
-        <field name="model_id" ref="model_hrm_blocks"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
-    </record>
-
-    <record id="rule_allow_group_access_departments" model="ir.rule">
-        <field name="name">Access Department</field>
-        <field name="model_id" ref="model_hrm_departments"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
-    </record>
-
-    <record id="rule_allow_group_access_companies" model="ir.rule">
-        <field name="name">Access Companies</field>
-        <field name="model_id" ref="model_hrm_companies"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
-    </record>
-
-    <record id="rule_allow_group_access_systems" model="ir.rule">
-        <field name="name">Access Systems</field>
-        <field name="model_id" ref="model_hrm_systems"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
-    </record>
-
-    <record id="rule_allow_group_access_position" model="ir.rule">
-        <field name="name">Access Position</field>
-        <field name="model_id" ref="model_hrm_position"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
     </record>
 </odoo>

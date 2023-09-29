@@ -4,28 +4,28 @@
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
             <field name="arch" type="xml">
-                <form string="Tạo mới hồ sơ" create="false">
+                <form string="Tạo mới hồ sơ" create="false" >
                     <field name="id" invisible="1"/>
                     <field name="create_uid" invisible="1"/>
                     <header attrs="{'invisible': [('id', '=', False)]}">
-                        <button name="action_send" string="Gửi duyệt" type="object"
-                                attrs="{'invisible': ['|', ('state', 'in', ('pending', 'approved')), ('create_uid', '!=', 'user.id')]}"/>
+                        <button name="action_send" string="Gửi duyệt" type="object"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
                     <sheet>
                         <group col="2">
-                            <group>
+                            <group >
+                                <field name="acc_id" invisible="1"/>
                                 <field name="employee_code_new" readonly="1"/>
                                 <field name="name"/>
-                                <field name="phone_num"/>
-                                <field name="email"/>
+                                <field name="phone_num" />
+                                <field name="email"  modifiers="{'readonly': false, 'required': true}" />
                                 <field name="identifier"/>
                                 <field name="work_start_date"/>
                                 <field name="date_receipt"/>
                                 <field name="profile_status"/>
                             </group>
                             <group>
-                                <!--   related = true là đã chọn văn phòng -->
+                                <!--related = true là đã chọn văn phòng-->
                                 <field name="related" invisible="1"/>
                                 <field name="check_blocks" invisible="1"/>
                                 <field name="block_id" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
@@ -91,10 +91,7 @@
             <field name="name">Tạo mới hồ sơ</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.employee.profile</field>
-
-
             <field name="search_view_id" ref="blocks_filter"/>
-
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_profile_tree')}),

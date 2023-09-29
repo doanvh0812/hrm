@@ -31,7 +31,7 @@ class Approval_flow_object(models.Model):
     @api.model
     def create(self, vals_list):
         """Decorator này để check xem khi tạo luồng phê duyệt có người duyệt hay không"""
-        if vals_list['approval_flow_link'] == []:
+        if not vals_list['approval_flow_link']:
             raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
         else:
             list_check = []
@@ -46,11 +46,10 @@ class Approval_flow_object(models.Model):
     def write(self, vals):
         if 'approval_flow_link' in vals:
             approval_flow_link = vals['approval_flow_link']
-            if approval_flow_link == []:
+            if not approval_flow_link:
                 raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
             else:
                 list_check = []
-                print(approval_flow_link)
                 for item in approval_flow_link:
                     if item[2] and 'obligatory' in item[2]:
                         list_check.append(item[2]['obligatory'])
@@ -149,12 +148,15 @@ class Approval_flow_object(models.Model):
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
-        """ decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
-            """
-        selected_systems = self.system_id.ids  # Danh sách các hệ thống được chọn
-        company_to_remove = self.company.filtered(lambda c: c.system_id.id not in selected_systems)
+        """
+            decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
+            Xoá bỏ công ty nếu trong trường hệ thống không có hệ thống công ty đó thuộc
+        """
+        # for system in self.system_id:
+
+        # company_to_remove = self.company.filtered(lambda c: c.system_id.id not in selected_systems)
         # Bỏ chọn các công ty không thuộc các hệ thống đã chọn
-        company_to_remove.write({'approval_id': [(5, 0, 0)]})
+        # company_to_remove.write({'approval_id': [(5, 0, 0)]})
 
         if self.system_id:
             list_company_id = []
@@ -197,5 +199,4 @@ class ApproveProfile(models.Model):
     profile_id = fields.Many2one('hrm.employee.profile')
     approve_status = fields.Selection(constraint.APPROVE_STATUS, default='pending', string="Trạng thái")
     time = fields.Datetime(string="Thời gian")
-
 
