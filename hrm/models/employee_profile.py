@@ -24,7 +24,7 @@ class EmployeeProfile(models.Model):
         compute='render_code',
         store=True
     )
-    # list_fields = ['name', 'phone_num', 'email', '', '']
+
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
@@ -39,6 +39,8 @@ class EmployeeProfile(models.Model):
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
+    acc_id = fields.Integer(string='Id tài khoản đăng nhập')
+
     # lọc duy nhất mã nhân viên
     _sql_constraints = [
         ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
@@ -52,14 +54,46 @@ class EmployeeProfile(models.Model):
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
 
+    _security = "hrm.hrm_group_own_edit"
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
         server_date = fields.Datetime.now()
         return server_date
 
     # lý do từ chối
-    reason_refusal = fields.Char(string='Lý do từ chối',
-                                 index=True, ondelete='restrict', tracking=True)
+    reason_refusal = fields.Char(string='Lý do từ chối', index=True, ondelete='restrict', tracking=True)
+
+
+
+    def auto_create_account_employee(self):
+        # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
+        self.ensure_one()
+        user_group = self.env.ref('hrm.hrm_group_own_edit')
+        values = {
+            'name': self.name,
+            'login': self.email,
+            'groups_id': [(6, 0, [user_group.id])],
+
+        }
+        new_user = self.env['res.users'].sudo().create(values)
+        self.acc_id = new_user.id
+        return {
+            'name': "User Created",
+            'type': 'ir.actions.act_window',
+            'res_model': 'res.users',
+            'res_id': new_user.id,
+            'view_mode': 'form',
+        }
+    @api.model
+    def create(self, vals):
+        # Call the create method of the super class to create the record
+        record = super(EmployeeProfile, self).create(vals)
+
+        # Perform your custom logic here
+        if record:
+            # Assuming you want to call the auto_create_account_employee function
+            record.auto_create_account_employee()
+        return record
 
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
@@ -67,7 +101,8 @@ class EmployeeProfile(models.Model):
                                                            submenu=submenu)
 
         # Kiểm tra xem view_type có phải là 'form' và user_id có tồn tại
-        if view_type == 'form':
+
+        if view_type == 'form' and not self.id:
             user_id = self.env.user.id
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
@@ -77,18 +112,18 @@ class EmployeeProfile(models.Model):
             )
 
             doc = etree.XML(res['arch'])
-
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
-
-            config_group = doc.xpath("//group")  # Tìm nhóm có id là 'config'
+            config_group = doc.xpath("//group")
             if config_group:
                 cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
                     field_name = field.get("name")
-                    if field_name not in ['phone_num', 'email', 'identifier']:
+                    if field_name != 'employee_code_new':
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
-                        modifiers.update({'readonly': 1})
+                        modifiers.update({'readonly': [["id", "!=", False]]})
+                        if field_name in ['phone_num', 'email', 'identifier']:
+                            modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False]]})
                         field.attrib['modifiers'] = json.dumps(modifiers)
 
                 # Gán lại 'arch' cho res với các thay đổi mới
