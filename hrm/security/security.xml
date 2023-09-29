@@ -28,16 +28,6 @@
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
-    <record id="rule_update_own_profile" model="ir.rule">
-        <field name="name">Cho phép cập nhật thông tin của mình</field>
-        <field name="model_id" ref="model_hrm_employee_profile"/>
-        <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>
-        <field name="domain_force">[('acc_id', '=', user.id)]</field>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_unlink" eval="False"/>
-    </record>
-
     <record id="hrm_employee_profile_create_edit_own" model="ir.rule">
         <field name="name">Tạo mới và chỉnh sửa bản ghi của mình</field>
         <field ref="model_hrm_employee_profile" name="model_id"/>
