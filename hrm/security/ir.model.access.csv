@@ -1,5 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_update_employee_profile,only_update_my_employee_profile,model_hrm_employee_profile,hrm_group_own_edit,1,1,0,0
+access_update_employee_profile,only_update_my_employee_profile,model_hrm_employee_profile,hrm_group_own_edit,1,1,1,0
 access_see_approval_profile,see_approval_profile,model_hrm_approval_flow_profile,hrm_group_own_edit,1,0,0,0
 access_see_block,see_block,model_hrm_blocks,hrm_group_own_edit,1,0,0,0
 access_see_system_id,see_system_id,model_hrm_systems,hrm_group_own_edit,1,0,0,0
@@ -33,4 +33,3 @@ access_hrm_position_read_only,hrm_position_read_only,model_hrm_position,hrm_grou
 access_hrm_system_read_only,hrm_system_read_only,model_hrm_systems,hrm_group_create_edit,1,0,0,0
 access_hrm_approval_flow_profile_read_only,hrm_approval_flow_profile_read_only,model_hrm_approval_flow_profile,hrm_group_create_edit,1,0,0,0
 
->>>>>>> 760c80cf028d969e71aba9c5cbb558b2bf620081

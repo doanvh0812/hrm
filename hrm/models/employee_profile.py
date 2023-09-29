@@ -13,7 +13,7 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_(),
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self.env['hrm.utils'].default_block_(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
@@ -96,14 +96,21 @@ class EmployeeProfile(models.Model):
 
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
-        res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
-                                                           submenu=submenu)
+        res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
 
         # Kiểm tra xem view_type có phải là 'form' và user_id có tồn tại
-        if view_type == 'form':
 
+        if view_type == 'form' and not self.id:
+            # Kiểm tra xem view_type có phải là 'form' và user_id có tồn tại
+            user_id = self.env.user.id
+            # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
+            # Thuộc tính của trường phụ thuộc vào modifiers
+            res['arch'] = res['arch'].replace(
+                '<button name="action_send" string="Gửi duyệt" type="object"/>',
+                f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
+            )
             doc = etree.XML(res['arch'])
-
+            """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
 
             config_group = doc.xpath("//group")  # Tìm nhóm có id là 'config'
@@ -111,10 +118,12 @@ class EmployeeProfile(models.Model):
                 cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
                     field_name = field.get("name")
-                    if field_name not in ['phone_num', 'email', 'identifier']:
+                    if field_name != 'employee_code_new':
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
-                        modifiers.update({'readonly': 1})
+                        modifiers.update({'readonly': [["id", "!=", False]]})
+                        if field_name in ['phone_num', 'email', 'identifier']:
+                            modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False]]})
                         field.attrib['modifiers'] = json.dumps(modifiers)
 
                 # Gán lại 'arch' cho res với các thay đổi mới

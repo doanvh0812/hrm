@@ -5,7 +5,7 @@ from . import constraint
 class Utils(models.Model):
     _name = 'hrm.utils'
 
-    def _default_block_(self):
+    def default_block_(self):
         # Đặt giá trị mặc định cho Khối -> Khối thương mại
         ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
         return ids

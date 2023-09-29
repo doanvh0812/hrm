@@ -15,6 +15,7 @@
                     <sheet>
                         <group col="2">
                             <group >
+                                <field name="acc_id" invisible="1"/>
                                 <field name="employee_code_new" readonly="1"/>
                                 <field name="name"/>
                                 <field name="phone_num" />

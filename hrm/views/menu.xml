@@ -12,8 +12,8 @@
     <menuitem id="managers" name="Người quản lý" parent="config" sequence="100" action=""/>
     <menuitem id="document" name="Tài liệu" parent="config" sequence="110" action=""/>
     <menuitem id="approval_flow" name="Luồng phê duyệt" parent="config" sequence="3" action=""/>
-    <menuitem id="employee" name="Nhân viên" parent="menu_field" sequence="2" groups="hrm_group_own_edit"/>
-    <menuitem id="employee_profile" name="Tạo mới" parent="employee" sequence="10" action="employee_profile_action" groups="hrm_group_own_edit"/>
+    <menuitem id="employee" name="Nhân viên" parent="menu_field" sequence="2" />
+    <menuitem id="employee_profile" name="Tạo mới" parent="employee" sequence="10" action="employee_profile_action" />
     <menuitem id="approval" name="Phê duyệt" parent="employee" sequence="11" action="approval_action" />
     <menuitem id="approve_flow" name="Luồng phê duyệt" parent="menu_field" sequence="3"/>
     <menuitem id="create_approve_flow" name="Tạo" parent="approve_flow" sequence="10"
