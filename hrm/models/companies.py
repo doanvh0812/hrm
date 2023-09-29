@@ -74,7 +74,7 @@ class Companies(models.Model):
             list_systems = [t for t in temp]
             return [('id', 'in', list_systems)]
         # nếu có công ty thì không hiển thị hệ thống
-        if self.env.user.company.ids:
+        if self.env.user.company.ids or self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             return [('id', '=', 0)]
         return []
 
