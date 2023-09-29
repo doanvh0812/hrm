@@ -8,8 +8,9 @@
                     <sheet style="max-width: 440px;">
                         <group>
                             <field name="related" invisible="1"/>
+                            <field name="check_blocks" invisible="1"/>
                             <field name="work_position"/>
-                            <field name="block"/>
+                            <field name="block" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
                             <field name="department" attrs="{'invisible': [('related', '=', True)]}"/>
                         </group>
                     </sheet>

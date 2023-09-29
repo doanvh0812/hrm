@@ -19,6 +19,7 @@ class Companies(models.Model):
     chairperson = fields.Many2one('res.users', string="Chủ hộ")
     vice_president = fields.Many2one('res.users', string='Phó hộ')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    res_user_id = fields.Many2one('res.users')
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
 
@@ -33,15 +34,6 @@ class Companies(models.Model):
             name_system = rec.system_id and rec.system_id.name or ''
             name_parts = [part for part in [type_company, name_system, name_main] if part]  # Lọc các trường không rỗng
             rec.name = '.'.join(name_parts)
-
-    @api.constrains('name_company')
-    def _check_name_case_insensitive(self):
-        """ Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường """
-        for record in self:
-            name = self.search([('id', '!=', record.id)])
-            for n in name:
-                if n['name_company'].lower() == record.name_company.lower():
-                    raise ValidationError(constraint.DUPLICATE_RECORD % 'Công ty')
 
     @api.onchange('parent_company')
     def _onchange_parent_company(self):
@@ -59,11 +51,14 @@ class Companies(models.Model):
     def _onchange_company(self):
         """decorator này  chọn lại hệ thống sẽ clear công ty cha"""
         self.change_system_id = self.system_id
+        if not self.system_id.name:
+            self.parent_company = False
         if self.system_id != self.parent_company.system_id:
             self.parent_company = False
             list_systems_id = []
             self._cr.execute(
-                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
+                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
+                'where hrm1.name ILIKE %s;',
                 (self.system_id.name + '%',))
             for item in self._cr.fetchall():
                 list_systems_id.append(item[0])
@@ -103,3 +98,12 @@ class Companies(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
+    @api.constrains('name', 'type_company')
+    def _check_name_block_combination(self):
+        # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+        for record in self:
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['name'].lower() == record.name.lower() and n.type_company == self.type_company:
+                    raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")

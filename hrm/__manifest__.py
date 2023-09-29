@@ -25,8 +25,15 @@
     # always loaded
     'data': [
         'wizard/approval_reason_refusal.xml',
+<<<<<<< HEAD
         'security/security.xml',
         'security/ir.model.access.csv',
+=======
+
+        'security/security.xml',
+        'security/ir.model.access.csv',
+
+>>>>>>> 760c80cf028d969e71aba9c5cbb558b2bf620081
         'views/blocks_view.xml',
         'data/blocks_data.xml',
         'views/systems_views.xml',
@@ -36,8 +43,8 @@
         'views/employee_profile_view.xml',
         'views/approval_view.xml',
         'views/approval_flow_config.xml',
-        'views/menu.xml',
-
+        'views/hrm_users_view.xml',
+        'views/menu.xml'
     ],
     # only loaded in demonstration mode
     'demo': [

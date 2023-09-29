@@ -19,6 +19,7 @@ class Systems(models.Model):
     active = fields.Boolean(string='Hoạt Động', default=True)
     company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    res_user_id = fields.Many2one('res.users')
 
     @api.depends("parent_system.name", "name_system")
     def _compute_name(self):
@@ -28,7 +29,6 @@ class Systems(models.Model):
                 rec.name = f"{rec.parent_system.name}.{rec.name_system}"
             elif rec.name_system:
                 rec.name = rec.name_system
-
 
     @api.constrains("chairperson", "vice_president")
     def _check_chairperson_and_vice_president(self):
@@ -71,10 +71,6 @@ class Systems(models.Model):
             if duplicate_records:
                 raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
 
-
-
-
-
     # @api.depends("name_system")
     # def compute_list_parent(self, vals):
     #     sort_lst = []
@@ -84,4 +80,3 @@ class Systems(models.Model):
     #         sort_lst.append(self.env["hrm.systems"].browse(item[1]))
     #     print(sort_lst)
     #     return sort_lst
-

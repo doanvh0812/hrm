@@ -26,7 +26,7 @@ class EmployeeProfile(models.Model):
 
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
-    identifier = fields.Char('Số căn cước công dân', required=True,tracking=True)
+    identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
@@ -173,10 +173,7 @@ class EmployeeProfile(models.Model):
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
-    def _default_block_(self):
-        # Đặt giá trị mặc định cho Khối
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
-        return ids
+
 
     @api.onchange('company')
     def _onchange_company(self):
@@ -191,27 +188,28 @@ class EmployeeProfile(models.Model):
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
-        """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+        """
+            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
-            """
+        """
         # clear dữ liệu
         if self.system_id != self.company.system_id:
             self.position_id = self.company = self.team_sales = self.team_marketing = False
 
         if self.system_id:
-            list_systems_id = []
+            list_id = []
             self._cr.execute(
                 'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
                 (self.system_id.name + '%',))
             for item in self._cr.fetchall():
-                list_systems_id.append(item[0])
+                list_id.append(item[0])
             self._cr.execute(
                 'select * from hrm_companies where hrm_companies.system_id in %s;',
-                (tuple(list_systems_id),))
-            list_systems_id.clear()
+                (tuple(list_id),))
+            list_id.clear()
             for item in self._cr.fetchall():
-                list_systems_id.append(item[0])
-            return {'domain': {'company': [('id', 'in', list_systems_id)]}}
+                list_id.append(item[0])
+            return {'domain': {'company': [('id', 'in', list_id)]}}
         else:
             return {'domain': {'company': []}}
 
@@ -248,13 +246,15 @@ class EmployeeProfile(models.Model):
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
 
-    @api.onchange('email')
-    def validate_mail(self):
-        # Hàm kiểm tra định dạng email
-        if self.email:
-            match = re.match(r'^[\w.-]+@[\w.-]+\.\w+$', self.email)
-            if not match:
-                raise ValidationError('Email phải đúng định dạng: email@example.com!')
+    @api.constrains("email")
+    def _check_email_valid(self):
+        """
+            hàm kiểm tra email có hợp lệ không
+        """
+        for rec in self:
+            if rec.email:
+                if not re.match(r'^[a-z0-9]+$', rec.email):
+                    raise ValidationError("Email chỉ được chứa chữ cái thường và số.")
 
     @api.constrains("name")
     def _check_valid_name(self):
@@ -319,18 +319,18 @@ class EmployeeProfile(models.Model):
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # nếu là khối thương mại
                 # Danh sách công ty cha con
-                list_company = self.get_hierarchy('hrm_companies', 'parent_company', self.company.id)
+                list_company = self.get_all_parent('hrm_companies', 'parent_company', self.company.id)
                 approved_id = self.find_company(records, list_company)
                 # Nếu không có cấu hình cho công ty
                 if not approved_id:
                     # Danh sách hệ thống cha con
-                    list_system = self.get_hierarchy('hrm_systems', 'parent_system', self.system_id.id)
+                    list_system = self.get_all_parent('hrm_systems', 'parent_system', self.system_id.id)
                     # Trả về bản ghi là cấu hình cho hệ thống
                     approved_id = self.find_system(list_system, records)
             else:
                 # Nếu là khối văn phòng
                 # Danh sách các phòng ban cha con
-                list_dept = self.get_hierarchy('hrm_departments', 'superior_department', self.department_id.id)
+                list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
                 # Trả về bản ghi là cấu hình cho phòng ban
                 approved_id = self.find_department(list_dept, records)
             # Nếu không tìm thấy cấu hình nào từ phòng ban, hệ thống, công ty thì lấy khối
@@ -363,7 +363,7 @@ class EmployeeProfile(models.Model):
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
-    def get_hierarchy(self, table_name, parent, starting_id):
+    def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
             WITH RECURSIVE search AS (
                 SELECT id, {parent} FROM {table_name} WHERE id = {starting_id}
@@ -410,7 +410,7 @@ class EmployeeProfile(models.Model):
                 if company_id[0] == cf.company.id:
                     return cf
 
-    def find_child_company(self,record):
+    def find_child_company(self, record):
         # record là 1 hàng trong bảng cấu hình luồng phê duyệt
         name_company_profile = self.company.name.split('.')
         if record.company:
@@ -432,3 +432,4 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
