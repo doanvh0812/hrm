@@ -17,9 +17,11 @@ class Department(models.Model):
     res_user_id = fields.Many2one('res.users')
 
     def _default_parent(self):
+        """" kiểm tra phòng ban mặc định của người dùng
+                    xây dựng danh sách phòng ban con và cháu"""
         if self.env.user.department_id:
             func = self.env['hrm.utils']
-            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
+            list_department = func.get_child_id(self.env.user.system_id, 'hrm_departments', 'superior_department')
             return [('id', 'in', list_department)]
 
     superior_department = fields.Many2one("hrm.departments", string="Phòng/Ban cấp trên", tracking=True

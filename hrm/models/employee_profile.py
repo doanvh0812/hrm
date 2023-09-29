@@ -5,6 +5,7 @@ from . import constraint
 from lxml import etree
 import json
 
+
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
@@ -13,8 +14,10 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
+
+    check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
-                               default=lambda self: self.env['hrm.utils'].default_block_(),
+                               default=lambda self: self.default_block_profile(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
@@ -55,6 +58,7 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
 
     _security = "hrm.hrm_group_own_edit"
+
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
         server_date = fields.Datetime.now()
@@ -62,8 +66,6 @@ class EmployeeProfile(models.Model):
 
     # lý do từ chối
     reason_refusal = fields.Char(string='Lý do từ chối', index=True, ondelete='restrict', tracking=True)
-
-
 
     def auto_create_account_employee(self):
         # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
@@ -84,6 +86,7 @@ class EmployeeProfile(models.Model):
             'res_id': new_user.id,
             'view_mode': 'form',
         }
+
     @api.model
     def create(self, vals):
         # Call the create method of the super class to create the record
@@ -130,6 +133,13 @@ class EmployeeProfile(models.Model):
             res['arch'] = etree.tostring(doc, encoding='unicode')
 
         return res
+
+    def default_block_profile(self):
+        """kiểm tra điều kiện giữa khối văn phòng và thương mại"""
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
+        else:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
