@@ -20,7 +20,7 @@ class Companies(models.Model):
     res_user_id = fields.Many2one('res.users')
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
-    check_company = fields.Char(default=lambda self: self.env.user.company.id)
+    check_company = fields.Char(default=lambda self: self.env.user.company.ids)
 
     def _system_have_child_company(self, system_name):
         """
@@ -73,8 +73,8 @@ class Companies(models.Model):
             temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
             list_systems = [t for t in temp]
             return [('id', 'in', list_systems)]
-        # nếu có công ty thì không hiển thị hệ thống
         if self.env.user.company.ids or self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            # nếu có công ty thì không hiển thị hệ thống
             return [('id', '=', 0)]
         return []
 
