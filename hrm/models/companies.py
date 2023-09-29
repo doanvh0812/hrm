@@ -44,21 +44,23 @@ class Companies(models.Model):
     def _get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
         list_child_company = []
-        if self.env.user.company.id:
+        # print(self.env.user.company.ids)
+        # print(self.env.user.system_id.ids)
+        if self.env.user.company.ids:
             # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
             temp = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
             list_child_company = [t for t in temp]
-        elif not self.env.user.company.id and self.env.user.system_id.id:
+        elif not self.env.user.company.ids and self.env.user.system_id.ids:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
             for sys in self.env.user.system_id:
                 list_child_company += self._system_have_child_company(sys.name)
-        print(list_child_company)
+        # print(list_child_company)
         return list_child_company
 
     def _default_company(self):
         """ tạo bộ lọc các công ty user có thể cấu hình """
-        if self.env.user.block_id != constraint.BLOCK_OFFICE_NAME and not self.env.user.company.id and not self.env.user.system_id.id:
+        if self.env.user.block_id != constraint.BLOCK_OFFICE_NAME and not self.env.user.company.ids and not self.env.user.system_id.ids:
             # nếu user không cấu hình công ty và hệ thống, khối khác văn phòng thì hiển thị all
             return []
         return [('id', 'in', self._get_child_company())]
@@ -67,23 +69,31 @@ class Companies(models.Model):
 
     def _default_system(self):
         """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
-        if not self.env.user.company.id and self.env.user.system_id.id:
+        if not self.env.user.company.ids and self.env.user.system_id.ids:
             temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
             list_systems = [t for t in temp]
             return [('id', 'in', list_systems)]
-        elif self.env.user.block_id != constraint.BLOCK_OFFICE_NAME:
-            return []
-        return [('id', '=', 0)]
+        # nếu có công ty thì không hiển thị hệ thống
+        if self.env.user.company.ids:
+            return [('id', '=', 0)]
+        return []
 
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
 
-    @api.constrains('parent_company', 'system_id')
+    @api.constrains('parent_company', 'system_id', 'type_company', 'phone_num', 'name_company', 'chairperson','vice_president')
     def _check_parent_company(self):
         """ kiểm tra xem user có quyền cấu hình công ty được chọn không """
-        if self.parent_company.id not in self._get_child_company():
+        if self.env.user.company.id and self.parent_company.id and self.parent_company.id not in self._get_child_company():
             raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.parent_company.name}")
+        elif self.env.user.system_id.ids:
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            list_systems = [t for t in temp]
+            if self.system_id.id not in list_systems or (not self.parent_company.id and self.env.user.company.ids):
+                # nếu user có cấu hình hệ thống thì kiểm tra xem hệ thống được chọn có thuộc hệ thống user đc cấu hình hay không
+                # hoặc user không chọn công ty cha mà hệ thống vẫn chọn thì kiểm tra lại quyền cấu hình hệ thống
+                raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
         elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
-            raise AccessDenied("Bạn không có quyền cấu hình hệ thống.")
+            raise AccessDenied("Bạn không có quyền cấu hình một hệ thống nào.")
 
     @api.depends('system_id.name', 'type_company', 'name_company')
     def _compute_name_company(self):

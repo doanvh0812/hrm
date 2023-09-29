@@ -34,6 +34,7 @@
         <field name="domain_force">[('create_uid', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('hrm_group_create_edit'))]"/>
         <field name="perm_write" eval="False"/>
+        
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="True"/>
         <field name="perm_read" eval="True"/>
