@@ -1,2 +1,8 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_approval_reason_refusal,approval_reason_refusal,model_approva_reason_refusal,base.group_user,1,1,1,1
+access_update_employee_profile,only_update_my_employee_profile,model_hrm_employee_profile,hrm_group_own_edit,1,1,0,0
+access_see_approval_profile,see_approval_profile,model_hrm_approval_flow_profile,hrm_group_own_edit,1,0,0,0
+access_see_block,see_block,model_hrm_blocks,hrm_group_own_edit,1,0,0,0
+access_see_system_id,see_system_id,model_hrm_systems,hrm_group_own_edit,1,0,0,0
+access_company,see_company,model_hrm_companies,hrm_group_own_edit,1,0,0,0
+access_department_id,see_department_id,model_hrm_departments,hrm_group_own_edit,1,0,0,0
+access_position_id,see_position_id,model_hrm_position,hrm_group_own_edit,1,0,0,0

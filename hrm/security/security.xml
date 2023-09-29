@@ -1,7 +1,7 @@
 <odoo>
     <record id="module_hrm" model="ir.module.category">
         <field name="name">HRMS</field>
-        <field name="sequence">0</field>
+        <field name="sequence">-100</field>
     </record>
 
     <record id="hrm_group_read_only" model="res.groups">
@@ -26,6 +26,32 @@
         <field name="name">Cấu hình</field>
         <field name="category_id" ref="module_hrm"/>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>'
+
+    <record id="rule_update_own_profile" model="ir.rule">
+    <field name="name">Allow updating own profile</field>
+    <field name="model_id" ref="model_hrm_employee_profile"/>
+    <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>
+    <field name="domain_force">[('acc_id', '=', user.id)]</field>
+    <field name="perm_read" eval="True"/>
+    <field name="perm_write" eval="True"/>
+    <field name="perm_unlink" eval="False"/>
     </record>
+<!--    <record id="rule_see_approval_profile" model="ir.rule">-->
+<!--        <field name="name">see approval profile</field>-->
+<!--        <field name="model_id" ref="model_hrm_approval_flow_profile"/> &lt;!&ndash; Corrected "filed" to "field" &ndash;&gt;-->
+<!--        <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>-->
+<!--        <field name="domain_force">[]</field>-->
+<!--        <field name="perm_read" eval="False"/>-->
+<!--    </record>-->
+
+<!--    <record id="rule_see_blocks" model="ir.rule">-->
+<!--        <field name="name">see block</field>-->
+<!--        <field name="model_id" ref="model_hrm_blocks"/> &lt;!&ndash; Corrected "filed" to "field" &ndash;&gt;-->
+<!--        <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>-->
+<!--        <field name="domain_force">[]</field>-->
+<!--        <field name="perm_read" eval="False"/>-->
+<!--    </record>-->
+
 
 </odoo>

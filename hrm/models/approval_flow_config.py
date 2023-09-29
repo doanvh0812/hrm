@@ -27,8 +27,6 @@ class Approval_flow_object(models.Model):
             else:
                 seen.add(item)
 
-
-
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị

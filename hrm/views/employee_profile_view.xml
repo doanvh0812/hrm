@@ -4,7 +4,7 @@
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
             <field name="arch" type="xml">
-                <form string="Tạo mới hồ sơ" create="false">
+                <form string="Tạo mới hồ sơ" create="false" >
                     <field name="id" invisible="1"/>
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object"
@@ -13,17 +13,17 @@
                     </header>
                     <sheet>
                         <group col="2">
-                            <group>
+                            <group >
                                 <field name="employee_code_new" readonly="1"/>
                                 <field name="name"/>
-                                <field name="phone_num"/>
-                                <field name="email"/>
+                                <field name="phone_num" />
+                                <field name="email"  modifiers="{'readonly': false, 'required': true}" />
                                 <field name="identifier"/>
                                 <field name="work_start_date"/>
                                 <field name="date_receipt"/>
                                 <field name="profile_status"/>
                             </group>
-                            <group>
+                            <group >
                                 <!--   related = true là đã chọn văn phòng -->
                                 <field name="related" invisible="1"/>
                                 <field name="block_id"/>
