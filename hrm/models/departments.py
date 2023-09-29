@@ -12,20 +12,16 @@ class Department(models.Model):
 
     name = fields.Char(string="Tên Phòng/Ban", required=True, tracking=True)
     manager_id = fields.Many2one("res.users", string="Quản lý", required=True, tracking=True)
-    # superior_department = fields.Many2one("hrm.departments", string="Phòng/Ban cấp trên", tracking=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
     res_user_id = fields.Many2one('res.users')
 
     def _default_parent(self):
+        """" kiểm tra phòng ban mặc định của người dùng
+                    xây dựng danh sách phòng ban con và cháu"""
         if self.env.user.department_id:
-            list_department = []
-            func = self.env['hrm.position']
-            for department in self.env.user.department_id:
-                temp = func.get_all_child('hrm_departments', 'superior_department', department.id)
-                temp = [depart[0] for depart in temp]
-                for t in temp:
-                    list_department.append(t)
+            func = self.env['hrm.utils']
+            list_department = func.get_child_id(self.env.user.system_id, 'hrm_departments', 'superior_department')
             return [('id', 'in', list_department)]
 
     superior_department = fields.Many2one("hrm.departments", string="Phòng/Ban cấp trên", tracking=True

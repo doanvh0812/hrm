@@ -99,14 +99,11 @@ class Companies(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
-    @api.constrains('name','type_company')
+    @api.constrains('name', 'type_company')
     def _check_name_block_combination(self):
         # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
         for record in self:
-            duplicate_records = self.search([
-                ('id', '!=', record.id),
-                ('name', 'ilike', record.name_company),
-                ('type_company', '=', record.type_company),
-            ])
-            if duplicate_records:
-                raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['name'].lower() == record.name.lower() and n.type_company == self.type_company:
+                    raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")

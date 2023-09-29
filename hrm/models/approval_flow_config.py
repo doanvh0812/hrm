@@ -10,17 +10,12 @@ class Approval_flow_object(models.Model):
 
     name = fields.Char(string='Tên luồng phê duyệt', required=True, tracking=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True
-                               , default=lambda self: self._default_block())
+                               , default=lambda self: self.env['hrm.utils'].default_block_())
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True)
     system_id = fields.Many2many('hrm.systems', string='Hệ thống', tracking=True)
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
-
-    def _default_block(self):
-        # Đặt giá trị mặc định cho Khối
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
-        return ids
 
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):

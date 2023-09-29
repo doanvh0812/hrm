@@ -12,7 +12,9 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_(),
+    check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
+                               default=lambda self: self.default_block_profile(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
@@ -59,6 +61,13 @@ class EmployeeProfile(models.Model):
     # lý do từ chối
     reason_refusal = fields.Char(string='Lý do từ chối',
                                  index=True, ondelete='restrict', tracking=True)
+
+    def default_block_profile(self):
+        """kiểm tra điều kiện giữa khối văn phòng và thương mại"""
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
+        else:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -111,11 +120,6 @@ class EmployeeProfile(models.Model):
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
-    def _default_block_(self):
-        # Đặt giá trị mặc định cho Khối
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
-        return ids
-
     @api.onchange('company')
     def _onchange_company(self):
         """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
@@ -129,9 +133,10 @@ class EmployeeProfile(models.Model):
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
-        """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+        """
+            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
-            """
+        """
         # clear dữ liệu
         if self.system_id != self.company.system_id:
             self.position_id = self.company = self.team_sales = self.team_marketing = False
@@ -372,5 +377,3 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
-
-
