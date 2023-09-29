@@ -26,33 +26,17 @@
         <field name="name">Cấu hình</field>
         <field name="category_id" ref="module_hrm"/>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-    </record>'
+    </record>
 
     <record id="rule_update_own_profile" model="ir.rule">
-    <field name="name">Allow updating own profile</field>
-    <field name="model_id" ref="model_hrm_employee_profile"/>
-    <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>
-    <field name="domain_force">[('acc_id', '=', user.id)]</field>
-    <field name="perm_read" eval="True"/>
-    <field name="perm_write" eval="True"/>
-    <field name="perm_unlink" eval="False"/>
+        <field name="name">Cho phép cập nhật thông tin của mình</field>
+        <field name="model_id" ref="model_hrm_employee_profile"/>
+        <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>
+        <field name="domain_force">[('acc_id', '=', user.id)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
     </record>
-<!--    <record id="rule_see_approval_profile" model="ir.rule">-->
-<!--        <field name="name">see approval profile</field>-->
-<!--        <field name="model_id" ref="model_hrm_approval_flow_profile"/> &lt;!&ndash; Corrected "filed" to "field" &ndash;&gt;-->
-<!--        <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>-->
-<!--        <field name="domain_force">[]</field>-->
-<!--        <field name="perm_read" eval="False"/>-->
-<!--    </record>-->
-
-<!--    <record id="rule_see_blocks" model="ir.rule">-->
-<!--        <field name="name">see block</field>-->
-<!--        <field name="model_id" ref="model_hrm_blocks"/> &lt;!&ndash; Corrected "filed" to "field" &ndash;&gt;-->
-<!--        <field name="groups" eval="[(4, ref('hrm.hrm_group_own_edit'))]"/>-->
-<!--        <field name="domain_force">[]</field>-->
-<!--        <field name="perm_read" eval="False"/>-->
-<!--    </record>-->
-
 
     <record id="hrm_employee_profile_create_edit_own" model="ir.rule">
         <field name="name">Tạo mới và chỉnh sửa bản ghi của mình</field>
@@ -63,40 +47,5 @@
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="True"/>
         <field name="perm_read" eval="True"/>
-    </record>
-
-    <record id="rule_allow_group_access_blocks" model="ir.rule">
-        <field name="name">Access Blocks</field>
-        <field name="model_id" ref="model_hrm_blocks"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
-    </record>
-
-    <record id="rule_allow_group_access_departments" model="ir.rule">
-        <field name="name">Access Department</field>
-        <field name="model_id" ref="model_hrm_departments"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
-    </record>
-
-    <record id="rule_allow_group_access_companies" model="ir.rule">
-        <field name="name">Access Companies</field>
-        <field name="model_id" ref="model_hrm_companies"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
-    </record>
-
-    <record id="rule_allow_group_access_systems" model="ir.rule">
-        <field name="name">Access Systems</field>
-        <field name="model_id" ref="model_hrm_systems"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
-    </record>
-
-    <record id="rule_allow_group_access_position" model="ir.rule">
-        <field name="name">Access Position</field>
-        <field name="model_id" ref="model_hrm_position"/>
-        <field name="domain_force">[]</field>
-        <field name="groups" eval="[(4, ref('hrm_group_config_access'))]"/>
     </record>
 </odoo>

@@ -10,7 +10,7 @@ class Approval_flow_object(models.Model):
 
     name = fields.Char(string='Tên luồng phê duyệt', required=True, tracking=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True
-                               , default=lambda self: self._default_block_())
+                               , default=lambda self: self.env['hrm.utils'].default_block_())
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True)
     system_id = fields.Many2many('hrm.systems', string='Hệ thống', tracking=True)
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
@@ -27,6 +27,35 @@ class Approval_flow_object(models.Model):
                 raise ValidationError(f'Người dùng tên {item.name} đã có trong luồng duyệt')
             else:
                 seen.add(item)
+
+    @api.model
+    def create(self, vals_list):
+        """Decorator này để check xem khi tạo luồng phê duyệt có người duyệt hay không"""
+        if not vals_list['approval_flow_link']:
+            raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
+        else:
+            list_check = []
+            # Đoạn này để check xem khi có ngươời duyệt thì đã được tích duyệt bắt buộc hay chưa
+            for i in vals_list['approval_flow_link']:
+                list_check.append(i[2]['obligatory'])
+            if True not in list_check:
+                raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
+            else:
+                return super(Approval_flow_object, self).create(vals_list)
+
+    def write(self, vals):
+        if 'approval_flow_link' in vals:
+            approval_flow_link = vals['approval_flow_link']
+            if not approval_flow_link:
+                raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
+            else:
+                list_check = []
+                for item in approval_flow_link:
+                    if item[2] and 'obligatory' in item[2]:
+                        list_check.append(item[2]['obligatory'])
+                if True not in list_check:
+                    raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
+        return super(Approval_flow_object, self).write(vals)
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -119,12 +148,15 @@ class Approval_flow_object(models.Model):
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
-        """ decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
-            """
-        selected_systems = self.system_id.ids  # Danh sách các hệ thống được chọn
-        company_to_remove = self.company.filtered(lambda c: c.system_id.id not in selected_systems)
+        """
+            decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
+            Xoá bỏ công ty nếu trong trường hệ thống không có hệ thống công ty đó thuộc
+        """
+        # for system in self.system_id:
+
+        # company_to_remove = self.company.filtered(lambda c: c.system_id.id not in selected_systems)
         # Bỏ chọn các công ty không thuộc các hệ thống đã chọn
-        company_to_remove.write({'approval_id': [(5, 0, 0)]})
+        # company_to_remove.write({'approval_id': [(5, 0, 0)]})
 
         if self.system_id:
             list_company_id = []
