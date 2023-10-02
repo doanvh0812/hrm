@@ -1,6 +1,6 @@
 import re
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 
 
@@ -11,10 +11,8 @@ class Companies(models.Model):
 
     name = fields.Char(string="Tên hiển thị", compute='_compute_name_company', store=True)
     name_company = fields.Char(string="Tên công ty", required=True, tracking=True)
-    parent_company = fields.Many2one('hrm.companies', string="Công ty cha", domain=[], tracking=True)
     type_company = fields.Selection(selection=constraint.SELECT_TYPE_COMPANY, string="Loại hình công ty", required=True,
                                     tracking=True)
-    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True)
     phone_num = fields.Char(string="Số điện thoại", required=True, tracking=True)
     chairperson = fields.Many2one('res.users', string="Chủ hộ")
     vice_president = fields.Many2one('res.users', string='Phó hộ')
@@ -22,6 +20,80 @@ class Companies(models.Model):
     res_user_id = fields.Many2one('res.users')
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
+    check_company = fields.Char(default=lambda self: self.env.user.company.ids)
+
+    def _system_have_child_company(self, system_name):
+        """
+        Kiểm tra hệ thống có công ty con hay không
+        Nếu có thì trả về list tên công ty con
+        """
+        self._cr.execute(
+            r"""select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
+                (select hrm1.id from hrm_systems as hrm1 left join hrm_systems as hrm2 
+                on hrm2.parent_system = hrm1.id
+                where hrm1.name ILIKE %s);""",
+            (system_name + '%',)
+        )
+        # kiểm tra company con của hệ thống cần tìm
+        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
+        list_company = self._cr.fetchall()
+        if len(list_company) > 0:
+            return [com[0] for com in list_company]
+        return []
+
+    def _get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
+        list_child_company = []
+        # print(self.env.user.company.ids)
+        # print(self.env.user.system_id.ids)
+        if self.env.user.company.ids:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+            list_child_company = [t for t in temp]
+        elif not self.env.user.company.ids and self.env.user.system_id.ids:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            for sys in self.env.user.system_id:
+                list_child_company += self._system_have_child_company(sys.name)
+        # print(list_child_company)
+        return list_child_company
+
+    def _default_company(self):
+        """ tạo bộ lọc các công ty user có thể cấu hình """
+        if self.env.user.block_id != constraint.BLOCK_OFFICE_NAME and not self.env.user.company.ids and not self.env.user.system_id.ids:
+            # nếu user không cấu hình công ty và hệ thống, khối khác văn phòng thì hiển thị all
+            return []
+        return [('id', 'in', self._get_child_company())]
+
+    parent_company = fields.Many2one('hrm.companies', string="Công ty cha", tracking=True, domain=_default_company)
+
+    def _default_system(self):
+        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
+        if not self.env.user.company.ids and self.env.user.system_id.ids:
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            list_systems = [t for t in temp]
+            return [('id', 'in', list_systems)]
+        if self.env.user.company.ids or self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            # nếu có công ty thì không hiển thị hệ thống
+            return [('id', '=', 0)]
+        return []
+
+    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
+
+    @api.constrains('parent_company', 'system_id', 'type_company', 'phone_num', 'name_company', 'chairperson','vice_president')
+    def _check_parent_company(self):
+        """ kiểm tra xem user có quyền cấu hình công ty được chọn không """
+        if self.env.user.company.id and self.parent_company.id and self.parent_company.id not in self._get_child_company():
+            raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.parent_company.name}")
+        elif self.env.user.system_id.ids:
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            list_systems = [t for t in temp]
+            if self.system_id.id not in list_systems or (not self.parent_company.id and self.env.user.company.ids):
+                # nếu user có cấu hình hệ thống thì kiểm tra xem hệ thống được chọn có thuộc hệ thống user đc cấu hình hay không
+                # hoặc user không chọn công ty cha mà hệ thống vẫn chọn thì kiểm tra lại quyền cấu hình hệ thống
+                raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+        elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            raise AccessDenied("Bạn không có quyền cấu hình một hệ thống nào.")
 
     @api.depends('system_id.name', 'type_company', 'name_company')
     def _compute_name_company(self):
@@ -37,8 +109,9 @@ class Companies(models.Model):
 
     @api.onchange('parent_company')
     def _onchange_parent_company(self):
-        """decorator này  chọn cty cha
-             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
+        """ decorator này  chọn cty cha
+            sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+        """
         company_system = self.parent_company.system_id
         if company_system:
             self.system_id = company_system

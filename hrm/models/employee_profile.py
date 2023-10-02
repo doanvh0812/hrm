@@ -5,6 +5,7 @@ from . import constraint
 from lxml import etree
 import json
 
+
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
@@ -13,7 +14,9 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self.env['hrm.utils'].default_block_(),
+    check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
+                               default=lambda self: self.default_block_profile(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
@@ -54,6 +57,7 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
 
     _security = "hrm.hrm_group_own_edit"
+
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
         server_date = fields.Datetime.now()
@@ -61,8 +65,6 @@ class EmployeeProfile(models.Model):
 
     # lý do từ chối
     reason_refusal = fields.Char(string='Lý do từ chối', index=True, ondelete='restrict', tracking=True)
-
-
 
     def auto_create_account_employee(self):
         # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
@@ -83,6 +85,7 @@ class EmployeeProfile(models.Model):
             'res_id': new_user.id,
             'view_mode': 'form',
         }
+
     @api.model
     def create(self, vals):
         # Call the create method of the super class to create the record
@@ -97,9 +100,6 @@ class EmployeeProfile(models.Model):
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
-
-        # Kiểm tra xem view_type có phải là 'form' và user_id có tồn tại
-
         if view_type == 'form' and not self.id:
             # Kiểm tra xem view_type có phải là 'form' và user_id có tồn tại
             user_id = self.env.user.id
@@ -112,8 +112,7 @@ class EmployeeProfile(models.Model):
             doc = etree.XML(res['arch'])
             """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
-
-            config_group = doc.xpath("//group")  # Tìm nhóm có id là 'config'
+            config_group = doc.xpath("//group")
             if config_group:
                 cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
@@ -130,6 +129,13 @@ class EmployeeProfile(models.Model):
             res['arch'] = etree.tostring(doc, encoding='unicode')
 
         return res
+
+    def default_block_profile(self):
+        """kiểm tra điều kiện giữa khối văn phòng và thương mại"""
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
+        else:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -181,8 +187,6 @@ class EmployeeProfile(models.Model):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
-
-
 
     @api.onchange('company')
     def _onchange_company(self):
@@ -420,7 +424,7 @@ class EmployeeProfile(models.Model):
                     return cf
 
     def find_child_company(self, record):
-        # record là 1 hàng trong bảng cấu hình luồng phê duyệt
+        """record là 1 hàng trong bảng cấu hình luồng phê duyệt"""
         name_company_profile = self.company.name.split('.')
         if record.company:
             for comp in record.company:
@@ -433,12 +437,13 @@ class EmployeeProfile(models.Model):
         else:
             return True
 
-    # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
+        """
+            Hàm này để hiển thị lịch sử lưu trữ
+        """
         for record in self:
             record.active = not record.active
             if not record.active:
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
-
