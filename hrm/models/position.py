@@ -1,7 +1,7 @@
 import re
 
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 
 
@@ -14,17 +14,30 @@ class Position(models.Model):
     work_position = fields.Char(string='Tên Vị Trí', required=True, tracking=True)
     block = fields.Selection(selection=[
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
-        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True, tracking=True)
-    department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True)
+        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True, tracking=True
+        , default=lambda self: self.env.user.block_id)
     active = fields.Boolean(string='Hoạt Động', default=True)
 
     related = fields.Boolean(compute='_compute_related_field')
+    check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
+
+    def _default_department(self):
+        """" kiểm tra phòng ban mặc định của người dùng
+            xây dựng danh sách phòng ban con và cháu"""
+        if self.env.user.department_id:
+            # xây dựng điều kiện tìm k
+            func = self.env['hrm.utils']
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
+
+            return [('id', 'in', list_department)]
+
+    department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True, domain=_default_department)
 
     @api.constrains("work_position")
     def _check_valid_name(self):
         """
-        kiểm tra trường name không có ký tự đặc biệt.
-        \W là các ký tự ko phải là chữ, dấu cách, _
+            kiểm tra trường name không có ký tự đặc biệt.
+            \W là các ký tự ko phải là chữ, dấu cách _
         """
         for rec in self:
             if rec.work_position:
@@ -37,8 +50,8 @@ class Position(models.Model):
         for record in self:
             record.related = record.block != constraint.BLOCK_OFFICE_NAME
 
-    # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
+        """hàm này để hiển thị lịch sử lưu trữ"""
         for record in self:
             record.active = not record.active
             if not record.active:
@@ -46,16 +59,23 @@ class Position(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
-    """ tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được """
-
     @api.constrains('work_position', 'block')
     def _check_name_block_combination(self):
-        # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+        """ tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được
+            Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+        """
         for record in self:
-            duplicate_records = self.search([
-                ('id', '!=', record.id),
-                ('work_position', 'ilike', record.work_position),
-                ('block', '=', record.block),
-            ])
-            if duplicate_records:
-                raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['work_position'].lower() == record.work_position.lower() and n.block == self.block:
+                    raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
+
+    @api.constrains('department')
+    def check_access_right(self):
+        func = self.env['hrm.utils']
+        list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
+        if self.env.user.block_id != 'full' and self.block != self.env.user.block_id:
+            raise AccessDenied(f"Bạn không có quyền truy cập với khối {self.block}")
+        elif self.department and self.department.id not in list_department:
+            raise AccessDenied(f"Bạn không có quyền truy cập với phòng ban {self.department.name}")
+

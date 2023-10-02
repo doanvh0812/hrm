@@ -2,6 +2,8 @@ from odoo import models, fields, api, _
 import re
 from odoo.exceptions import ValidationError
 from . import constraint
+from lxml import etree
+import json
 
 
 class EmployeeProfile(models.Model):
@@ -12,7 +14,10 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, default=lambda self: self._default_block_(),
+
+    check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
+                               default=lambda self: self.default_block_profile(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
@@ -37,6 +42,7 @@ class EmployeeProfile(models.Model):
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
+    acc_id = fields.Integer(string='Id tài khoản đăng nhập')
 
     # lọc duy nhất mã nhân viên
     _sql_constraints = [
@@ -45,11 +51,13 @@ class EmployeeProfile(models.Model):
 
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
-    state = fields.Selection(constraint.STATE, default='draft')
+    state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
+
+    _security = "hrm.hrm_group_own_edit"
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
@@ -57,8 +65,81 @@ class EmployeeProfile(models.Model):
         return server_date
 
     # lý do từ chối
-    reason_refusal = fields.Char(string='Lý do từ chối',
-                                 index=True, ondelete='restrict', tracking=True)
+    reason_refusal = fields.Char(string='Lý do từ chối', index=True, ondelete='restrict', tracking=True)
+
+    def auto_create_account_employee(self):
+        # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
+        self.ensure_one()
+        user_group = self.env.ref('hrm.hrm_group_own_edit')
+        values = {
+            'name': self.name,
+            'login': self.email,
+            'groups_id': [(6, 0, [user_group.id])],
+
+        }
+        new_user = self.env['res.users'].sudo().create(values)
+        self.acc_id = new_user.id
+        return {
+            'name': "User Created",
+            'type': 'ir.actions.act_window',
+            'res_model': 'res.users',
+            'res_id': new_user.id,
+            'view_mode': 'form',
+        }
+
+    @api.model
+    def create(self, vals):
+        # Call the create method of the super class to create the record
+        record = super(EmployeeProfile, self).create(vals)
+
+        # Perform your custom logic here
+        if record:
+            # Assuming you want to call the auto_create_account_employee function
+            record.auto_create_account_employee()
+        return record
+
+    @api.model
+    def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
+        res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
+                                                           submenu=submenu)
+
+        # Kiểm tra xem view_type có phải là 'form' và user_id có tồn tại
+
+        if view_type == 'form' and not self.id:
+            user_id = self.env.user.id
+            # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
+            # Thuộc tính của trường phụ thuộc vào modifiers
+            res['arch'] = res['arch'].replace(
+                '<button name="action_send" string="Gửi duyệt" type="object"/>',
+                f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
+            )
+
+            doc = etree.XML(res['arch'])
+            # Truy cập và sửa đổi modifier của trường 'name' trong form view
+            config_group = doc.xpath("//group")
+            if config_group:
+                cf = config_group[0]
+                for field in cf.xpath("//field[@name]"):
+                    field_name = field.get("name")
+                    if field_name != 'employee_code_new':
+                        modifiers = field.attrib.get('modifiers', '')
+                        modifiers = json.loads(modifiers) if modifiers else {}
+                        modifiers.update({'readonly': [["id", "!=", False]]})
+                        if field_name in ['phone_num', 'email', 'identifier']:
+                            modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False]]})
+                        field.attrib['modifiers'] = json.dumps(modifiers)
+
+                # Gán lại 'arch' cho res với các thay đổi mới
+            res['arch'] = etree.tostring(doc, encoding='unicode')
+
+        return res
+
+    def default_block_profile(self):
+        """kiểm tra điều kiện giữa khối văn phòng và thương mại"""
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
+        else:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -111,11 +192,6 @@ class EmployeeProfile(models.Model):
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
-    def _default_block_(self):
-        # Đặt giá trị mặc định cho Khối
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
-        return ids
-
     @api.onchange('company')
     def _onchange_company(self):
         """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
@@ -129,27 +205,28 @@ class EmployeeProfile(models.Model):
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
-        """ decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+        """
+            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
-            """
+        """
         # clear dữ liệu
         if self.system_id != self.company.system_id:
             self.position_id = self.company = self.team_sales = self.team_marketing = False
 
         if self.system_id:
-            list_systems_id = []
+            list_id = []
             self._cr.execute(
                 'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
                 (self.system_id.name + '%',))
             for item in self._cr.fetchall():
-                list_systems_id.append(item[0])
+                list_id.append(item[0])
             self._cr.execute(
                 'select * from hrm_companies where hrm_companies.system_id in %s;',
-                (tuple(list_systems_id),))
-            list_systems_id.clear()
+                (tuple(list_id),))
+            list_id.clear()
             for item in self._cr.fetchall():
-                list_systems_id.append(item[0])
-            return {'domain': {'company': [('id', 'in', list_systems_id)]}}
+                list_id.append(item[0])
+            return {'domain': {'company': [('id', 'in', list_id)]}}
         else:
             return {'domain': {'company': []}}
 
@@ -186,13 +263,15 @@ class EmployeeProfile(models.Model):
                 if not re.match(r'^\d+$', rec.identifier):
                     raise ValidationError("Số căn cước công dân không hợp lệ")
 
-    @api.onchange('email')
-    def validate_mail(self):
-        # Hàm kiểm tra định dạng email
-        if self.email:
-            match = re.match(r'^[\w.-]+@[\w.-]+\.\w+$', self.email)
-            if not match:
-                raise ValidationError('Email phải đúng định dạng: email@example.com!')
+    @api.constrains("email")
+    def _check_email_valid(self):
+        """
+            hàm kiểm tra email có hợp lệ không
+        """
+        for rec in self:
+            if rec.email:
+                if not re.match(r'^[a-z0-9]+$', rec.email):
+                    raise ValidationError("Email chỉ được chứa chữ cái thường và số.")
 
     @api.constrains("name")
     def _check_valid_name(self):
@@ -257,18 +336,18 @@ class EmployeeProfile(models.Model):
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # nếu là khối thương mại
                 # Danh sách công ty cha con
-                list_company = self.get_hierarchy('hrm_companies', 'parent_company', self.company.id)
+                list_company = self.get_all_parent('hrm_companies', 'parent_company', self.company.id)
                 approved_id = self.find_company(records, list_company)
                 # Nếu không có cấu hình cho công ty
                 if not approved_id:
                     # Danh sách hệ thống cha con
-                    list_system = self.get_hierarchy('hrm_systems', 'parent_system', self.system_id.id)
+                    list_system = self.get_all_parent('hrm_systems', 'parent_system', self.system_id.id)
                     # Trả về bản ghi là cấu hình cho hệ thống
                     approved_id = self.find_system(list_system, records)
             else:
                 # Nếu là khối văn phòng
                 # Danh sách các phòng ban cha con
-                list_dept = self.get_hierarchy('hrm_departments', 'superior_department', self.department_id.id)
+                list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
                 # Trả về bản ghi là cấu hình cho phòng ban
                 approved_id = self.find_department(list_dept, records)
             # Nếu không tìm thấy cấu hình nào từ phòng ban, hệ thống, công ty thì lấy khối
@@ -301,7 +380,7 @@ class EmployeeProfile(models.Model):
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
-    def get_hierarchy(self, table_name, parent, starting_id):
+    def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
             WITH RECURSIVE search AS (
                 SELECT id, {parent} FROM {table_name} WHERE id = {starting_id}
@@ -310,6 +389,7 @@ class EmployeeProfile(models.Model):
                 INNER JOIN search ch ON t.id = ch.{parent}
             )
             SELECT id FROM search;"""
+            """
         self._cr.execute(query)
         result = self._cr.fetchall()
         return result
@@ -381,6 +461,9 @@ class EmployeeProfile(models.Model):
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
+        """
+            Hàm này để hiển thị lịch sử lưu trữ
+        """
         for record in self:
             record.active = not record.active
             if not record.active:

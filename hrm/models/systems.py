@@ -11,7 +11,6 @@ class Systems(models.Model):
 
     name = fields.Char(string="Tên hiển thị", compute="_compute_name", store=True, )
     name_system = fields.Char(string="Tên hệ thống", required=True, tracking=True)
-    parent_system = fields.Many2one("hrm.systems", string="Hệ thống cha", tracking=True)
     type_system = fields.Selection(constraint.TYPE_SYSTEM, string="Loại hệ thống", required=True, tracking=True)
     phone_number = fields.Char(string="Số điện thoại", tracking=True)
     chairperson = fields.Many2one('res.users', string="Chủ tịch")
@@ -19,7 +18,16 @@ class Systems(models.Model):
     active = fields.Boolean(string='Hoạt Động', default=True)
     company_ids = fields.One2many('hrm.companies', 'system_id', string='Công ty trong hệ thống')
     approval_id = fields.Many2one('hrm.approval.flow.object', tracking=True)
+    res_user_id = fields.Many2one('res.users')
 
+    def _default_systems(self):
+        """Kiểm tra phòng ban mặc định của người dùng và xây dựng danh sách hệ thống con và cháu."""
+        if self.env.user.system_id:
+            func = self.env['hrm.utils']
+            list_systems = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
+            return [('id', 'in', list_systems)]
+
+    parent_system = fields.Many2one("hrm.systems", string='Hệ thống cha', tracking=True, domain=_default_systems)
     @api.depends("parent_system.name", "name_system")
     def _compute_name(self):
         """ Tính toán logic tên hiển thị """
@@ -51,14 +59,15 @@ class Systems(models.Model):
 
     @api.constrains('name', 'type_system')
     def _check_name_block_combination(self):
+        """
+                   Tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được
+                   Kiểm tra sự trùng lặp dựa trên kết hợp của name và type_system
+               """
         for record in self:
-            duplicate_records = self.search([
-                ('id', '!=', record.id),
-                ('name', 'ilike', record.name),
-                ('type_system', '=', record.type_system),
-            ])
-            if duplicate_records:
-                raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
+            name = self.search([('id', '!=', record.id)])
+            for n in name:
+                if n['name'].lower() == record.name.lower() and n.type_system == self.type_system:
+                    raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
@@ -69,10 +78,11 @@ class Systems(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
+
     # @api.depends("name_system")
     # def compute_list_parent(self, vals):
     #     sort_lst = []
-    #     self._cr.execute(
+    #     self._cr.execute(z
     #         "SELECT LENGTH(name) - LENGTH(REPLACE(name, '.', '')) as count_dots, id FROM hrm_systems ORDER BY count_dots ASC")
     #     for item in self._cr.fetchall():
     #         sort_lst.append(self.env["hrm.systems"].browse(item[1]))
