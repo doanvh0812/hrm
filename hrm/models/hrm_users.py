@@ -14,7 +14,8 @@ class Users(models.Model):
     system_id = fields.Many2many('hrm.systems', string='Hệ thống')
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
-    company_employee = fields.Many2many('hrm.companies', relation='user_company_employee_rel' ,string='Công ty của nhân viên')
+    # company_employee = fields.Many2many('hrm.companies', relation='user_company_employee_rel', string='Công ty của
+    # nhân viên')
 
     @api.depends('block_id')
     def _compute_related_(self):

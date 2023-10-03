@@ -33,7 +33,6 @@ class EmployeeProfile(models.Model):
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
 
-    # company = fields.Many2one('hrm.companies', string='Công ty con', tracking=True)
     team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
     team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
 
@@ -88,28 +87,21 @@ class EmployeeProfile(models.Model):
     def _get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
         list_child_company = []
-        # print(self.env.user.company.ids)
-        # print(self.env.user.system_id.ids)
-        if self.env.user.company_employee.ids:
+        print(self.env.user.company.ids)
+        print(self.env.user.system_id.ids)
+        if self.env.user.company.ids:
             # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
-            temp = self.env['hrm.utils'].get_child_id(self.env.user.company_employee, 'hrm_companies', "company")
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
             list_child_company = [t for t in temp]
-        elif not self.env.user.company_employee.ids and self.env.user.system_id.ids:
+        elif not self.env.user.company.ids and self.env.user.system_id.ids:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
             for sys in self.env.user.system_id:
                 list_child_company += self._system_have_child_company(sys.name)
-        # print(list_child_company)
-        return list_child_company
+        print(list_child_company)
+        return [('id', 'in', list_child_company)]
 
-    def _default_company(self):
-        """ tạo bộ lọc các công ty user có thể cấu hình """
-        if self.env.user.block_id != constraint.BLOCK_OFFICE_NAME and not self.env.user.company_employee.ids and not self.env.user.system_id.ids:
-            # nếu user không cấu hình công ty và hệ thống, khối khác văn phòng thì hiển thị all
-            return []
-        return [('id', 'in', self._get_child_company())]
-
-    company = fields.Many2one('hrm.companies', string="Công ty cha", tracking=True, domain=_default_company)
+    company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=_get_child_company)
 
     def _default_system(self):
         """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
@@ -285,7 +277,8 @@ class EmployeeProfile(models.Model):
         if self.system_id:
             list_id = []
             self._cr.execute(
-                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
+                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
+                'where hrm1.name ILIKE %s;',
                 (self.system_id.name + '%',))
             for item in self._cr.fetchall():
                 list_id.append(item[0])
