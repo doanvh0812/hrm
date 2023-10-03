@@ -16,7 +16,7 @@ class EmployeeProfile(models.Model):
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
 
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', readonly=True,
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
@@ -59,18 +59,6 @@ class EmployeeProfile(models.Model):
 
     _security = "hrm.hrm_group_own_edit"
 
-    def _default_system(self):
-        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
-        if not self.env.user.company.ids and self.env.user.system_id.ids:
-            temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
-            list_systems = [t for t in temp]
-            return [('id', 'in', list_systems)]
-        if self.env.user.company.ids or self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            # nếu có công ty thì không hiển thị hệ thống
-            return [('id', '=', 0)]
-        return []
-
-    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
 
     def _system_have_child_company(self, system_name):
         """
@@ -96,11 +84,11 @@ class EmployeeProfile(models.Model):
         list_child_company = []
         # print(self.env.user.company.ids)
         # print(self.env.user.system_id.ids)
-        if self.env.user.company.ids:
+        if self.env.user.company_employee.ids:
             # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
-            temp = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.company_employee, 'hrm_companies', "company")
             list_child_company = [t for t in temp]
-        elif not self.env.user.company.ids and self.env.user.system_id.ids:
+        elif not self.env.user.company_employee.ids and self.env.user.system_id.ids:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
             for sys in self.env.user.system_id:
@@ -110,12 +98,25 @@ class EmployeeProfile(models.Model):
 
     def _default_company(self):
         """ tạo bộ lọc các công ty user có thể cấu hình """
-        if self.env.user.block_id != constraint.BLOCK_OFFICE_NAME and not self.env.user.company.ids and not self.env.user.system_id.ids:
+        if self.env.user.block_id != constraint.BLOCK_OFFICE_NAME and not self.env.user.company_employee.ids and not self.env.user.system_id.ids:
             # nếu user không cấu hình công ty và hệ thống, khối khác văn phòng thì hiển thị all
             return []
         return [('id', 'in', self._get_child_company())]
 
     company = fields.Many2one('hrm.companies', string="Công ty cha", tracking=True, domain=_default_company)
+
+    def _default_system(self):
+        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
+        if not self.env.user.company.ids and self.env.user.system_id.ids:
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            list_systems = [t for t in temp]
+            return [('id', 'in', list_systems)]
+        if self.env.user.company.ids or self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            # nếu có công ty thì không hiển thị hệ thống
+            return [('id', '=', 0)]
+        return []
+
+    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ

@@ -10,6 +10,7 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
+                        <field name="company" />
                     </header>
                     <sheet>
                         <group col="2">
@@ -27,9 +28,8 @@
                             <group>
                                 <!--related = true là đã chọn văn phòng-->
                                 <field name="related" invisible="1"/>
-                                <field name="check_blocks" />
-                                <field name="block_id" 
-                                       readonly="1"/>
+                                <field name="check_blocks" invisible="1"/>
+                                <field name="block_id" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
                                 <field name="system_id"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)]}"/>
                                 <field name="company"
