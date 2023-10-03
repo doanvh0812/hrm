@@ -14,7 +14,6 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
-
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
@@ -37,13 +36,12 @@ class EmployeeProfile(models.Model):
     # company = fields.Many2one('hrm.companies', string='Công ty con', tracking=True)
     team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
     team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
-    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True)
+
     manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
-
     # lọc duy nhất mã nhân viên
     _sql_constraints = [
         ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
@@ -57,7 +55,15 @@ class EmployeeProfile(models.Model):
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
 
-    _security = "hrm.hrm_group_own_edit"
+    def _can_see_all_record(self):
+        profile = self.env['hrm.employee.profile'].sudo().search([])
+        for p in profile:
+            if self.env.user.has_group('hrm.hrm_group_create_edit'):
+                p.can_see_all_record = True
+            else:
+                p.can_see_all_record = False
+
+    can_see_all_record = fields.Boolean()
 
 
     def _system_have_child_company(self, system_name):
@@ -161,10 +167,13 @@ class EmployeeProfile(models.Model):
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
                                                            submenu=submenu)
+        self._can_see_all_record()
 
         # Kiểm tra xem view_type có phải là 'form' và user_id có tồn tại
-
-        if view_type == 'form' and not self.id:
+        if view_id:
+            view = self.env['ir.ui.view'].browse(view_id)
+            view_name = view.name
+        if view_type == 'form' and not self.id and view_name != 'hrm.employee.approval.form':
             user_id = self.env.user.id
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
@@ -172,20 +181,20 @@ class EmployeeProfile(models.Model):
                 '<button name="action_send" string="Gửi duyệt" type="object"/>',
                 f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
             )
-
             doc = etree.XML(res['arch'])
+            """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
             config_group = doc.xpath("//group")
-            if config_group:
+            if config_group and not self.env.user.has_group("hrm.hrm_group_config_access"):
                 cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
                     field_name = field.get("name")
                     if field_name != 'employee_code_new':
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
-                        modifiers.update({'readonly': [["id", "!=", False]]})
+                        modifiers.update({'readonly': [["id", "!=", False],["create_uid", "!=", user_id]]})
                         if field_name in ['phone_num', 'email', 'identifier']:
-                            modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False]]})
+                            modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False], ["create_uid", "!=", user_id]]})
                         field.attrib['modifiers'] = json.dumps(modifiers)
 
                 # Gán lại 'arch' cho res với các thay đổi mới
@@ -199,6 +208,7 @@ class EmployeeProfile(models.Model):
             return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
         else:
             return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
+
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -438,6 +448,15 @@ class EmployeeProfile(models.Model):
             return orders.write({'state': 'pending'})
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
+    def _default_departments(self):
+        """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
+        if self.env.user.department_id:
+            func = self.env['hrm.utils']
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                'superior_department')
+            return [('id', 'in', list_department)]
+
+    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
@@ -510,3 +529,4 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
