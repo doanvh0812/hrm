@@ -127,7 +127,7 @@ class EmployeeProfile(models.Model):
             doc = etree.XML(res['arch'])
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
             config_group = doc.xpath("//group")
-            if config_group:
+            if config_group and not self.env.user.has_group("hrm.hrm_group_config_access"):
                 cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
                     field_name = field.get("name")
