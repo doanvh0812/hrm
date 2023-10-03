@@ -14,7 +14,6 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
-
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
@@ -37,7 +36,7 @@ class EmployeeProfile(models.Model):
     company = fields.Many2one('hrm.companies', string='Công ty con', tracking=True)
     team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
     team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
-    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True)
+
     manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
@@ -123,8 +122,8 @@ class EmployeeProfile(models.Model):
                 '<button name="action_send" string="Gửi duyệt" type="object"/>',
                 f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
             )
-
             doc = etree.XML(res['arch'])
+            """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
             config_group = doc.xpath("//group")
             if config_group and not self.env.user.has_group("hrm.hrm_group_config_access"):
@@ -150,6 +149,7 @@ class EmployeeProfile(models.Model):
             return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
         else:
             return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
+
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -389,6 +389,15 @@ class EmployeeProfile(models.Model):
             return orders.write({'state': 'pending'})
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
+    def _default_departments(self):
+        """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
+        if self.env.user.department_id:
+            func = self.env['hrm.utils']
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                'superior_department')
+            return [('id', 'in', list_department)]
+
+    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
