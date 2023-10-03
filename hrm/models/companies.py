@@ -98,7 +98,7 @@ class Companies(models.Model):
     @api.depends('system_id.name', 'type_company', 'name_company')
     def _compute_name_company(self):
         """
-        decorator này để tự động tạo Tiên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
+        decorator này để tự động tạo Tên hiển thị theo logic 'Tiền tố . Tên hệ thông . Tên công ty'
         """
         for rec in self:
             name_main = rec.name_company or ''

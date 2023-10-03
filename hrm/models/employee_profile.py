@@ -36,7 +36,7 @@ class EmployeeProfile(models.Model):
     company = fields.Many2one('hrm.companies', string='Công ty con', tracking=True)
     team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
     team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
-    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True)
+
     manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
@@ -55,8 +55,6 @@ class EmployeeProfile(models.Model):
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
-
-    _security = "hrm.hrm_group_own_edit"
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
@@ -136,6 +134,7 @@ class EmployeeProfile(models.Model):
             return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
         else:
             return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
+
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -375,6 +374,15 @@ class EmployeeProfile(models.Model):
             return orders.write({'state': 'pending'})
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
+    def _default_departments(self):
+        """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
+        if self.env.user.department_id:
+            func = self.env['hrm.utils']
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                'superior_department')
+            return [('id', 'in', list_department)]
+
+    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""

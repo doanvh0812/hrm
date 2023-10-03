@@ -21,12 +21,11 @@ class Department(models.Model):
                     xây dựng danh sách phòng ban con và cháu"""
         if self.env.user.department_id:
             func = self.env['hrm.utils']
-            list_department = func.get_child_id(self.env.user.system_id, 'hrm_departments', 'superior_department')
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
             return [('id', 'in', list_department)]
 
     superior_department = fields.Many2one("hrm.departments", string="Phòng/Ban cấp trên", tracking=True
                                           , domain=_default_parent)
-
     @api.constrains('name', 'superior_department', 'manager_id', 'active')
     def _check_department_access(self):
         if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
