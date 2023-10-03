@@ -14,7 +14,6 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
-
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
@@ -33,11 +32,10 @@ class EmployeeProfile(models.Model):
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
-    system_id = fields.Many2one('hrm.systems', string='Hệ thống', tracking=True)
-    company = fields.Many2one('hrm.companies', string='Công ty con', tracking=True)
+
     team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
     team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
-    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True)
+
     manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
     rank_id = fields.Char(string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
@@ -65,6 +63,58 @@ class EmployeeProfile(models.Model):
                 p.can_see_all_record = False
 
     can_see_all_record = fields.Boolean()
+
+
+    def _system_have_child_company(self, system_name):
+        """
+        Kiểm tra hệ thống có công ty con hay không
+        Nếu có thì trả về list tên công ty con
+        """
+        self._cr.execute(
+            r"""select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
+                (select hrm1.id from hrm_systems as hrm1 left join hrm_systems as hrm2 
+                on hrm2.parent_system = hrm1.id
+                where hrm1.name ILIKE %s);""",
+            (system_name + '%',)
+        )
+        # kiểm tra company con của hệ thống cần tìm
+        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
+        list_company = self._cr.fetchall()
+        if len(list_company) > 0:
+            return [com[0] for com in list_company]
+        return []
+
+    def _get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
+        list_child_company = []
+        print(self.env.user.company.ids)
+        print(self.env.user.system_id.ids)
+        if self.env.user.company.ids:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+            list_child_company = [t for t in temp]
+        elif not self.env.user.company.ids and self.env.user.system_id.ids:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            for sys in self.env.user.system_id:
+                list_child_company += self._system_have_child_company(sys.name)
+        print(list_child_company)
+        return [('id', 'in', list_child_company)]
+
+    company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=_get_child_company)
+
+    def _default_system(self):
+        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
+        if not self.env.user.company.ids and self.env.user.system_id.ids:
+            temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            list_systems = [t for t in temp]
+            return [('id', 'in', list_systems)]
+        if self.env.user.company.ids or self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            # nếu có công ty thì không hiển thị hệ thống
+            return [('id', '=', 0)]
+        return []
+
+    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
@@ -123,8 +173,8 @@ class EmployeeProfile(models.Model):
                 '<button name="action_send" string="Gửi duyệt" type="object"/>',
                 f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
             )
-
             doc = etree.XML(res['arch'])
+            """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
             config_group = doc.xpath("//group")
             if config_group and not self.env.user.has_group("hrm.hrm_group_config_access"):
@@ -151,6 +201,7 @@ class EmployeeProfile(models.Model):
             return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
         else:
             return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
+
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -227,7 +278,8 @@ class EmployeeProfile(models.Model):
         if self.system_id:
             list_id = []
             self._cr.execute(
-                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id where hrm1.name ILIKE %s;',
+                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
+                'where hrm1.name ILIKE %s;',
                 (self.system_id.name + '%',))
             for item in self._cr.fetchall():
                 list_id.append(item[0])
@@ -390,6 +442,15 @@ class EmployeeProfile(models.Model):
             return orders.write({'state': 'pending'})
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
+    def _default_departments(self):
+        """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
+        if self.env.user.department_id:
+            func = self.env['hrm.utils']
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                'superior_department')
+            return [('id', 'in', list_department)]
+
+    department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
