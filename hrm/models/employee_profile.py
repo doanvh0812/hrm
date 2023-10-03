@@ -451,3 +451,12 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
+    def write(self, vals):
+        if 'email' in vals:
+            login = vals['email']
+            user = self.env['res.users'].sudo().search([("id", "=", self.acc_id)])
+            user.write({
+                'login': login
+            })
+        return super(EmployeeProfile, self).write(vals)
