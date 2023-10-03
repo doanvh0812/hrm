@@ -14,8 +14,6 @@ class Users(models.Model):
     system_id = fields.Many2many('hrm.systems', string='Hệ thống')
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
-    # company_employee = fields.Many2many('hrm.companies', relation='user_company_employee_rel', string='Công ty của
-    # nhân viên')
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -26,3 +24,19 @@ class Users(models.Model):
     @api.onchange('block_id')
     def _onchange_block_id(self):
         self.department_id = self.system_id = self.company = False
+
+    @api.onchange('system_id')
+    def _onchange_system_id(self):
+        """
+            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+            khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
+        """
+        # clear dữ liệu
+        if self.system_id != self.company.system_id:
+            self.company = False
+        list_id = []
+        for sys in self.system_id.ids:
+            print(self.system_id)
+            fun = self.env['hrm.employee.profile']
+            list_id += fun._system_have_child_company(sys)
+        return {'domain': {'company': [('id', 'in', list_id)]}}

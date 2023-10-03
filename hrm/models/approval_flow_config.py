@@ -143,20 +143,10 @@ class Approval_flow_object(models.Model):
 
         if self.system_id:
             list_company_id = []
-            list_systems_id = []
             for sys in self.system_id:
                 # Lấy tất cả các hệ thống có quan hệ cha con
-                self._cr.execute(
-                    'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
-                    'where hrm1.name ILIKE %s;',
-                    (sys.name + '%',))
-                for item in self._cr.fetchall():
-                    list_systems_id.append(item[0])
-                self._cr.execute(
-                    'select * from hrm_companies where hrm_companies.system_id in %s;',
-                    (tuple(list_systems_id),))
-                for item in self._cr.fetchall():
-                    list_company_id.append(item[0])
+                fun = self.env['hrm.employee.profile']
+                list_company_id += fun._system_have_child_company(sys.id)
 
             return {'domain': {'company': [('id', 'in', list_company_id)]}}
         else:

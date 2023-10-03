@@ -65,17 +65,25 @@ class EmployeeProfile(models.Model):
     can_see_all_record = fields.Boolean()
 
 
-    def _system_have_child_company(self, system_name):
+    def _system_have_child_company(self, system_id):
         """
         Kiểm tra hệ thống có công ty con hay không
         Nếu có thì trả về list tên công ty con
         """
         self._cr.execute(
-            r"""select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
-                (select hrm1.id from hrm_systems as hrm1 left join hrm_systems as hrm2 
-                on hrm2.parent_system = hrm1.id
-                where hrm1.name ILIKE %s);""",
-            (system_name + '%',)
+            r"""
+                select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
+                    (WITH RECURSIVE subordinates AS (
+                    SELECT id, parent_system
+                    FROM hrm_systems
+                    WHERE id = %s
+                    UNION ALL
+                    SELECT t.id, t.parent_system
+                    FROM hrm_systems t
+                    INNER JOIN subordinates s ON t.parent_system = s.id
+                    )
+            SELECT id FROM subordinates);
+            """, (system_id,)
         )
         # kiểm tra company con của hệ thống cần tìm
         # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
@@ -84,24 +92,20 @@ class EmployeeProfile(models.Model):
             return [com[0] for com in list_company]
         return []
 
-    def _get_child_company(self):
+    def get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
         list_child_company = []
-        print(self.env.user.company.ids)
-        print(self.env.user.system_id.ids)
-        if self.env.user.company.ids:
+        if self.env.user.company:
             # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
-            temp = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
-            list_child_company = [t for t in temp]
-        elif not self.env.user.company.ids and self.env.user.system_id.ids:
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+        elif not self.env.user.company and self.env.user.system_id:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.name)
-        print(list_child_company)
+                list_child_company += self._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
-    company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=_get_child_company)
+    company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=get_child_company)
 
     def _default_system(self):
         """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
@@ -276,19 +280,7 @@ class EmployeeProfile(models.Model):
             self.position_id = self.company = self.team_sales = self.team_marketing = False
 
         if self.system_id:
-            list_id = []
-            self._cr.execute(
-                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
-                'where hrm1.name ILIKE %s;',
-                (self.system_id.name + '%',))
-            for item in self._cr.fetchall():
-                list_id.append(item[0])
-            self._cr.execute(
-                'select * from hrm_companies where hrm_companies.system_id in %s;',
-                (tuple(list_id),))
-            list_id.clear()
-            for item in self._cr.fetchall():
-                list_id.append(item[0])
+            list_id = self._system_have_child_company(self.system_id.id)
             return {'domain': {'company': [('id', 'in', list_id)]}}
         else:
             return {'domain': {'company': []}}

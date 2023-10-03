@@ -22,25 +22,6 @@ class Companies(models.Model):
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
     check_company = fields.Char(default=lambda self: self.env.user.company.ids)
 
-    def _system_have_child_company(self, system_name):
-        """
-        Kiểm tra hệ thống có công ty con hay không
-        Nếu có thì trả về list tên công ty con
-        """
-        self._cr.execute(
-            r"""select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
-                (select hrm1.id from hrm_systems as hrm1 left join hrm_systems as hrm2 
-                on hrm2.parent_system = hrm1.id
-                where hrm1.name ILIKE %s);""",
-            (system_name + '%',)
-        )
-        # kiểm tra company con của hệ thống cần tìm
-        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
-        list_company = self._cr.fetchall()
-        if len(list_company) > 0:
-            return [com[0] for com in list_company]
-        return []
-
     def _get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
         list_child_company = []
@@ -54,7 +35,8 @@ class Companies(models.Model):
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.name)
+                fun = self.env['hrm.employee.profile']
+                list_child_company += fun._system_have_child_company(sys.id)
         # print(list_child_company)
         return list_child_company
 
@@ -128,19 +110,9 @@ class Companies(models.Model):
             self.parent_company = False
         if self.system_id != self.parent_company.system_id:
             self.parent_company = False
-            list_systems_id = []
-            self._cr.execute(
-                'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
-                'where hrm1.name ILIKE %s;',
-                (self.system_id.name + '%',))
-            for item in self._cr.fetchall():
-                list_systems_id.append(item[0])
-            self._cr.execute(
-                'select * from hrm_companies where hrm_companies.system_id in %s;',
-                (tuple(list_systems_id),))
-            list_systems_id.clear()
-            for item in self._cr.fetchall():
-                list_systems_id.append(item[0])
+            fun = self.env['hrm.employee.profile']
+            list_systems_id = fun._system_have_child_company(self.system_id.id)
+            print(list_systems_id)
             return {'domain': {'parent_company': [('id', 'in', list_systems_id)]}}
 
     @api.constrains("phone_num")

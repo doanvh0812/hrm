@@ -10,7 +10,6 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
-                        <field name="company" />
                     </header>
                     <sheet>
                         <group col="2">
