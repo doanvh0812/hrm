@@ -55,6 +55,7 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
 
     def _can_see_all_record(self):
+        """chỉ đọc vẫn có quyền phê duyệt, điền lý do từ chối"""
         profile = self.env['hrm.employee.profile'].sudo().search([])
         for p in profile:
             if self.env.user.has_group('hrm.hrm_group_create_edit'):

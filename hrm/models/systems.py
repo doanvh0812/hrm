@@ -47,7 +47,6 @@ class Systems(models.Model):
 
             if chairperson_id and vice_president_id and chairperson_id == vice_president_id:
                 raise ValidationError("Chủ tịch và Phó chủ tịch không thể giống nhau.")
-
     @api.constrains("phone_number")
     def _check_phone_valid(self):
         """
