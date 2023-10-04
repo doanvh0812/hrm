@@ -9,14 +9,14 @@ class Approval_flow_object(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string='Tên luồng phê duyệt', required=True, tracking=True)
-
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
-                               default=lambda self: self.default_block_profile(),
-                               tracking=True)
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True
+                               , default=lambda self: self.env['hrm.utils'].default_block_())
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
-    # company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
+    check_company = fields.Char(default=lambda self: self.env.user.company)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
+
+
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
         """decorator này để check trùng nhân viên tham gia luồng phê duyệt"""
@@ -27,8 +27,6 @@ class Approval_flow_object(models.Model):
                 raise ValidationError(f'Người dùng tên {item.name} đã có trong luồng duyệt')
             else:
                 seen.add(item)
-
-
 
     @api.constrains('approval_flow_link')
     def check_approval_flow_link(self):
@@ -139,26 +137,29 @@ class Approval_flow_object(models.Model):
     def _onchange_company(self):
         if not self.system_id:
             self.system_id = self.company.system_id
+        if not self.company:
+            self.system_id = False
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
         """
-            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
-            khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
+            decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
+            Xoá bỏ công ty nếu trong trường hệ thống không có hệ thống công ty đó thuộc
         """
+        # for system in self.system_id:
+
+        # company_to_remove = self.company.filtered(lambda c: c.system_id.id not in selected_systems)
+        # Bỏ chọn các công ty không thuộc các hệ thống đã chọn
+        # company_to_remove.write({'approval_id': [(5, 0, 0)]})
         if self.system_id:
             if not self.env.user.company:
-                list_id = self._system_have_child_company(self.system_id.id)
+                list_id = []
+                for sys_id in self.system_id.ids:
+                    list_id += self._system_have_child_company(sys_id.id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 return {'domain': {'company': self.get_child_company()}}
 
-    def default_block_profile(self):
-        """kiểm tra điều kiện giữa khối văn phòng và thương mại"""
-        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
-            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
-        else:
-            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
@@ -170,6 +171,47 @@ class Approval_flow_object(models.Model):
 
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
 
+    def _system_have_child_company(self, system_id):
+        """
+        Kiểm tra hệ thống có công ty con hay không
+        Nếu có thì trả về list tên công ty con
+        """
+        self._cr.execute(
+            r"""
+                select hrm_companies.id from hrm_companies where hrm_companies.system_id in
+                    (WITH RECURSIVE subordinates AS (
+                    SELECT id, parent_system
+                    FROM hrm_systems
+                    WHERE id = %s
+                    UNION ALL
+                    SELECT t.id, t.parent_system
+                    FROM hrm_systems t
+                    INNER JOIN subordinates s ON t.parent_system = s.id
+                    )
+            SELECT id FROM subordinates);
+            """, (system_id,)
+        )
+        # kiểm tra company con của hệ thống cần tìm
+        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
+        list_company = self._cr.fetchall()
+        if len(list_company) > 0:
+            return [com[0] for com in list_company]
+        return []
+
+    def get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
+        list_child_company = []
+        if self.env.user.company:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+        elif not self.env.user.company and self.env.user.system_id:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            for sys in self.env.user.system_id:
+                list_child_company += self._system_have_child_company(sys.id)
+        return [('id', 'in', list_child_company)]
+
+    company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
 
     def _default_system(self):
         """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
