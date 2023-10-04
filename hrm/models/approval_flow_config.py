@@ -63,17 +63,25 @@ class Approval_flow_object(models.Model):
                 if obj.id in get_list_configured(configured_objects):
                     raise ValidationError(f"Luồng phê duyệt cho {obj.name} đã tồn tại.")
 
-        def system_have_child_company(system_name):
+        def system_have_child_company(system_id):
             """
             Kiểm tra hệ thống có công ty con hay không
             Nếu có thì trả về list tên công ty con
             """
             self._cr.execute(
-                r"""select hrm_companies.name from hrm_companies where hrm_companies.system_id in 
-                    (select hrm1.id from hrm_systems as hrm1 left join hrm_systems as hrm2 
-                    on hrm2.parent_system = hrm1.id
-                    where hrm1.name ILIKE %s);""",
-                (system_name + '%',)
+                r"""
+                    select hrm_companies.name from hrm_companies where hrm_companies.system_id in 
+                        (WITH RECURSIVE subordinates AS (
+                        SELECT id, parent_system
+                        FROM hrm_systems
+                        WHERE id = %s
+                        UNION ALL
+                        SELECT t.id, t.parent_system
+                        FROM hrm_systems t
+                        INNER JOIN subordinates s ON t.parent_system = s.id
+                        )
+                SELECT id FROM subordinates);
+                """, (system_id,)
             )
             # kiểm tra company con của hệ thống cần tìm
             # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
@@ -94,7 +102,7 @@ class Approval_flow_object(models.Model):
             for system in self.system_id:
                 list_name_company = [company.name for company in self.company]
                 # nếu hệ thống được chọn không có công ty con trong công ty đã chọn thì mới tiếp tục kiểm tra
-                if not any(elem in system_have_child_company(system.name) for elem in list_name_company):
+                if not any(elem in system_have_child_company(system.id) for elem in list_name_company):
                     # tìm các cấu hình hệ thống đã có trong hệ thống được chọn
                     record_temp_configured = [(rec["name"], rec["system_id"], rec["company"]) for rec in
                                               self.env["hrm.approval.flow.object"].search(
@@ -104,7 +112,7 @@ class Approval_flow_object(models.Model):
                         for sys in record[1]:
                             # nếu hệ thống không có công ty con trong các bản ghi khác là đã cấu hình
                             if sys.id == system.id and not any(
-                                    elem in system_have_child_company(sys.name) for elem in list_name_company):
+                                    elem in system_have_child_company(sys.id) for elem in list_name_company):
                                 raise ValidationError(
                                     f"Luồng phê duyệt cho {sys.name} đã tồn tại trong cấu hình {record[0]}.")
         elif self.block_id:
@@ -144,10 +152,10 @@ class Approval_flow_object(models.Model):
 
         if self.system_id:
             list_company_id = []
-            for sys in self.system_id:
+            fun = self.env['hrm.employee.profile']
+            for sys_id in self.system_id.ids:
                 # Lấy tất cả các hệ thống có quan hệ cha con
-                fun = self.env['hrm.employee.profile']
-                list_company_id += fun._system_have_child_company(sys.id)
+                list_company_id += fun._system_have_child_company(sys_id)
 
             return {'domain': {'company': [('id', 'in', list_company_id)]}}
         else:
