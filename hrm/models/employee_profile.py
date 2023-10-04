@@ -275,12 +275,17 @@ class EmployeeProfile(models.Model):
             decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
         """
+
+        if self.system_id != self.company.system_id: #khi đổi hệ thống thì clear company
+            self.position_id = self.company = self.team_sales = self.team_marketing = False
         if self.system_id:
             if not self.env.user.company:
                 list_id = self._system_have_child_company(self.system_id.id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 return {'domain': {'company': self.get_child_company()}}
+                self.company = ''
+
 
     @api.onchange('block_id')
     def _onchange_block_id(self):

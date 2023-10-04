@@ -154,6 +154,7 @@ class Approval_flow_object(models.Model):
             else:
                 return {'domain': {'company': self.get_child_company()}}
 
+
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:
