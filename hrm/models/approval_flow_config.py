@@ -147,18 +147,12 @@ class Approval_flow_object(models.Model):
         # company_to_remove = self.company.filtered(lambda c: c.system_id.id not in selected_systems)
         # Bỏ chọn các công ty không thuộc các hệ thống đã chọn
         # company_to_remove.write({'approval_id': [(5, 0, 0)]})
-
         if self.system_id:
-            list_company_id = []
-            fun = self.env['hrm.employee.profile']
-            for sys_id in self.system_id.ids:
-                # Lấy tất cả các hệ thống có quan hệ cha con
-                list_company_id += fun._system_have_child_company(sys_id)
-
-            return {'domain': {'company': [('id', 'in', list_company_id)]}}
-        else:
-            self.company = False
-            return {'domain': {'company': []}}
+            if not self.env.user.company:
+                list_id = self._system_have_child_company(self.system_id.id)
+                return {'domain': {'company': [('id', 'in', list_id)]}}
+            else:
+                return {'domain': {'company': self.get_child_company()}}
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
