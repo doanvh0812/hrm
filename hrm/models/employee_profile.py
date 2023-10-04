@@ -119,7 +119,7 @@ class EmployeeProfile(models.Model):
             return [('id', '=', 0)]
         return []
 
-    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
+    system_id = fields.Many2one('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
 
     def _get_server_date(self):
         # Lấy ngày hiện tại theo múi giờ của máy chủ
@@ -522,3 +522,5 @@ class EmployeeProfile(models.Model):
                 'login': login
             })
         return super(EmployeeProfile, self).write(vals)
+
+
