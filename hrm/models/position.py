@@ -76,6 +76,6 @@ class Position(models.Model):
         list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
         if self.env.user.block_id != 'full' and self.block != self.env.user.block_id:
             raise AccessDenied(f"Bạn không có quyền truy cập với khối {self.block}")
-        elif self.department and self.department.id not in list_department:
+        elif self.department and list_department and self.department.id not in list_department:
             raise AccessDenied(f"Bạn không có quyền truy cập với phòng ban {self.department.name}")
 

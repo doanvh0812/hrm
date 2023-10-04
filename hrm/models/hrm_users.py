@@ -16,6 +16,7 @@ class Users(models.Model):
     related = fields.Boolean(compute='_compute_related_')
     login = fields.Char(string="Login")
 
+
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
