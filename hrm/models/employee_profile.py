@@ -277,8 +277,11 @@ class EmployeeProfile(models.Model):
         """
 
         if self.system_id:
-            list_id = self._system_have_child_company(self.system_id.id)
-            return {'domain': {'company': [('id', 'in', list_id)]}}
+            if not self.env.user.company:
+                list_id = self._system_have_child_company(self.system_id.id)
+                return {'domain': {'company': [('id', 'in', list_id)]}}
+            else:
+                return {'domain': {'company': self.get_child_company()}}
 
     @api.onchange('block_id')
     def _onchange_block_id(self):
