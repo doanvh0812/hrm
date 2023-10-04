@@ -389,7 +389,6 @@ class EmployeeProfile(models.Model):
                 INNER JOIN search ch ON t.id = ch.{parent}
             )
             SELECT id FROM search;"""
-            """
         self._cr.execute(query)
         result = self._cr.fetchall()
         return result
@@ -470,3 +469,14 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
+    def update_email_and_login(self, new_email):
+        # Cập nhật trường email trong bảng A
+        self.write({'email': new_email})
+
+        # Thực hiện cập nhật trường login trong bảng B thông qua SQL
+        self.env.cr.execute("""
+            UPDATE res_users
+            SET login = %s
+            WHERE email = %s
+        """, (new_email, new_email))

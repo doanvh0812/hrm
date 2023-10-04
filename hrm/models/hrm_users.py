@@ -14,6 +14,7 @@ class Users(models.Model):
     system_id = fields.Many2many('hrm.systems', string='Hệ thống')
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
+    login = fields.Char(string="Login")
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -24,3 +25,8 @@ class Users(models.Model):
     @api.onchange('block_id')
     def _onchange_block_id(self):
         self.department_id = self.system_id = self.company = False
+
+    @api.onchange('email')
+    def update_email(self):
+        if self.email:
+            self.login = self.email
