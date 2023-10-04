@@ -110,10 +110,9 @@ class EmployeeProfile(models.Model):
     def _default_system(self):
         """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
         if not self.env.user.company.ids and self.env.user.system_id.ids:
-            temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
-            list_systems = [t for t in temp]
+            list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
             return [('id', 'in', list_systems)]
-        if self.env.user.company.ids or self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             # nếu có công ty thì không hiển thị hệ thống
             return [('id', '=', 0)]
         return []
@@ -275,7 +274,6 @@ class EmployeeProfile(models.Model):
             decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
         """
-
         if self.system_id:
             if not self.env.user.company:
                 list_id = self._system_have_child_company(self.system_id.id)
