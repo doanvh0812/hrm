@@ -9,14 +9,27 @@ class Approval_flow_object(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string='Tên luồng phê duyệt', required=True, tracking=True)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, tracking=True
-                               , default=lambda self: self.env['hrm.utils'].default_block_())
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
+                               default=lambda self: self.default_block_profile(),
+                               tracking=True)
+    check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True)
-    system_id = fields.Many2many('hrm.systems', string='Hệ thống', tracking=True)
+    # system_id = fields.Many2many('hrm.systems', string='Hệ thống', tracking=True)
     company = fields.Many2many('hrm.companies', string='Công ty con', tracking=True)
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
 
+    def _default_system(self):
+        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
+        if not self.env.user.company.ids and self.env.user.system_id.ids:
+            list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            return [('id', 'in', list_systems)]
+        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            # nếu có công ty thì không hiển thị hệ thống
+            return [('id', '=', 0)]
+        return []
+
+    system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
         """decorator này để check trùng nhân viên tham gia luồng phê duyệt"""
@@ -27,6 +40,8 @@ class Approval_flow_object(models.Model):
                 raise ValidationError(f'Người dùng tên {item.name} đã có trong luồng duyệt')
             else:
                 seen.add(item)
+
+
 
     @api.constrains('approval_flow_link')
     def check_approval_flow_link(self):
@@ -161,6 +176,13 @@ class Approval_flow_object(models.Model):
         else:
             self.company = False
             return {'domain': {'company': []}}
+
+    def default_block_profile(self):
+        """kiểm tra điều kiện giữa khối văn phòng và thương mại"""
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
+        else:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
 
 
 class Approve(models.Model):

@@ -8,7 +8,8 @@
                     <group>
                         <field name="related" invisible="1"/>
                         <field name="name"/>
-                        <field name="block_id"/>
+                        <field name="block_id" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
+                        <field name="check_blocks" invisible="1"/>
                         <field name="department_id" attrs="{'invisible': [('related', '!=', True)]}"
                                widget="many2many_tags"/>
                         <field name="system_id"
@@ -18,7 +19,7 @@
                         <field name="company" attrs="{'invisible': [('related', '=', True)]}" widget="many2many_tags"/>
                     </group>
                     <notebook>
-                        <page string="Chi tiết luồng" name="approval_flow_link" >
+                        <page string="Chi tiết luồng" name="approval_flow_link">
                             <field name="approval_flow_link">
                                 <tree editable="bottom" default_order="step ASC">
                                     <field name="step"/>
