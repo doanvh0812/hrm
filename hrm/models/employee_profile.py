@@ -15,6 +15,7 @@ class EmployeeProfile(models.Model):
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
+    check_company = fields.Char(default=lambda self: self.env.user.company)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
