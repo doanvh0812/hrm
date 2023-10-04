@@ -28,6 +28,7 @@ class Systems(models.Model):
             return [('id', 'in', list_systems)]
 
     parent_system = fields.Many2one("hrm.systems", string='Hệ thống cha', tracking=True, domain=_default_systems)
+
     @api.depends("parent_system.name", "name_system")
     def _compute_name(self):
         """ Tính toán logic tên hiển thị """

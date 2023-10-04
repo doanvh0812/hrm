@@ -26,7 +26,18 @@ class Users(models.Model):
     def _onchange_block_id(self):
         self.department_id = self.system_id = self.company = False
 
-    @api.onchange('email')
-    def update_email(self):
-        if self.email:
-            self.login = self.email
+    @api.onchange('system_id')
+    def _onchange_system_id(self):
+        """
+            decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
+            khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
+        """
+        # clear dữ liệu
+        if self.system_id != self.company.system_id:
+            self.company = False
+        list_id = []
+        for sys in self.system_id.ids:
+            print(self.system_id)
+            fun = self.env['hrm.employee.profile']
+            list_id += fun._system_have_child_company(sys)
+        return {'domain': {'company': [('id', 'in', list_id)]}}

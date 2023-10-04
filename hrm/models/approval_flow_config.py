@@ -28,35 +28,18 @@ class Approval_flow_object(models.Model):
             else:
                 seen.add(item)
 
-    @api.model
-    def create(self, vals_list):
-        """Decorator này để check xem khi tạo luồng phê duyệt có người duyệt hay không"""
-        if not vals_list['approval_flow_link']:
-            raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
-        else:
-            list_check = []
-            # Đoạn này để check xem khi có ngươời duyệt thì đã được tích duyệt bắt buộc hay chưa
-            for i in vals_list['approval_flow_link']:
-                list_check.append(i[2]['obligatory'])
-            if True not in list_check:
-                raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
-            else:
-                return super(Approval_flow_object, self).create(vals_list)
-
-    def write(self, vals):
-        if 'approval_flow_link' in vals:
-            approval_flow_link = vals['approval_flow_link']
-            if not approval_flow_link:
+    @api.constrains('approval_flow_link')
+    def check_approval_flow_link(self):
+        for record in self:
+            if not record.approval_flow_link:
                 raise ValidationError('Không thể tạo luồng phê duyệt khi không có người phê duyệt trong luồng.')
             else:
                 list_check = []
-                for item in approval_flow_link:
-                    if item[2] and 'obligatory' in item[2]:
-                        list_check.append(item[2]['obligatory'])
-                if True not in list_check:
+                for item in record.approval_flow_link:
+                    if item.obligatory:
+                        list_check.append(True)
+                if not any(list_check):
                     raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
-        return super(Approval_flow_object, self).write(vals)
-
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
@@ -160,20 +143,10 @@ class Approval_flow_object(models.Model):
 
         if self.system_id:
             list_company_id = []
-            list_systems_id = []
             for sys in self.system_id:
                 # Lấy tất cả các hệ thống có quan hệ cha con
-                self._cr.execute(
-                    'select * from hrm_systems as hrm1 left join hrm_systems as hrm2 on hrm2.parent_system = hrm1.id '
-                    'where hrm1.name ILIKE %s;',
-                    (sys.name + '%',))
-                for item in self._cr.fetchall():
-                    list_systems_id.append(item[0])
-                self._cr.execute(
-                    'select * from hrm_companies where hrm_companies.system_id in %s;',
-                    (tuple(list_systems_id),))
-                for item in self._cr.fetchall():
-                    list_company_id.append(item[0])
+                fun = self.env['hrm.employee.profile']
+                list_company_id += fun._system_have_child_company(sys.id)
 
             return {'domain': {'company': [('id', 'in', list_company_id)]}}
         else:
@@ -199,4 +172,3 @@ class ApproveProfile(models.Model):
     profile_id = fields.Many2one('hrm.employee.profile')
     approve_status = fields.Selection(constraint.APPROVE_STATUS, default='pending', string="Trạng thái")
     time = fields.Datetime(string="Thời gian")
-

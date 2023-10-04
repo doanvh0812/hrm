@@ -17,7 +17,7 @@ class Utils(models.Model):
             table_name là tên bảng
             parent là tên cột cha
         """
-        list_department = []
+        list_object = []
         for ob in _object:
             query = f"""
                 WITH RECURSIVE subordinates AS (
@@ -35,7 +35,7 @@ class Utils(models.Model):
             temp = self._cr.fetchall()
             temp = [obj[0] for obj in temp]
             for t in temp:
-                list_department.append(t)
-        return list_department
+                list_object.append(t)
+        return list_object
 
 
