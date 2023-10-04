@@ -40,6 +40,7 @@ class Approval_flow_object(models.Model):
                         list_check.append(True)
                 if not any(list_check):
                     raise ValidationError('Luồng phê duyệt cần có ít nhất một người bắt buộc phê duyệt.')
+
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị

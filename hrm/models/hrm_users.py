@@ -15,6 +15,7 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
 
+
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị

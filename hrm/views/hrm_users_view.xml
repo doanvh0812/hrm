@@ -21,8 +21,6 @@
                                attrs="{'invisible': ['|', ('related', '=', True), ('block_id', '=', 'full')]}"/>
                         <field name="company" widget="many2many_tags"
                                attrs="{'invisible': ['|', ('related', '=', True), ('block_id', '=', 'full')]}"/>
-<!--                        <field name = "company_employee" widget="many2many_tags"-->
-<!--                               attrs="{'invisible': ['|', ('related', '=', True), ('block_id', '=', 'full')]}"/>-->
                     </group>
                     <field name="groups_id"/>
                 </page>
