@@ -4,11 +4,12 @@
         <field name="model">hrm.employee.profile</field>
         <field name="arch" type="xml">
             <form string="Phê duyệt" create="false" edit="false" delete="false">
+                <field name="can_see_button_approval" invisible="1"/>
                 <header>
                     <button name="%(hrm.approval_reason_refusal_action)d" string="Từ chối" type="action"
-                            attrs="{'invisible': [('state', 'in', ('draft','approved'))]}"/>
+                            attrs="{'invisible': ['|', ('state', 'in', ('draft','approved')), ('can_see_button_approval', '=', False)]}"/>
                     <button name="action_confirm" string="Phê duyệt" type="object"
-                            attrs="{'invisible': [('state', 'in', ('draft','approved'))]}"/>
+                            attrs="{'invisible': ['|', ('state', 'in', ('draft','approved')), ('can_see_button_approval', '=', False)]}"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                 </header>
                 <sheet>
@@ -23,7 +24,6 @@
                             <field name="date_receipt"/>
                             <field name="profile_status"/>
                             <field name="reason" attrs="{'invisible':[('reason','=',False)]}"/>
-
                         </group>
                         <group>
                             <!--   related = true là đã chọn văn phòng -->
@@ -50,7 +50,7 @@
                         <page string="Trạng thái phê duyệt">
                             <field name="approved_name" readonly="1"/>
                             <field name="approved_link" readonly="1">
-                                <tree>
+                                <tree default_order="step ASC">
                                     <field name="step"/>
                                     <field name="approve"/>
                                     <field name="obligatory"/>
@@ -92,7 +92,7 @@
         <field name="name">Màn hình phê duyệt</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">hrm.employee.profile</field>
-        <field name="domain">[('state', 'in', ['pending', 'approved'])]</field>
+        <field name="domain">[('state', 'in', ['pending', 'approved']), ('can_see_approved_record', '=', True)]</field>
         <field name="view_mode">tree,form</field>
         <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_approval_tree')}),
