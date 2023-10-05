@@ -89,13 +89,13 @@ class EmployeeProfile(models.Model):
                           (step = (
                             SELECT MIN(step)
                             FROM hrm_approval_flow_profile
-                            WHERE approve_status = 'pending'
+                            WHERE approve_status = 'pending' AND profile_id = {p.id}
                           ))
                           OR
                           (excess_level = true AND step = (
                             SELECT MIN(step)
                             FROM hrm_approval_flow_profile
-                            WHERE approve_status = 'pending'
+                            WHERE approve_status = 'pending' AND profile_id = {p.id}
                             AND excess_level = true
                           ))
                         );
@@ -103,6 +103,7 @@ class EmployeeProfile(models.Model):
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
+            print("user id", self.env.user.id)
             print(list_id_last)
             if self.env.user.id in list_id_last:
                 p.can_see_button_approval = True
@@ -397,6 +398,7 @@ class EmployeeProfile(models.Model):
                 step = rec.step
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
+        for rec in orders.approved_link:
             if rec.step <= step and rec.approve_status == 'pending':
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
@@ -404,7 +406,6 @@ class EmployeeProfile(models.Model):
         message_body = f"Chờ Duyệt => Đã Phê Duyệt Tài Khoản - {self.name}"
         self.sudo().message_post(body=message_body,
                                  subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
-
         return orders.write({
             'state': 'pending'
         })
