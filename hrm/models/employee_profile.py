@@ -82,27 +82,32 @@ class EmployeeProfile(models.Model):
         profile = self.env['hrm.employee.profile'].sudo().search([('state', '=', 'pending')])
         for p in profile:
             # list_id lưu id người đang đến lượt
-            list_id_last = []
-
-            last_step = 0
-            # Duyệt qua tất cả người trong luồng
-            for apr in p.approved_link:
-                if last_step == 0 and apr.approve_status == 'pending':
-                    last_step = apr.step
-                if apr.approve_status == 'pending' and apr.step < last_step:
-                    last_step = apr.step
-                    print(last_step)
-            for apr in p.approved_link:
-                if apr.step == last_step:
-                    list_id_last.append(apr.approve.id)
-            for apr in p.approved_link:
-                if apr.excess_level == True and apr.approve_status == 'pending' and apr.approve.id not in list_id_last:
-                    list_id_last.append(apr.approve.id)
-                    break
+            query = f"""
+                        SELECT approve
+                        FROM hrm_approval_flow_profile where profile_id = {p.id}
+                        AND (
+                          (step = (
+                            SELECT MIN(step)
+                            FROM hrm_approval_flow_profile
+                            WHERE approve_status = 'pending'
+                          ))
+                          OR
+                          (excess_level = true AND step = (
+                            SELECT MIN(step)
+                            FROM hrm_approval_flow_profile
+                            WHERE approve_status = 'pending'
+                            AND excess_level = true
+                          ))
+                        );
+                        """
+            self._cr.execute(query)
+            list_id = self._cr.fetchall()
+            list_id_last = [i[0] for i in list_id]
+            print(list_id_last)
             if self.env.user.id in list_id_last:
-                self.can_see_button_approval = True
+                p.can_see_button_approval = True
             else:
-                self.can_see_button_approval = False
+                p.can_see_button_approval = False
 
     def _system_have_child_company(self, system_id):
         """
@@ -392,7 +397,7 @@ class EmployeeProfile(models.Model):
                 step = rec.step
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
-            if rec.step == step:
+            if rec.step <= step and rec.approve_status == 'pending':
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
 
@@ -568,5 +573,3 @@ class EmployeeProfile(models.Model):
                 'login': login
             })
         return super(EmployeeProfile, self).write(vals)
-
-

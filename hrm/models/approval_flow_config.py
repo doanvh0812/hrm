@@ -144,12 +144,6 @@ class Approval_flow_object(models.Model):
             decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
             Xoá bỏ công ty nếu trong trường hệ thống không có hệ thống công ty đó thuộc
         """
-        # for system in self.system_id:
-
-        # company_to_remove = self.company.filtered(lambda c: c.system_id.id not in selected_systems)
-        # Bỏ chọn các công ty không thuộc các hệ thống đã chọn
-        # company_to_remove.write({'approval_id': [(5, 0, 0)]})
-
         if self.system_id:
             list_company_id = []
             fun = self.env['hrm.employee.profile']
