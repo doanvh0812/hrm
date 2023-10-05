@@ -8,7 +8,6 @@
                     <group>
                         <field name="related" invisible="1"/>
                         <field name="name"/>
-
                         <field name="block_id" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
                         <field name="check_blocks" invisible="1"/>
                         <field name="check_company" invisible="1"/>
