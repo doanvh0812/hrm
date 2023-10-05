@@ -15,6 +15,7 @@ class EmployeeProfile(models.Model):
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
+    check_company = fields.Char(default=lambda self: self.env.user.company)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
@@ -59,7 +60,8 @@ class EmployeeProfile(models.Model):
     can_see_button_approval = fields.Boolean()
 
     def _can_see_all_record(self):
-        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ"""
+        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ
+        chỉ đọc vẫn có quyền phê duyệt, điền lý do từ chối"""
         profile = self.env['hrm.employee.profile'].sudo().search([])
         for p in profile:
             if self.env.user.has_group('hrm.hrm_group_create_edit'):
