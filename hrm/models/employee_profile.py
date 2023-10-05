@@ -413,8 +413,17 @@ class EmployeeProfile(models.Model):
         message_body = f"Chờ Duyệt => Đã Phê Duyệt Tài Khoản - {self.name}"
         self.sudo().message_post(body=message_body,
                                  subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+        query = f"""
+                SELECT MAX(step) FROM hrm_approval_flow_profile
+                WHERE profile_id = {orders.id};
+                """
+        self._cr.execute(query)
+        max_step = self._cr.fetchone()
+        state = 'pending'
+        if max_step[0] == step:
+            state = 'approved'
         return orders.write({
-            'state': 'pending'
+            'state': state
         })
 
     def action_refuse(self, reason_refusal=None):
