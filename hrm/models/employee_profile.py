@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
 import re
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
@@ -105,8 +105,6 @@ class EmployeeProfile(models.Model):
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
-            print("user id", self.env.user.id)
-            print(list_id_last)
             if self.env.user.id in list_id_last:
                 p.can_see_button_approval = True
             else:
@@ -227,6 +225,7 @@ class EmployeeProfile(models.Model):
                 f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
             )
             doc = etree.XML(res['arch'])
+
             """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
             config_group = doc.xpath("//group")
@@ -234,7 +233,7 @@ class EmployeeProfile(models.Model):
                 cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
                     field_name = field.get("name")
-                    if field_name != 'employee_code_new':
+                    if field_name != 'employee_code_new' or field_name != 'employee_':
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
                         modifiers.update({'readonly': [["id", "!=", False], ["create_uid", "!=", user_id]]})
@@ -242,6 +241,14 @@ class EmployeeProfile(models.Model):
                             modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False],
                                                            ["create_uid", "!=", user_id]]})
                         field.attrib['modifiers'] = json.dumps(modifiers)
+
+            for form in doc.xpath("//form"):
+                record_id = self.env.context.get('params', {}).get('id')
+                print(record_id)
+                if record_id:
+                    record = self.browse(record_id)
+                    if record.state != 'draft':
+                        form.set('edit', 'false')
 
                 # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
@@ -413,8 +420,18 @@ class EmployeeProfile(models.Model):
         message_body = f"Chờ Duyệt => Đã Phê Duyệt Tài Khoản - {self.name}"
         self.sudo().message_post(body=message_body,
                                  subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+        query = f"""
+                SELECT MAX(step) FROM hrm_approval_flow_profile
+                WHERE profile_id = {orders.id} AND obligatory = true;
+                """
+        self._cr.execute(query)
+        max_step = self._cr.fetchone()
+        state = 'pending'
+        if max_step[0] <= step:
+            state = 'approved'
+        self.reload()
         return orders.write({
-            'state': 'pending'
+            'state': state
         })
 
     def action_refuse(self, reason_refusal=None):
@@ -432,7 +449,7 @@ class EmployeeProfile(models.Model):
             if rec.approve.id == id_access:
                 rec.approve_status = 'refuse'
                 rec.time = fields.Datetime.now()
-
+        self.reload()
         return orders.write({
             'state': 'draft'
         })
@@ -487,6 +504,7 @@ class EmployeeProfile(models.Model):
             # đè base thay đổi lịch sử theo  mình
             message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+            self.reload()
             return orders.write({'state': 'pending'})
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
@@ -599,3 +617,29 @@ class EmployeeProfile(models.Model):
                 'login': login
             })
         return super(EmployeeProfile, self).write(vals)
+
+    @api.constrains("name")
+    def check_permission(self):
+        """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
+        func = self.env['hrm.utils']
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                'superior_department')
+            if self.department_id.id not in list_department:
+                raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {self.department_id.name}")
+        elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            if self.env.user.company:
+                list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
+                if self.company.id not in list_company:
+                    raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.company.name}")
+            elif self.env.user.system_id and not self.env.user.company:
+                list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
+                if self.system_id.id not in list_system:
+                    raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+
+    def reload(self):
+        print("re")
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }

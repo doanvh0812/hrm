@@ -7,8 +7,10 @@ class Utils(models.Model):
 
     def default_block_(self):
         # Đặt giá trị mặc định cho Khối -> Khối thương mại
-        ids = self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
-        return ids
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)]).id
+        else:
+            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)]).id
 
     def get_child_id(self, _object, table_name, parent):
         """

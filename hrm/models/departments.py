@@ -26,6 +26,7 @@ class Department(models.Model):
 
     superior_department = fields.Many2one("hrm.departments", string="Phòng/Ban cấp trên", tracking=True
                                           , domain=_default_parent)
+
     @api.constrains('name', 'superior_department', 'manager_id', 'active')
     def _check_department_access(self):
         if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:

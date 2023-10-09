@@ -78,7 +78,6 @@ class Systems(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
-
     # @api.depends("name_system")
     # def compute_list_parent(self, vals):
     #     sort_lst = []
