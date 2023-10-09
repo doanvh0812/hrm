@@ -79,3 +79,9 @@ class Position(models.Model):
         elif self.department and list_department and self.department.id not in list_department:
             raise AccessDenied(f"Bạn không có quyền truy cập với phòng ban {self.department.name}")
 
+    @api.constrains('work_position', 'block', 'active', 'department')
+    def check_permission(self):
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME and self.block != constraint.BLOCK_OFFICE_NAME:
+            raise AccessDenied(f"Bạn không có quyền chỉnh sửa bản ghi này")
+        elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME and self.block != constraint.BLOCK_COMMERCE_NAME:
+            raise AccessDenied(f"Bạn không có quyền chỉnh sửa bản ghi này")
