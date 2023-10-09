@@ -16,6 +16,44 @@ class Approval_flow_object(models.Model):
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
 
+    def get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
+        list_child_company = []
+        if self.env.user.company:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
+                                                                    "parent_company")
+        elif not self.env.user.company and self.env.user.system_id:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            for sys in self.env.user.system_id:
+                list_child_company += self._system_have_child_company(sys.id)
+        return [('id', 'in', list_child_company)]
+
+    company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
+
+    def _default_departments(self):
+        """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
+        if self.env.user.department_id:
+            func = self.env['hrm.utils']
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                'superior_department')
+            return [('id', 'in', list_department)]
+
+    department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
+
+    def _default_system(self):
+        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
+        if not self.env.user.company.ids and self.env.user.system_id.ids:
+            list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            return [('id', 'in', list_systems)]
+        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            # nếu có công ty thì không hiển thị hệ thống
+            return [('id', '=', 0)]
+        return []
+
+    system_id = fields.Many2many('hrm.systems', string="Hệ thống", tracking=True, store=True, domain=_default_system)
+
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
         """decorator này để check trùng nhân viên tham gia luồng phê duyệt"""
@@ -114,7 +152,7 @@ class Approval_flow_object(models.Model):
                                     elem in system_have_child_company(sys.id) for elem in list_name_company):
                                 raise ValidationError(
                                     f"Luồng phê duyệt cho {sys.name} đã tồn tại trong cấu hình {record[0]}.")
-        elif self.block_id:
+        elif self.block_id and self.department_id == self.company == self.system_id == False:
             # Kiểm tra bản ghi cấu hình cho khối văn phòng hoặc thương mại đã được cấu hình hay chưa
             # nếu có thì block_configured sẽ có kết quả sau đó raise thông báo
             block_configured = self.env["hrm.approval.flow.object"].search([
@@ -134,10 +172,9 @@ class Approval_flow_object(models.Model):
 
     @api.onchange('company')
     def _onchange_company(self):
-        if not self.system_id:
-            self.system_id = self.company.system_id
-        if not self.company:
-            self.system_id = False
+        self.system_id = False
+        for com in self.company:
+            self.system_id += com.system_id
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -153,16 +190,6 @@ class Approval_flow_object(models.Model):
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 return {'domain': {'company': self.get_child_company()}}
-
-    def _default_departments(self):
-        """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
-        if self.env.user.department_id:
-            func = self.env['hrm.utils']
-            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                'superior_department')
-            return [('id', 'in', list_department)]
-
-    department_id = fields.Many2many('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
 
     def _system_have_child_company(self, system_id):
         """
@@ -191,59 +218,34 @@ class Approval_flow_object(models.Model):
             return [com[0] for com in list_company]
         return []
 
-    def get_child_company(self):
-        """ lấy tất cả công ty user được cấu hình trong thiết lập """
-        list_child_company = []
-        if self.env.user.company:
-            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
-            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
-                                                                    "parent_company")
-        elif not self.env.user.company and self.env.user.system_id:
-            # nếu user chỉ đc cấu hình hệ thống
-            # lấy list id công ty con của hệ thống đã chọn
-            for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
-        return [('id', 'in', list_child_company)]
-
-    company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
-
-    def _default_system(self):
-        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
-        if not self.env.user.company.ids and self.env.user.system_id.ids:
-            list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
-            return [('id', 'in', list_systems)]
-        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            # nếu có công ty thì không hiển thị hệ thống
-            return [('id', '=', 0)]
-        return []
-
-    system_id = fields.Many2many('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
-
     @api.constrains('name', 'block_id', 'system_id', 'company', 'department_id')
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
-        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME and self.env.user.company:
             # nếu là khối văn phòng
-            print('2')
+            if self.block_id == constraint.BLOCK_COMMERCE_NAME:
+                raise AccessDenied("Bạn không có quyền cấu hình khối thương mại.")
             list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
                                                 'superior_department')
-            if self.env.user.department_id and self.department_id.id not in list_department:
-                raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {self.department_id.name}")
-            raise AccessDenied(f"Bạn không có quyền cấu hình khối {self.block_id.name}.")
+            for depart in self.department_id:
+                if depart.id not in list_department:
+                    raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             # nếu là khối thương mại
-            print('3')
             if self.env.user.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
+                print(self.company.ids)
+                print(list_company)
                 for com in self.company:
                     if com.id not in list_company:
                         raise AccessDenied(f"Bạn không có quyền cấu hình công ty {com.name}")
-                raise AccessDenied(f"Bạn không có quyền cấu hình công ty đã chọn.")
+                return
             elif self.env.user.system_id and not self.env.user.company:
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
-                if self.system_id.id not in list_system:
-                    raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+                for sys in self.system_id:
+                    if sys.id not in list_system:
+                        raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {sys.name}")
 
 class Approve(models.Model):
     _name = 'hrm.approval.flow'
