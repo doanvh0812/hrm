@@ -152,7 +152,7 @@ class Approval_flow_object(models.Model):
                                     elem in system_have_child_company(sys.id) for elem in list_name_company):
                                 raise ValidationError(
                                     f"Luồng phê duyệt cho {sys.name} đã tồn tại trong cấu hình {record[0]}.")
-        elif self.block_id and self.department_id == self.company == self.system_id == False:
+        elif self.block_id:
             # Kiểm tra bản ghi cấu hình cho khối văn phòng hoặc thương mại đã được cấu hình hay chưa
             # nếu có thì block_configured sẽ có kết quả sau đó raise thông báo
             block_configured = self.env["hrm.approval.flow.object"].search([
