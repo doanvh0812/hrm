@@ -80,7 +80,6 @@ class Systems(models.Model):
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
 
 
-
     # @api.depends("name_system")
     # def compute_list_parent(self, vals):
     #     sort_lst = []
