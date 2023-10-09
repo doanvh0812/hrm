@@ -4,7 +4,7 @@
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
             <field name="arch" type="xml">
-                <form string="Tạo mới hồ sơ" create="false">
+                <form string="Tạo mới hồ sơ" create="false" edit="true">
                     <field name="id" invisible="1"/>
                     <field name="create_uid" invisible="1"/>
                     <header attrs="{'invisible': [('id', '=', False)]}">

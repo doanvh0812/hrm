@@ -15,7 +15,6 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
 
-
     @api.depends('block_id')
     def _compute_related_(self):
         # Lấy giá trị của trường related để check điều kiện hiển thị
@@ -37,7 +36,12 @@ class Users(models.Model):
             self.company = False
         list_id = []
         for sys in self.system_id.ids:
-            print(self.system_id)
             fun = self.env['hrm.employee.profile']
             list_id += fun._system_have_child_company(sys)
         return {'domain': {'company': [('id', 'in', list_id)]}}
+
+    def write(self, vals):
+        res = super(Users, self).write(vals)
+        if 'name' in list(vals.keys()) and self.env.user.id == self.id:
+            return {'type': 'ir.actions.client', 'tag': 'reload'}
+        return res

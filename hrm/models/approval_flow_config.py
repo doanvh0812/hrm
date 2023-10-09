@@ -16,7 +16,6 @@ class Approval_flow_object(models.Model):
     approval_flow_link = fields.One2many('hrm.approval.flow', 'approval_id', tracking=True)
     related = fields.Boolean(compute='_compute_related_')
 
-
     @api.onchange('approval_flow_link')
     def _check_duplicate_approval(self):
         """decorator này để check trùng nhân viên tham gia luồng phê duyệt"""
@@ -143,7 +142,7 @@ class Approval_flow_object(models.Model):
     @api.onchange('system_id')
     def _onchange_system_id(self):
         """
-            decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
+            Decorator này khi chọn 1 hệ thống nào đó sẽ hiện ra tất cả những cty có trong hệ thống đó
             Xoá bỏ công ty nếu trong trường hệ thống không có hệ thống công ty đó thuộc
         """
         if self.system_id:
@@ -154,7 +153,6 @@ class Approval_flow_object(models.Model):
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 return {'domain': {'company': self.get_child_company()}}
-
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
@@ -198,7 +196,8 @@ class Approval_flow_object(models.Model):
         list_child_company = []
         if self.env.user.company:
             # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
-            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
+                                                                    "parent_company")
         elif not self.env.user.company and self.env.user.system_id:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
@@ -219,7 +218,6 @@ class Approval_flow_object(models.Model):
         return []
 
     system_id = fields.Many2many('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
-
 
 
 class Approve(models.Model):
