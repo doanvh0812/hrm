@@ -45,3 +45,15 @@ class Users(models.Model):
         if 'name' in list(vals.keys()) and self.env.user.id == self.id:
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         return res
+
+    def reload(self):
+        # user_ids = self._context.get('active_model') == 'res.users' and self._context.get('active_ids') or []
+        user_ids = self._context.get('active_model')
+        print(self._context.get('active_ids'))
+        a = self._context
+        print(user_ids)
+        # user = [
+        #     (0, 0, {'user_id': user.id, 'user_login': user.login})
+        #     for user in self.env['res.users'].browse(user_ids)
+        # ]
+        # print(user)

@@ -625,10 +625,3 @@ class EmployeeProfile(models.Model):
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 if self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
-
-    def reload(self):
-        print("re")
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-        }
