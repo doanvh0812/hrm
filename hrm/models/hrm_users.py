@@ -57,3 +57,4 @@ class Users(models.Model):
         #     for user in self.env['res.users'].browse(user_ids)
         # ]
         # print(user)
+    
