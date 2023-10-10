@@ -1,5 +1,5 @@
 from odoo import models, api, fields
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 import re
 
@@ -47,6 +47,7 @@ class Systems(models.Model):
 
             if chairperson_id and vice_president_id and chairperson_id == vice_president_id:
                 raise ValidationError("Chủ tịch và Phó chủ tịch không thể giống nhau.")
+
     @api.constrains("phone_number")
     def _check_phone_valid(self):
         """
@@ -68,22 +69,27 @@ class Systems(models.Model):
 
     @api.constrains('name', 'type_system')
     def _check_name_block_combination(self):
-        # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
         """
-                   Tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được
-                   Kiểm tra sự trùng lặp dựa trên kết hợp của name và type_system
-               """
+            Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
+            Tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được
+            Kiểm tra sự trùng lặp dựa trên kết hợp của name và type_system
+        """
         for record in self:
             name = self.search([('id', '!=', record.id)])
             for n in name:
                 if n['name'].lower() == record.name.lower() and n.type_system == self.type_system:
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
 
+    @api.constrains('name', 'name_system', 'type_system', 'parent_system', 'active', 'phone_number', 'chairperson',
+                    'vice_president')
+    def check_access_create(self):
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            raise AccessDenied("Bạn không có quyền cấu hình một hệ thống nào.")
 
     # @api.depends("name_system")
     # def compute_list_parent(self, vals):
     #     sort_lst = []
-    #     self._cr.execute(z
+    #     self._cr.execute(
     #         "SELECT LENGTH(name) - LENGTH(REPLACE(name, '.', '')) as count_dots, id FROM hrm_systems ORDER BY count_dots ASC")
     #     for item in self._cr.fetchall():
     #         sort_lst.append(self.env["hrm.systems"].browse(item[1]))

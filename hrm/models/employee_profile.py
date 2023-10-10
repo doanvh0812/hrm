@@ -85,23 +85,23 @@ class EmployeeProfile(models.Model):
         for p in profile:
             # list_id lưu id người đang đến lượt
             query = f"""
-                        SELECT approve
-                        FROM hrm_approval_flow_profile where profile_id = {p.id}
-                        AND (
-                          (step = (
-                            SELECT MIN(step)
-                            FROM hrm_approval_flow_profile
-                            WHERE approve_status = 'pending' AND profile_id = {p.id}
-                          ))
-                          OR
-                          (excess_level = true AND step = (
-                            SELECT MIN(step)
-                            FROM hrm_approval_flow_profile
-                            WHERE approve_status = 'pending' AND profile_id = {p.id}
-                            AND excess_level = true
-                          ))
-                        );
-                        """
+                    SELECT approve
+                    FROM hrm_approval_flow_profile where profile_id = {p.id}
+                    AND (
+                      (step = (
+                        SELECT MIN(step)
+                        FROM hrm_approval_flow_profile
+                        WHERE approve_status = 'pending' AND profile_id = {p.id}
+                      ))
+                      OR
+                      (excess_level = true AND step = (
+                        SELECT MIN(step)
+                        FROM hrm_approval_flow_profile
+                        WHERE approve_status = 'pending' AND profile_id = {p.id}
+                        AND excess_level = true
+                      ))
+                    );
+                    """
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
@@ -244,7 +244,6 @@ class EmployeeProfile(models.Model):
 
             for form in doc.xpath("//form"):
                 record_id = self.env.context.get('params', {}).get('id')
-                print(record_id)
                 if record_id:
                     record = self.browse(record_id)
                     if record.state != 'draft':
@@ -429,10 +428,8 @@ class EmployeeProfile(models.Model):
         state = 'pending'
         if max_step[0] <= step:
             state = 'approved'
-        self.reload()
-        return orders.write({
-            'state': state
-        })
+        return orders.write({'state': state})
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     def action_refuse(self, reason_refusal=None):
         # Khi ấn button Từ chối sẽ chuyển từ pending sang draft
@@ -449,10 +446,8 @@ class EmployeeProfile(models.Model):
             if rec.approve.id == id_access:
                 rec.approve_status = 'refuse'
                 rec.time = fields.Datetime.now()
-        self.reload()
-        return orders.write({
-            'state': 'draft'
-        })
+        orders.write({'state': 'draft'})
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     def action_send(self):
         # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
@@ -504,8 +499,9 @@ class EmployeeProfile(models.Model):
             # đè base thay đổi lịch sử theo  mình
             message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
-            self.reload()
-            return orders.write({'state': 'pending'})
+            # self.reload_window()
+            orders.write({'state': 'pending'})
+            return {'type': 'ir.actions.client', 'tag': 'reload'}
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
@@ -619,9 +615,5 @@ class EmployeeProfile(models.Model):
                 if self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
 
-    def reload(self):
-        print("re")
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-        }
+    def reload_window(self):
+        return {'type': 'ir.actions.client', 'tag': 'reload'}

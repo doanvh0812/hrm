@@ -40,8 +40,5 @@ class Users(models.Model):
             list_id += fun._system_have_child_company(sys)
         return {'domain': {'company': [('id', 'in', list_id)]}}
 
-    def write(self, vals):
-        res = super(Users, self).write(vals)
-        if 'name' in list(vals.keys()) and self.env.user.id == self.id:
-            return {'type': 'ir.actions.client', 'tag': 'reload'}
-        return res
+    def reload_window(self):
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
