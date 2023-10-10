@@ -1,5 +1,5 @@
 from . import constraint
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessDenied
 
 
@@ -222,30 +222,30 @@ class Approval_flow_object(models.Model):
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
-        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME and self.env.user.company:
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng
-            if self.block_id == constraint.BLOCK_COMMERCE_NAME:
-                raise AccessDenied("Bạn không có quyền cấu hình khối thương mại.")
-            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                'superior_department')
-            for depart in self.department_id:
-                if depart.id not in list_department:
-                    raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
+            if self.env.user.department_id.ids:
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                    'superior_department')
+                for depart in self.department_id:
+                    if depart.id not in list_department:
+                        raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
+            if self.block_id.name != self.env.user.block_id:
+                raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             # nếu là khối thương mại
             if self.env.user.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
-                print(self.company.ids)
-                print(list_company)
                 for com in self.company:
                     if com.id not in list_company:
-                        raise AccessDenied(f"Bạn không có quyền cấu hình công ty {com.name}")
-                return
+                        raise AccessDenied(_(f"Bạn không có quyền cấu hình công ty {com.name}"))
             elif self.env.user.system_id and not self.env.user.company:
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 for sys in self.system_id:
                     if sys.id not in list_system:
-                        raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {sys.name}")
+                        raise AccessDenied(_(f"Bạn không có quyền cấu hình hệ thống {sys.name}"))
+            if self.block_id.name != self.env.user.block_id:
+                raise AccessDenied(_("Bạn không có quyền cấu hình khối văn phòng."))
 
 class Approve(models.Model):
     _name = 'hrm.approval.flow'

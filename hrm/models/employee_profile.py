@@ -105,6 +105,7 @@ class EmployeeProfile(models.Model):
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
+            print(p.id, list_id_last)
             if self.env.user.id in list_id_last:
                 p.can_see_button_approval = True
             else:
@@ -429,7 +430,8 @@ class EmployeeProfile(models.Model):
         state = 'pending'
         if max_step[0] <= step:
             state = 'approved'
-        self.reload()
+        # self.reload()
+        self.logic_button()
         return orders.write({
             'state': state
         })
@@ -605,10 +607,15 @@ class EmployeeProfile(models.Model):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
-            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                'superior_department')
-            if self.department_id.id not in list_department:
-                raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {self.department_id.name}")
+            # nếu là khối văn phòng
+            if self.env.user.department_id.ids:
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                    'superior_department')
+                for depart in self.department_id:
+                    if depart.id not in list_department:
+                        raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
+            if self.block_id.name != self.env.user.block_id:
+                raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             if self.env.user.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
