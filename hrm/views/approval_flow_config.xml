@@ -15,7 +15,7 @@
                                widget="many2many_tags"/>
                         <field name="system_id"
                                options="{'limit': 10, 'create': false, 'create_edit': false}"
-                               attrs="{'invisible': [('related', '=', True)], 'readonly': [('check_company', '!=', 'hrm.companies()')]}"
+                               attrs="{'invisible': [('related', '=', True)]}"
                                widget="many2many_tags"/>
                         <field name="company" attrs="{'invisible': [('related', '=', True)]}" widget="many2many_tags"/>
                     </group>
