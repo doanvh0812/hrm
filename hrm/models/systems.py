@@ -72,7 +72,6 @@ class Systems(models.Model):
                 if n['name'].lower() == record.name.lower() and n.type_system == self.type_system:
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
 
-<<<<<<< HEAD
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
         for record in self:
@@ -81,13 +80,11 @@ class Systems(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
-=======
     @api.constrains('name', 'name_system', 'type_system', 'parent_system', 'active', 'phone_number', 'chairperson',
                     'vice_president')
     def check_access_create(self):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             raise AccessDenied("Bạn không có quyền cấu hình một hệ thống nào.")
->>>>>>> fe5f0664c50463bf81e2cfc6cfb176a27279ba3a
 
     # @api.depends("name_system")
     # def compute_list_parent(self, vals):
