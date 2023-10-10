@@ -1,5 +1,6 @@
 <odoo>
     <data>
+
         <record id="view_employee_profile_form" model="ir.ui.view">
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>

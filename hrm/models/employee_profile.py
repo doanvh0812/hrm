@@ -5,7 +5,6 @@ from . import constraint
 from lxml import etree
 import json
 
-
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
@@ -224,6 +223,7 @@ class EmployeeProfile(models.Model):
                 '<button name="action_send" string="Gửi duyệt" type="object"/>',
                 f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
             )
+
             doc = etree.XML(res['arch'])
 
             """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
@@ -509,6 +509,17 @@ class EmployeeProfile(models.Model):
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
+    def action_open_edit_form(self):
+        # Đoạn mã này sẽ mở action sửa thông tin hồ sơ
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Sửa thông tin nhân viên',
+            'res_model': 'hrm.employee.profile',
+            'view_mode': 'form',
+            'view_id': self.env.ref('hrm.view_employee_profile_form').id,
+            'res_id': self.id,
+            'target': 'current',
+        }
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:
