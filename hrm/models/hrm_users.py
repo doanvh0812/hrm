@@ -14,6 +14,7 @@ class Users(models.Model):
     system_id = fields.Many2many('hrm.systems', string='Hệ thống')
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
+    login = fields.Char(string="Login")
 
     @api.depends('block_id')
     def _compute_related_(self):
