@@ -80,6 +80,7 @@ class Systems(models.Model):
                 record.message_post(body="Đã lưu trữ")
             else:
                 record.message_post(body="Bỏ lưu trữ")
+
     @api.constrains('name', 'name_system', 'type_system', 'parent_system', 'active', 'phone_number', 'chairperson',
                     'vice_president')
     def check_access_create(self):

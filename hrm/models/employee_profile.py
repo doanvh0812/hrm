@@ -71,23 +71,25 @@ class EmployeeProfile(models.Model):
 
         domain = []
         # Lay domain theo cac truong
-        if company_config:
-            domain.append(('company', 'in', company_config))
-        elif system_config:
-            domain.append(('system_id', 'in', system_config))
-        elif department_config:
-            domain.append(('department_id', 'in', department_config))
-        elif block_config:
-            # Neu la full thi domain = []
-            if block_config == 'full':
-                pass
-            else:
-                # Neu khac thi search trong bang block xem khoi nay id la bao nhieu de gan vao domain
-                block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
-                if block_id:
-                    domain.append(('block_id', '=', block_id.id))
-        if domain:
-            self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
+        if not user.has_group("hrm.hrm_group_create_edit"):
+            if company_config:
+                domain.append(('company', 'in', company_config))
+            elif system_config:
+                domain.append(('system_id', 'in', system_config))
+            elif department_config:
+                domain.append(('department_id', 'in', department_config))
+            elif block_config:
+                # Neu la full thi domain = []
+                if block_config == 'full':
+                    self.env['hrm.employee.profile'].sudo().search([]).write({'see_record_with_config': True})
+                    pass
+                else:
+                    # Neu khac thi search trong bang block xem khoi nay id la bao nhieu de gan vao domain
+                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
+                    if block_id:
+                        domain.append(('block_id', '=', block_id.id))
+            if domain:
+                self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
 
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
