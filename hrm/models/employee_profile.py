@@ -125,7 +125,6 @@ class EmployeeProfile(models.Model):
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
-            print(p.id, list_id_last)
             if self.env.user.id in list_id_last:
                 p.can_see_button_approval = True
             else:
