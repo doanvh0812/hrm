@@ -14,8 +14,8 @@ class EmployeeProfile(models.Model):
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
-    check_company = fields.Char(default=lambda self: self.env.user.company)
-    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
+    ck_idheck_company = fields.Char(default=lambda self: self.env.user.company)
+    bloc = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
@@ -84,26 +84,27 @@ class EmployeeProfile(models.Model):
         for p in profile:
             # list_id lưu id người đang đến lượt
             query = f"""
-                        SELECT approve
-                        FROM hrm_approval_flow_profile where profile_id = {p.id}
-                        AND (
-                          (step = (
-                            SELECT MIN(step)
-                            FROM hrm_approval_flow_profile
-                            WHERE approve_status = 'pending' AND profile_id = {p.id}
-                          ))
-                          OR
-                          (excess_level = true AND step = (
-                            SELECT MIN(step)
-                            FROM hrm_approval_flow_profile
-                            WHERE approve_status = 'pending' AND profile_id = {p.id}
-                            AND excess_level = true
-                          ))
-                        );
-                        """
+                    SELECT approve
+                    FROM hrm_approval_flow_profile where profile_id = {p.id}
+                    AND (
+                      (step = (
+                        SELECT MIN(step)
+                        FROM hrm_approval_flow_profile
+                        WHERE approve_status = 'pending' AND profile_id = {p.id}
+                      ))
+                      OR
+                      (excess_level = true AND step = (
+                        SELECT MIN(step)
+                        FROM hrm_approval_flow_profile
+                        WHERE approve_status = 'pending' AND profile_id = {p.id}
+                        AND excess_level = true
+                      ))
+                    );
+                    """
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
+            print(p.id, list_id_last)
             if self.env.user.id in list_id_last:
                 p.can_see_button_approval = True
             else:
@@ -217,6 +218,13 @@ class EmployeeProfile(models.Model):
             view_name = view.name
         if view_type == 'form' and not self.id and view_name != 'hrm.employee.approval.form':
             user_id = self.env.user.id
+            # Kiểm tra trạng thái của bản ghi
+            record_id = self.env.context.get('params', {}).get('id')
+            if record_id:
+                record = self.browse(record_id)
+                if record.state != 'draft':
+                    res['arch'] = res['arch'].replace('<form string="Tạo mới hồ sơ" create="false" edit="true" modifiers="{}">', '<form string="Tạo mới hồ sơ" create="false" edit="false" modifiers="{}">')
+
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
             res['arch'] = res['arch'].replace(
@@ -244,7 +252,6 @@ class EmployeeProfile(models.Model):
 
             for form in doc.xpath("//form"):
                 record_id = self.env.context.get('params', {}).get('id')
-                print(record_id)
                 if record_id:
                     record = self.browse(record_id)
                     if record.state != 'draft':
@@ -429,10 +436,8 @@ class EmployeeProfile(models.Model):
         state = 'pending'
         if max_step[0] <= step:
             state = 'approved'
-        self.reload()
-        return orders.write({
-            'state': state
-        })
+        orders.write({'state': state})
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     def action_refuse(self, reason_refusal=None):
         # Khi ấn button Từ chối sẽ chuyển từ pending sang draft
@@ -449,10 +454,8 @@ class EmployeeProfile(models.Model):
             if rec.approve.id == id_access:
                 rec.approve_status = 'refuse'
                 rec.time = fields.Datetime.now()
-        self.reload()
-        return orders.write({
-            'state': 'draft'
-        })
+        orders.write({'state': 'draft'})
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     def action_send(self):
         # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
@@ -504,8 +507,9 @@ class EmployeeProfile(models.Model):
             # đè base thay đổi lịch sử theo  mình
             message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
-            self.reload()
-            return orders.write({'state': 'pending'})
+            # self.reload_window()
+            orders.write({'state': 'pending'})
+            return {'type': 'ir.actions.client', 'tag': 'reload'}
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
 
@@ -538,8 +542,7 @@ class EmployeeProfile(models.Model):
                 SELECT t.id, t.{parent} FROM {table_name} t
                 INNER JOIN search ch ON t.id = ch.{parent}
             )
-            SELECT id FROM search;
-            """
+            SELECT id FROM search;"""
         self._cr.execute(query)
         result = self._cr.fetchall()
         return result
@@ -577,20 +580,39 @@ class EmployeeProfile(models.Model):
                 if company_id[0] == cf.company.id:
                     return cf
 
-    def find_child_company(self, record):
-        """record là 1 hàng trong bảng cấu hình luồng phê duyệt"""
-        name_company_profile = self.company.name.split('.')
-        if record.company:
-            for comp in record.company:
-                names = comp.name.split('.')
-                for rec in record.system_id:
-                    name_in_rec = rec.name.split('.')
-                    if name_in_rec[0] == names[1] == name_company_profile[1]:
-                        return False
-                return True
-        else:
-            return True
+    def find_block(self, records):
+        for approved in records:
+            if not approved.department_id and not approved.system_id:
+                return approved
 
+    def find_system(self, systems, records):
+        # systems là danh sách id hệ thống có quan hệ cha con
+        # records là danh sách bản ghi cấu hình luồng phê duyệt
+        # Duyệt qua 2 danh sách
+        for sys in systems:
+            for rec in records:
+                # Nếu cấu hình không có công ty
+                # Hệ thống có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
+                if not rec.company and sys[0] in rec.system_id.ids:
+                    return rec
+
+    def find_department(self, list_dept, records):
+        # list_dept là danh sách id hệ thống có quan hệ cha con
+        # records là danh sách bản ghi cấu hình luồng phê duyệt
+        # Duyệt qua 2 danh sách
+        for dept in list_dept:
+            for rec in records:
+                # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
+                if dept[0] in rec.department_id.ids:
+                    return rec
+
+    def find_company(self, records, lis_company):
+        for company_id in lis_company:
+            for cf in records:
+                if company_id[0] == cf.company.id:
+                    return cf
+
+    # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
         """
             Hàm này để hiển thị lịch sử lưu trữ
@@ -616,10 +638,15 @@ class EmployeeProfile(models.Model):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
-            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                'superior_department')
-            if self.department_id.id not in list_department:
-                raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {self.department_id.name}")
+            # nếu là khối văn phòng
+            if self.env.user.department_id.ids:
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                    'superior_department')
+                for depart in self.department_id:
+                    if depart.id not in list_department:
+                        raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
+            if self.block_id.name != self.env.user.block_id:
+                raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             if self.env.user.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
@@ -629,10 +656,3 @@ class EmployeeProfile(models.Model):
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 if self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
-
-    def reload(self):
-        print("re")
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-        }

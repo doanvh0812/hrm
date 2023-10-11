@@ -62,7 +62,8 @@ class Companies(models.Model):
 
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", required=True, tracking=True, domain=_default_system)
 
-    @api.constrains('parent_company', 'system_id', 'type_company', 'phone_num', 'name_company', 'chairperson','vice_president')
+    @api.constrains('parent_company', 'system_id', 'type_company', 'phone_num', 'name_company', 'chairperson',
+                    'vice_president')
     def _check_parent_company(self):
         """ kiểm tra xem user có quyền cấu hình công ty được chọn không """
         if self.env.user.company.id and self.parent_company.id and self.parent_company.id not in self._get_child_company():
@@ -70,9 +71,9 @@ class Companies(models.Model):
         elif self.env.user.system_id.ids:
             temp = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
             list_systems = [t for t in temp]
+            # nếu user có cấu hình hệ thống thì kiểm tra xem hệ thống được chọn có thuộc hệ thống user đc cấu hình hay k
+            # hoặc user không chọn công ty cha mà hệ thống vẫn chọn thì kiểm tra lại quyền cấu hình hệ thống
             if self.system_id.id not in list_systems or (not self.parent_company.id and self.env.user.company.ids):
-                # nếu user có cấu hình hệ thống thì kiểm tra xem hệ thống được chọn có thuộc hệ thống user đc cấu hình hay không
-                # hoặc user không chọn công ty cha mà hệ thống vẫn chọn thì kiểm tra lại quyền cấu hình hệ thống
                 raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
         elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             raise AccessDenied("Bạn không có quyền cấu hình một hệ thống nào.")
