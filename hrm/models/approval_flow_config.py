@@ -226,10 +226,6 @@ class Approval_flow_object(models.Model):
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
-        print("com:", self.company.ids)
-        print("com:", self.env.user.company.ids)
-        print(self.system_id)
-        print(self.department_id)
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng
             if self.env.user.department_id.ids:
