@@ -27,11 +27,4 @@
         <field name="category_id" ref="module_hrm"/>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
-
-    <record id="disable_edit_rule" model="ir.rule">
-        <field name="name">Không cho phép chỉnh sửa khi không phải trạng thái nháp</field>
-        <field name="model_id" ref="model_hrm_employee_profile"/>
-        <field name="domain_force">[('state', '!=', 'draft')]</field>
-        <field name="perm_write" eval="False"/>
-    </record>
 </odoo>
