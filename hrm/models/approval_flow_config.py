@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
+from odoo.exceptions import ValidationError, AccessDenied
 
 
 class Approval_flow_object(models.Model):

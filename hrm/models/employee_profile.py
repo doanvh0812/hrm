@@ -1,11 +1,9 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 import re
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
-
-
 
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
@@ -20,7 +18,6 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
-
 
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
@@ -75,23 +72,20 @@ class EmployeeProfile(models.Model):
 
         domain = []
         # Lay domain theo cac truong
-        if company_config:
-            domain.append(('company', 'in', company_config))
-        elif system_config:
-            domain.append(('system_id', 'in', system_config))
-        elif department_config:
-            domain.append(('department_id', 'in', department_config))
-        elif block_config:
-            # Neu la full thi domain = []
-            if block_config == 'full':
-                pass
+        if not user.has_group("hrm.hrm_group_create_edit"):
+            if company_config:
+                domain.append(('company', 'in', company_config))
+            elif system_config:
+                domain.append(('system_id', 'in', system_config))
+            elif department_config:
+                domain.append(('department_id', 'in', department_config))
+            elif block_config:
+                # Neu la full thi domain = []
+                if block_config != 'full':
+                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
+                    if block_id:
+                        domain.append(('block_id', '=', block_id.id))
 
-            else:
-                # Neu khac thi search trong bang block xem khoi nay id la bao nhieu de gan vao domain
-                block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
-                if block_id:
-                    domain.append(('block_id', '=', block_id.id))
-        if domain:
             self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
 
     def see_own_approved_record(self):
@@ -126,7 +120,7 @@ class EmployeeProfile(models.Model):
                         AND excess_level = true
                       ))
                     );
-                    """
+                """
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
@@ -290,12 +284,12 @@ class EmployeeProfile(models.Model):
             # Ngược lại không phải khối văn phòng
             else:
                 # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-                if record.system_id.name:
+                if record.system_id.name and not record.employee_code_new:
                     name = str.split(record.system_id.name, '.')[0]
                     last_employee_code = self._get_last_employee_code('like', name)
                     record.employee_code_new = self._generate_employee_code(name, last_employee_code)
                 # Ngược lại chưa chọn hệ thống ra mã là rỗng
-                else:
+                elif not record.employee_code_new:
                     record.employee_code_new = ''
 
     @api.model
@@ -468,7 +462,7 @@ class EmployeeProfile(models.Model):
     def action_send(self):
         # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
         orders = self.filtered(lambda s: s.state == 'draft')
-        records = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
+        records = self.env['hrm.approval.flow.object'].sudo().search([('block_id', '=', self.block_id.id)])
         approved_id = None
         if records:
             # Nếu có ít nhất 1 cấu hình cho khối của hồ sơ đang thuộc
@@ -510,13 +504,13 @@ class EmployeeProfile(models.Model):
             })
 
             # Sử dụng phương thức create để chèn danh sách dữ liệu vào tab trạng thái
-            self.approved_link.create(approved_link_data)
+            self.sudo().approved_link.create(approved_link_data)
 
             # đè base thay đổi lịch sử theo  mình
             message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
             # self.reload_window()
-            orders.write({'state': 'pending'})
+            orders.sudo().write({'state': 'pending'})
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")

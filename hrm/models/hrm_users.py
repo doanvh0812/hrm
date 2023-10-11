@@ -8,7 +8,7 @@ class Users(models.Model):
     block_id = fields.Selection(selection=[
         ('full', ''),
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
-        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True,
+        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối",
         default=constraint.BLOCK_COMMERCE_NAME)
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban')
     system_id = fields.Many2many('hrm.systems', string='Hệ thống')
