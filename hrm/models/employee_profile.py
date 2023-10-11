@@ -341,8 +341,7 @@ class EmployeeProfile(models.Model):
             decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
         """
-
-        if self.system_id != self.company.system_id:  # khi đổi hệ thống thì clear company
+        if self.system_id != self.company.system_id: #khi đổi hệ thống thì clear company
             self.position_id = self.company = self.team_sales = self.team_marketing = False
         if self.system_id:
             if not self.env.user.company:
@@ -625,7 +624,10 @@ class EmployeeProfile(models.Model):
             })
         return super(EmployeeProfile, self).write(vals)
 
-    @api.constrains("name")
+    @api.constrains("name", "date_receipt", "block_id", "position_id", "work_start_date", "employee_code_old",
+                    "employee_code_new", "email", "phone_num", "identifier", "team_marketing", "team_sales", "manager_id",
+                    "rank_id", "auto_create_acc", "reason", "acc_id", "approved_name", "approved_link", "company",
+                    "system_id")
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
@@ -637,7 +639,7 @@ class EmployeeProfile(models.Model):
                 for depart in self.department_id:
                     if depart.id not in list_department:
                         raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
-            if self.block_id.name != self.env.user.block_id:
+            if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             if self.env.user.company:
@@ -648,10 +650,3 @@ class EmployeeProfile(models.Model):
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 if self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
-
-
-   
-
-
-
-
