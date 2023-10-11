@@ -59,15 +59,6 @@ class Systems(models.Model):
                 if not re.match(r'^\d+$', rec.phone_number):
                     raise ValidationError("Số điện thoại không hợp lệ")
 
-    # hàm này để hiển thị lịch sử lưu trữ
-    def toggle_active(self):
-        for record in self:
-            record.active = not record.active
-            if not record.active:
-                record.message_post(body="Đã lưu trữ")
-            else:
-                record.message_post(body="Bỏ lưu trữ")
-
     @api.constrains('name', 'type_system')
     def _check_name_block_combination(self):
         """
@@ -81,6 +72,14 @@ class Systems(models.Model):
                 if n['name'].lower() == record.name.lower() and n.type_system == self.type_system:
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
 
+    # hàm này để hiển thị lịch sử lưu trữ
+    def toggle_active(self):
+        for record in self:
+            record.active = not record.active
+            if not record.active:
+                record.message_post(body="Đã lưu trữ")
+            else:
+                record.message_post(body="Bỏ lưu trữ")
     @api.constrains('name', 'name_system', 'type_system', 'parent_system', 'active', 'phone_number', 'chairperson',
                     'vice_president')
     def check_access_create(self):

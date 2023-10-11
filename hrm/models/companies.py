@@ -25,19 +25,16 @@ class Companies(models.Model):
     def _get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
         list_child_company = []
-        # print(self.env.user.company.ids)
-        # print(self.env.user.system_id.ids)
         if self.env.user.company.ids:
             # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
-            temp = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
-            list_child_company = [t for t in temp]
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
+                                                                    "parent_company")
         elif not self.env.user.company.ids and self.env.user.system_id.ids:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
             for sys in self.env.user.system_id:
                 fun = self.env['hrm.employee.profile']
                 list_child_company += fun._system_have_child_company(sys.id)
-        # print(list_child_company)
         return list_child_company
 
     def _default_company(self):
@@ -113,7 +110,6 @@ class Companies(models.Model):
             self.parent_company = False
             fun = self.env['hrm.employee.profile']
             list_systems_id = fun._system_have_child_company(self.system_id.id)
-            print(list_systems_id)
             return {'domain': {'parent_company': [('id', 'in', list_systems_id)]}}
 
     @api.constrains("phone_num")
