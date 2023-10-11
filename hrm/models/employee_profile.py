@@ -6,6 +6,7 @@ from lxml import etree
 import json
 
 
+
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
@@ -19,6 +20,8 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
+
+
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
@@ -59,6 +62,7 @@ class EmployeeProfile(models.Model):
     can_see_button_approval = fields.Boolean()
     see_record_with_config = fields.Boolean()
 
+
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
         self.env['hrm.employee.profile'].sudo().search([]).write({'see_record_with_config': False})
@@ -81,6 +85,7 @@ class EmployeeProfile(models.Model):
             # Neu la full thi domain = []
             if block_config == 'full':
                 pass
+
             else:
                 # Neu khac thi search trong bang block xem khoi nay id la bao nhieu de gan vao domain
                 block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
@@ -649,3 +654,10 @@ class EmployeeProfile(models.Model):
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 if self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+
+
+   
+
+
+
+
