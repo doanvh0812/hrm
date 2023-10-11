@@ -19,7 +19,6 @@ class EmployeeProfile(models.Model):
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
 
-
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
@@ -82,16 +81,12 @@ class EmployeeProfile(models.Model):
                 domain.append(('department_id', 'in', department_config))
             elif block_config:
                 # Neu la full thi domain = []
-                if block_config == 'full':
-                    self.env['hrm.employee.profile'].sudo().search([]).write({'see_record_with_config': True})
-                    pass
-                else:
-                    # Neu khac thi search trong bang block xem khoi nay id la bao nhieu de gan vao domain
+                if block_config != 'full':
                     block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
                     if block_id:
                         domain.append(('block_id', '=', block_id.id))
-            if domain:
-                self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
+
+            self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
 
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
@@ -468,7 +463,7 @@ class EmployeeProfile(models.Model):
     def action_send(self):
         # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
         orders = self.filtered(lambda s: s.state == 'draft')
-        records = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
+        records = self.env['hrm.approval.flow.object'].sudo().search([('block_id', '=', self.block_id.id)])
         approved_id = None
         if records:
             # Nếu có ít nhất 1 cấu hình cho khối của hồ sơ đang thuộc
@@ -510,13 +505,13 @@ class EmployeeProfile(models.Model):
             })
 
             # Sử dụng phương thức create để chèn danh sách dữ liệu vào tab trạng thái
-            self.approved_link.create(approved_link_data)
+            self.sudo().approved_link.create(approved_link_data)
 
             # đè base thay đổi lịch sử theo  mình
             message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
             # self.reload_window()
-            orders.write({'state': 'pending'})
+            orders.sudo().write({'state': 'pending'})
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
