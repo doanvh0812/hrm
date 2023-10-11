@@ -1,11 +1,9 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 import re
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
-
-
 
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
@@ -127,7 +125,7 @@ class EmployeeProfile(models.Model):
                         AND excess_level = true
                       ))
                     );
-                    """
+                """
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
@@ -291,12 +289,12 @@ class EmployeeProfile(models.Model):
             # Ngược lại không phải khối văn phòng
             else:
                 # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-                if record.system_id.name:
+                if record.system_id.name and not record.employee_code_new:
                     name = str.split(record.system_id.name, '.')[0]
                     last_employee_code = self._get_last_employee_code('like', name)
                     record.employee_code_new = self._generate_employee_code(name, last_employee_code)
                 # Ngược lại chưa chọn hệ thống ra mã là rỗng
-                else:
+                elif not record.employee_code_new:
                     record.employee_code_new = ''
 
     @api.model
