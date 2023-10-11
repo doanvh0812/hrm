@@ -4,6 +4,9 @@
         <field name="model">res.users</field>
         <field name="inherit_id" ref="base.view_users_form"/>
         <field name="arch" type="xml">
+<!--            <header>-->
+<!--                    <button name="reload" type="object" string="Test action"/>-->
+<!--            </header>-->
             <xpath expr="//page[@name='access_rights']" position="replace">
                 <page name="access_rights" string="Access Rights">
                     <group string="Multi Companies" attrs="{'invisible': [('companies_count', '&lt;=', 1)]}">

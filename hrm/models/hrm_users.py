@@ -14,6 +14,7 @@ class Users(models.Model):
     system_id = fields.Many2many('hrm.systems', string='Hệ thống')
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
+    login = fields.Char(string="Login")
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -40,5 +41,21 @@ class Users(models.Model):
             list_id += fun._system_have_child_company(sys)
         return {'domain': {'company': [('id', 'in', list_id)]}}
 
-    def reload_window(self):
-        return {'type': 'ir.actions.client', 'tag': 'reload'}
+    def write(self, vals):
+        res = super(Users, self).write(vals)
+        if 'name' in list(vals.keys()) and self.env.user.id == self.id:
+            return {'type': 'ir.actions.client', 'tag': 'reload'}
+        return res
+
+    def reload(self):
+        # user_ids = self._context.get('active_model') == 'res.users' and self._context.get('active_ids') or []
+        user_ids = self._context.get('active_model')
+        print(self._context.get('active_ids'))
+        print(user_ids)
+        return {'type': 'ir.actions.act_window_close'}
+        # user = [
+        #     (0, 0, {'user_id': user.id, 'user_login': user.login})
+        #     for user in self.env['res.users'].browse(user_ids)
+        # ]
+        # print(user)
+
