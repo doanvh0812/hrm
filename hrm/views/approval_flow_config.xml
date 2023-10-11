@@ -12,11 +12,14 @@
                         <field name="check_blocks" invisible="1"/>
                         <field name="check_company" invisible="1"/>
                         <field name="department_id" attrs="{'invisible': [('related', '!=', True)]}"
-                               widget="many2many_tags"/>
+                               widget="many2many_tags"
+                        />
                         <field name="system_id"
                                options="{'limit': 10, 'create': false, 'create_edit': false}"
                                attrs="{'invisible': [('related', '=', True)]}"
-                               widget="many2many_tags"/>
+                               widget="many2many_tags"
+                               store="1"
+                        />
                         <field name="company" attrs="{'invisible': [('related', '=', True)]}" widget="many2many_tags"/>
                     </group>
                     <notebook>
