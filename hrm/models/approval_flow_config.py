@@ -1,6 +1,6 @@
-from . import constraint
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, AccessDenied
+from . import constraint
 
 
 class Approval_flow_object(models.Model):
@@ -177,8 +177,8 @@ class Approval_flow_object(models.Model):
         system_ids = []
         for com in self.company:
             system_ids.append(com.system_id.id)
-        # self.system_id = [(6, 0, system_ids)]
-        self.write({'system_id': [(6, 0, system_ids)]})
+        self.system_id = [(6, 0, system_ids)]
+        # self.write({'system_id': [(6, 0, system_ids)]})
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -226,6 +226,10 @@ class Approval_flow_object(models.Model):
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
+        print("com:", self.company.ids)
+        print("com:", self.env.user.company.ids)
+        print(self.system_id)
+        print(self.department_id)
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng
             if self.env.user.department_id.ids:
@@ -236,27 +240,25 @@ class Approval_flow_object(models.Model):
                 for depart in self.department_id:
                     if depart.id not in list_department:
                         raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
-            elif self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
-                # nếu không kiểm tra xem khối được chọn có phải là khối thương mại hay không
-                raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             # nếu là khối thương mại
-            if self.env.user.company:
+            if self.env.user.company or self.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
+                for sys in self.env.user.system_id:
+                    list_company += self._system_have_child_company(sys.id)
                 for com in self.company:
                     if com.id not in list_company:
                         raise AccessDenied(_(f"Bạn không có quyền cấu hình công ty {com.name}"))
+                return
             elif self.env.user.system_id and not self.env.user.company:
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 for sys in self.system_id:
                     if sys.id not in list_system:
                         raise AccessDenied(_(f"Bạn không có quyền cấu hình hệ thống {sys.name}"))
-            elif self.block_id.name == constraint.BLOCK_OFFICE_NAME:
-                raise AccessDenied(_("Bạn không có quyền cấu hình khối văn phòng."))
+        if self.block_id.name != self.env.user.block_id and self.env.user.block_id != "full":
+            # nếu không kiểm tra xem khối được chọn có phải là khối được cấu hình hay không
+            raise AccessDenied(_(f"Bạn không có quyền cấu hình khối {self.block_id.name}."))
 
-    # def write(self, vals):
-    #     print(vals)
-    #     return super(Approval_flow_object, self).write(vals)
 
 class Approve(models.Model):
     _name = 'hrm.approval.flow'

@@ -632,7 +632,8 @@ class EmployeeProfile(models.Model):
 
     @api.constrains("name", "date_receipt", "block_id", "position_id", "work_start_date", "employee_code_old",
                     "employee_code_new", "email", "phone_num", "identifier", "team_marketing", "team_sales", "manager_id",
-                    "rank_id", "auto_create_acc", "reason", "acc_id", "approved_name", "approved_link")
+                    "rank_id", "auto_create_acc", "reason", "acc_id", "approved_name", "approved_link", "company",
+                    "system_id")
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
