@@ -5,6 +5,9 @@ from . import constraint
 from lxml import etree
 import json
 
+
+
+
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
@@ -14,10 +17,12 @@ class EmployeeProfile(models.Model):
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
-    ck_idheck_company = fields.Char(default=lambda self: self.env.user.company)
-    bloc = fields.Many2one('hrm.blocks', string='Khối', required=True,
+    check_company = fields.Boolean(default=lambda self: self.env.user.company)
+    block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
+
+
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
@@ -54,19 +59,41 @@ class EmployeeProfile(models.Model):
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
 
-    can_see_all_record = fields.Boolean()
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
+    see_record_with_config = fields.Boolean()
 
-    def _can_see_all_record(self):
-        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ
-        chỉ đọc vẫn có quyền phê duyệt, điền lý do từ chối"""
-        profile = self.env['hrm.employee.profile'].sudo().search([])
-        for p in profile:
-            if self.env.user.has_group('hrm.hrm_group_create_edit'):
-                p.can_see_all_record = True
+
+    def _see_record_with_config(self):
+        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
+        self.env['hrm.employee.profile'].sudo().search([]).write({'see_record_with_config': False})
+        user = self.env.user
+        # Tim tat ca cac cong ty, he thong, phong ban con
+        company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
+        system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
+        department_config = self.env['hrm.utils'].get_child_id(user.department_id, 'hrm_departments', "superior_department")
+        block_config = user.block_id
+
+        domain = []
+        # Lay domain theo cac truong
+        if company_config:
+            domain.append(('company', 'in', company_config))
+        elif system_config:
+            domain.append(('system_id', 'in', system_config))
+        elif department_config:
+            domain.append(('department_id', 'in', department_config))
+        elif block_config:
+            # Neu la full thi domain = []
+            if block_config == 'full':
+                pass
+
             else:
-                p.can_see_all_record = False
+                # Neu khac thi search trong bang block xem khoi nay id la bao nhieu de gan vao domain
+                block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
+                if block_id:
+                    domain.append(('block_id', '=', block_id.id))
+        if domain:
+            self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
 
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
@@ -104,7 +131,6 @@ class EmployeeProfile(models.Model):
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
-            print(p.id, list_id_last)
             if self.env.user.id in list_id_last:
                 p.can_see_button_approval = True
             else:
@@ -208,7 +234,7 @@ class EmployeeProfile(models.Model):
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
                                                            submenu=submenu)
-        self._can_see_all_record()
+        self._see_record_with_config()
         self.see_own_approved_record()
         self.logic_button()
 
@@ -249,13 +275,6 @@ class EmployeeProfile(models.Model):
                             modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False],
                                                            ["create_uid", "!=", user_id]]})
                         field.attrib['modifiers'] = json.dumps(modifiers)
-
-            for form in doc.xpath("//form"):
-                record_id = self.env.context.get('params', {}).get('id')
-                if record_id:
-                    record = self.browse(record_id)
-                    if record.state != 'draft':
-                        form.set('edit', 'false')
 
                 # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
@@ -338,7 +357,7 @@ class EmployeeProfile(models.Model):
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
         """
 
-        if self.system_id != self.company.system_id: #khi đổi hệ thống thì clear company
+        if self.system_id != self.company.system_id:  # khi đổi hệ thống thì clear company
             self.position_id = self.company = self.team_sales = self.team_marketing = False
         if self.system_id:
             if not self.env.user.company:
@@ -347,7 +366,6 @@ class EmployeeProfile(models.Model):
             else:
                 return {'domain': {'company': self.get_child_company()}}
                 self.company = ''
-
 
     @api.onchange('block_id')
     def _onchange_block_id(self):
@@ -656,3 +674,10 @@ class EmployeeProfile(models.Model):
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 if self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+
+
+   
+
+
+
+
