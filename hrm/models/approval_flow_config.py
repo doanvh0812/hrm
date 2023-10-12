@@ -228,14 +228,14 @@ class Approval_flow_object(models.Model):
         func = self.env['hrm.utils']
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng
-            # if self.env.user.department_id.ids:
+            if self.env.user.department_id.ids:
                 # nếu user có cấu hình phòng ban thì kiểm tra xem các phòng ban được chọn
                 # có thuộc phòng ban được cấu hình của user hay không
-            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                'superior_department')
-            for depart in self.department_id:
-                if depart.id not in list_department:
-                    raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                    'superior_department')
+                for depart in self.department_id:
+                    if depart.id not in list_department:
+                        raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             # nếu là khối thương mại
             if self.env.user.company or self.company:
