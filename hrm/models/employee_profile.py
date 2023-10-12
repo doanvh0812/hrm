@@ -631,18 +631,20 @@ class EmployeeProfile(models.Model):
         func = self.env['hrm.utils']
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng và có cấu hình phòng ban
-            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                'superior_department')
-            for depart in self.department_id:
-                if depart.id not in list_department:
-                    raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
+            if self.env.user.department_id.ids:
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                    'superior_department')
+                for depart in self.department_id:
+                    if depart.id not in list_department:
+                        raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
-            if self.company.id not in list_company:
-                raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.company.name}")
-
-            list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
-            if self.system_id.id not in list_system:
-                raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+            if self.env.user.company:
+                list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
+                if self.company.id not in list_company:
+                    raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.company.name}")
+            elif self.env.user.system_id and not self.env.user.company:
+                list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
+                if self.system_id.id not in list_system:
+                    raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
