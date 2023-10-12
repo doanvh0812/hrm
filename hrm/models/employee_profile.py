@@ -637,9 +637,9 @@ class EmployeeProfile(models.Model):
                                                 'superior_department')
             for depart in self.department_id:
                 if depart.id not in list_department:
-                    raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
+                    raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
-                raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
+                raise AccessDenied("Bạn không có quyền cấu hình khối thương mại.")
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             # if self.env.user.company:
             list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')

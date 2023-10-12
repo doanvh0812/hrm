@@ -235,7 +235,7 @@ class Approval_flow_object(models.Model):
                                                 'superior_department')
             for depart in self.department_id:
                 if depart.id not in list_department:
-                    raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
+                    raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             # nếu là khối thương mại
             if self.env.user.company or self.company:
@@ -244,15 +244,15 @@ class Approval_flow_object(models.Model):
                     list_company += self._system_have_child_company(sys.id)
                 for com in self.company:
                     if com.id not in list_company:
-                        raise AccessDenied(_(f"Bạn không có quyền cấu hình công ty {com.name}"))
+                        raise AccessDenied(f"Bạn không có quyền cấu hình công ty {com.name}")
             elif self.env.user.system_id and not self.env.user.company:
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 for sys in self.system_id:
                     if sys.id not in list_system:
-                        raise AccessDenied(_(f"Bạn không có quyền cấu hình hệ thống {sys.name}"))
+                        raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {sys.name}")
         if self.block_id.name != self.env.user.block_id and self.env.user.block_id != "full":
             # nếu không kiểm tra xem khối được chọn có phải là khối được cấu hình hay không
-            raise AccessDenied(_(f"Bạn không có quyền cấu hình khối {self.block_id.name}."))
+            raise AccessDenied(f"Bạn không có quyền cấu hình khối {self.block_id.name}.")
 
 
 class Approve(models.Model):
