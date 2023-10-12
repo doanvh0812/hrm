@@ -62,7 +62,7 @@ class EmployeeProfile(models.Model):
 
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
-        self.env['hrm.employee.profile'].sudo().search(['see_record_with_config', '=', True]).write({'see_record_with_config': False})
+        self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write({'see_record_with_config': False})
         user = self.env.user
         # Tim tat ca cac cong ty, he thong, phong ban con
         company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
