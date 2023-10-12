@@ -92,8 +92,7 @@ class EmployeeProfile(models.Model):
         """Nhìn thấy những hồ sơ user được cấu hình"""
         profile = self.env['hrm.employee.profile'].sudo().search([('state', '!=', 'draft')])
         for p in profile:
-            approve = p.approved_link.approve.ids
-            if self.env.user.id in approve:
+            if self.env.user.id in p.approved_link.approve.ids:
                 p.can_see_approved_record = True
             else:
                 p.can_see_approved_record = False
@@ -252,14 +251,16 @@ class EmployeeProfile(models.Model):
                 cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
                     field_name = field.get("name")
-                    if field_name != 'employee_code_new' or field_name != 'employee_':
-                        modifiers = field.attrib.get('modifiers', '')
-                        modifiers = json.loads(modifiers) if modifiers else {}
-                        modifiers.update({'readonly': [["id", "!=", False], ["create_uid", "!=", user_id]]})
-                        if field_name in ['phone_num', 'email', 'identifier']:
-                            modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False],
-                                                           ["create_uid", "!=", user_id]]})
-                        field.attrib['modifiers'] = json.dumps(modifiers)
+                    if not (field_name != 'employee_code_new' or field_name != 'employee_'):
+                        continue
+                    modifiers = field.attrib.get('modifiers', '')
+                    modifiers = json.loads(modifiers) if modifiers else {}
+                    modifiers.update({'readonly': [["id", "!=", False], ["create_uid", "!=", user_id]]})
+                    if field_name not in ['phone_num', 'email', 'identifier']:
+                        continue
+                    modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False],
+                                                   ["create_uid", "!=", user_id]]})
+                    field.attrib['modifiers'] = json.dumps(modifiers)
 
                 # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
@@ -327,13 +328,11 @@ class EmployeeProfile(models.Model):
     @api.onchange('company')
     def _onchange_company(self):
         """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
-             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
-        if self.company:
-            company_system = self.company.system_id
-            if company_system:
-                self.system_id = company_system
-            else:
-                self.system_id = False
+             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+        """
+        if not self.company:
+            return
+        self.system_id = self.company.system_id
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -348,8 +347,8 @@ class EmployeeProfile(models.Model):
                 list_id = self._system_have_child_company(self.system_id.id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
+                self.company = False
                 return {'domain': {'company': self.get_child_company()}}
-                self.company = ''
 
     @api.onchange('block_id')
     def _onchange_block_id(self):
@@ -409,7 +408,7 @@ class EmployeeProfile(models.Model):
     def onchange_position_id(self):
         # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
         if self.position_id.block != self.block_id.name:
-            self.position_id = ''
+            self.position_id = False
 
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
@@ -632,7 +631,7 @@ class EmployeeProfile(models.Model):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
-            # nếu là khối văn phòng
+            # nếu là khối văn phòng và có cấu hình phòng ban
             if self.env.user.department_id.ids:
                 list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
                                                     'superior_department')
