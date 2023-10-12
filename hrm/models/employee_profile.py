@@ -62,7 +62,7 @@ class EmployeeProfile(models.Model):
 
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
-        self.env['hrm.employee.profile'].sudo().search([]).write({'see_record_with_config': False})
+        self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write({'see_record_with_config': False})
         user = self.env.user
         # Tim tat ca cac cong ty, he thong, phong ban con
         company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
@@ -508,11 +508,10 @@ class EmployeeProfile(models.Model):
             # đè base thay đổi lịch sử theo  mình
             message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
-            # self.reload_window()
             orders.sudo().write({'state': 'pending'})
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         else:
-            raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
+            raise ValidationError("Lỗi không tìm thấy luồng!")
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
