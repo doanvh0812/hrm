@@ -192,6 +192,7 @@ class Approval_flow_object(models.Model):
             child_company = []
             for sys in self.system_id:
                 child_company += self._system_have_child_company(sys.id.origin)
+            # lấy ra cty chung trong hai list cty
             company_ids = list(set(current_company_ids) & set(child_company))
             self.company = [(6, 0, company_ids)]
             # lấy domain cho trường công ty
