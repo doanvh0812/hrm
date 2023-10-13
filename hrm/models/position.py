@@ -16,6 +16,7 @@ class Position(models.Model):
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
         (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối", required=True, tracking=True
         , default=lambda self: self.env.user.block_id)
+    team_id = fields.Many2one('hrm.teams', string='Đội ngũ')
     active = fields.Boolean(string='Hoạt Động', default=True)
 
     related = fields.Boolean(compute='_compute_related_field')
@@ -65,7 +66,7 @@ class Position(models.Model):
             Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
         """
         for record in self:
-            name = self.search([('id', '!=', record.id)])
+            name = self.search([('id', '!=', record.id), ('active', 'in', (True, False))])
             for n in name:
                 if n['work_position'].lower() == record.work_position.lower() and n.block == self.block:
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")

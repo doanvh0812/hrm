@@ -1,0 +1,58 @@
+<odoo>
+    <data>
+        <record id="view_documents_list_form" model="ir.ui.view">
+            <field name="name">hrm.documents.list.form</field>
+            <field name="model">hrm.document.list.config</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="name" string="Tên hiển thị"/>
+                            <field name="block_id"/>
+                            <field name="department_id"/>
+                            <field name="position_id"/>
+                            <field name="system_id"/>
+                            <field name="company"/>
+                        </group>
+                        <notebook>
+                            <page string="Danh sách tài liệu" name="document_list">
+                                <field name="document_list">
+                                    <tree editable="bottom">
+                                        <field name="doc"/>
+                                        <field name="status_doc"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_documents_list_tree" model="ir.ui.view">
+            <field name="name">hrm.documents.list.tree</field>
+            <field name="model">hrm.document.list.config</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <field name="block_id"/>
+                    <field name="department_id"/>
+                    <field name="position_id"/>
+                    <field name="system_id"/>
+                    <field name="company"/>
+                </tree>
+            </field>
+        </record>
+
+
+        <record id="document_list_action" model="ir.actions.act_window">
+            <field name="name">Danh sách tài liệu</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">hrm.document.list.config</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_documents_list_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_documents_list_form')})]"/>
+        </record>
+    </data>
+</odoo>

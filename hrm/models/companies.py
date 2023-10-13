@@ -145,7 +145,7 @@ class Companies(models.Model):
     def _check_name_block_combination(self):
         # Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
         for record in self:
-            name = self.search([('id', '!=', record.id)])
+            name = self.search([('id', '!=', record.id), ('active', 'in', (True, False))])
             for n in name:
                 if n['name'].lower() == record.name.lower() and n.type_company == self.type_company:
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Công ty")
