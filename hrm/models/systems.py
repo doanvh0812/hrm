@@ -62,7 +62,6 @@ class Systems(models.Model):
     @api.constrains('name', 'type_system')
     def _check_name_block_combination(self):
         """
-            Kiểm tra sự trùng lặp dựa trên kết hợp của work_position và block
             Tên vị trí giống nhau nhưng khối khác nhau vẫn có thể lưu được
             Kiểm tra sự trùng lặp dựa trên kết hợp của name và type_system
         """
