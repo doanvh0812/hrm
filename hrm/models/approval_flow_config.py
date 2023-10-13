@@ -241,12 +241,9 @@ class Approval_flow_object(models.Model):
 
     def _default_system(self):
         """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
-        if not self.env.user.company.ids and self.env.user.system_id.ids:
+        if self.env.user.system_id.ids:
             list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
             return [('id', 'in', list_systems)]
-        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            # nếu có công ty thì không hiển thị hệ thống
-            return [('id', '=', 0)]
         return []
 
     system_id = fields.Many2many('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
