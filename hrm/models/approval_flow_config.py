@@ -171,15 +171,6 @@ class Approval_flow_object(models.Model):
     def _onchange_block(self):
         self.company = self.department_id = self.system_id = False
 
-    # @api.onchange('company')
-    # def _onchange_company(self):
-    #     self.system_id = False
-    #     system_ids = []
-    #     for com in self.company:
-    #         system_ids.append(com.system_id.id)
-    #     self.system_id = [(6, 0, system_ids)]
-        # self.write({'system_id': [(6, 0, system_ids)]})
-
     @api.onchange('system_id')
     def _onchange_system_id(self):
         """
