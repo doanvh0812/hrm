@@ -5,6 +5,7 @@ from . import constraint
 from lxml import etree
 import json
 
+
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
@@ -14,11 +15,10 @@ class EmployeeProfile(models.Model):
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
-    check_company = fields.Char(default=lambda self: self.env.user.company)
+    check_company = fields.Boolean(default=lambda self: self.env.user.company)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
-
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
@@ -54,6 +54,7 @@ class EmployeeProfile(models.Model):
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
+    document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
@@ -234,14 +235,22 @@ class EmployeeProfile(models.Model):
         if view_id:
             view = self.env['ir.ui.view'].browse(view_id)
             view_name = view.name
-        if view_type == 'form' and not self.id and view_name != 'hrm.employee.approval.form':
+        if view_type == 'form' and not self.id and view_name == 'hrm.employee.profile.form':
             user_id = self.env.user.id
+            # Kiểm tra trạng thái của bản ghi
+            record_id = self.env.context.get('params', {}).get('id')
+            if record_id:
+                record = self.browse(record_id)
+                if record.state != 'draft':
+                    res['arch'] = res['arch'].replace('<form string="Tạo mới hồ sơ" create="false" edit="true" modifiers="{}">', '<form string="Tạo mới hồ sơ" create="false" edit="false" modifiers="{}">')
+
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
             res['arch'] = res['arch'].replace(
                 '<button name="action_send" string="Gửi duyệt" type="object"/>',
                 f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
             )
+
             doc = etree.XML(res['arch'])
 
             """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
@@ -249,22 +258,28 @@ class EmployeeProfile(models.Model):
             config_group = doc.xpath("//group")
             if config_group and not self.env.user.has_group("hrm.hrm_group_config_access"):
                 cf = config_group[0]
-                for field in cf.xpath("//field[@name]"):
-                    field_name = field.get("name")
-                    if not (field_name != 'employee_code_new' or field_name != 'employee_'):
-                        continue
-                    modifiers = field.attrib.get('modifiers', '')
-                    modifiers = json.loads(modifiers) if modifiers else {}
-                    modifiers.update({'readonly': [["id", "!=", False], ["create_uid", "!=", user_id]]})
-                    if field_name not in ['phone_num', 'email', 'identifier']:
-                        continue
-                    modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False],
-                                                   ["create_uid", "!=", user_id]]})
-                    field.attrib['modifiers'] = json.dumps(modifiers)
-
+                has_group_readonly = self.env.user.has_group("hrm.hrm_group_read_only")
+                if not has_group_readonly:
+                    # nếu user login không có quyền chỉ đọc thì update lại các thuộc tính readonly
+                    for field in cf.xpath("//field[@name]"):
+                        field_name = field.get("name")
+                        modifiers = field.attrib.get('modifiers', '')
+                        modifiers = json.loads(modifiers) if modifiers else {}
+                        if field_name != 'employee_code_new':
+                            modifiers.update({'readonly': ["|",['id', '!=', False],['create_uid', '!=', user_id],['state','!=','draft']]})
+                        if field_name in ['phone_num', 'email', 'identifier']:
+                            modifiers.update({'readonly': ["|",["id", "!=", False],
+                                                           ["create_uid", "!=", user_id],['state','!=','draft']]})
+                        field.attrib['modifiers'] = json.dumps(modifiers)
+                else:
+                    # nếu user login có quyền chỉ đọc thì set các field readonly
+                    for field in cf.xpath("//field[@name]"):
+                        modifiers = field.attrib.get('modifiers', '')
+                        modifiers = json.loads(modifiers) if modifiers else {}
+                        modifiers.update({'readonly': [[1,'=',1]]})
+                        field.attrib['modifiers'] = json.dumps(modifiers)
                 # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
-
         return res
 
     def default_block_profile(self):
@@ -513,6 +528,17 @@ class EmployeeProfile(models.Model):
         else:
             raise ValidationError("Lỗi không tìm thấy luồng!")
 
+    def action_open_edit_form(self):
+        # Đoạn mã này sẽ mở action sửa thông tin hồ sơ
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Sửa thông tin nhân viên',
+            'res_model': 'hrm.employee.profile',
+            'view_mode': 'form',
+            'view_id': self.env.ref('hrm.view_employee_profile_form').id,
+            'res_id': self.id,
+            'target': 'current',
+        }
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:

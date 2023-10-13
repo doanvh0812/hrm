@@ -19,7 +19,7 @@ class Blocks(models.Model):
     def _check_name_case_insensitive(self):
         """ Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường """
         for record in self:
-            name = self.search([('id', '!=', record.id)])
+            name = self.search([('id', '!=', record.id), ('active', 'in', (True, False))])
             for n in name:
                 if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Khối')

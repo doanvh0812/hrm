@@ -1,4 +1,4 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 from . import constraint
 from odoo.exceptions import ValidationError, AccessDenied
 
@@ -171,15 +171,6 @@ class Approval_flow_object(models.Model):
     def _onchange_block(self):
         self.company = self.department_id = self.system_id = False
 
-    @api.onchange('company')
-    def _onchange_company(self):
-        self.system_id = False
-        system_ids = []
-        for com in self.company:
-            system_ids.append(com.system_id.id)
-        self.system_id = [(6, 0, system_ids)]
-        # self.write({'system_id': [(6, 0, system_ids)]})
-
     @api.onchange('system_id')
     def _onchange_system_id(self):
         """
@@ -187,6 +178,15 @@ class Approval_flow_object(models.Model):
             Xoá bỏ công ty nếu trong trường hệ thống không có hệ thống công ty đó thuộc
         """
         if self.system_id:
+            # khi bỏ trường hệ thống thì loại bỏ các cty con của nó
+            current_company_ids = self.company.ids
+            child_company = []
+            for sys in self.system_id:
+                child_company += self._system_have_child_company(sys.id.origin)
+            # lấy ra cty chung trong hai list cty
+            company_ids = list(set(current_company_ids) & set(child_company))
+            self.company = [(6, 0, company_ids)]
+            # lấy domain cho trường công ty
             if not self.env.user.company:
                 list_id = []
                 for sys_id in self.system_id.ids:
@@ -194,6 +194,7 @@ class Approval_flow_object(models.Model):
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 return {'domain': {'company': self.get_child_company()}}
+        self.company = [(6, 0, [])]
 
     def _system_have_child_company(self, system_id):
         """
@@ -221,6 +222,34 @@ class Approval_flow_object(models.Model):
         if len(list_company) > 0:
             return [com[0] for com in list_company]
         return []
+
+    def get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
+        list_child_company = []
+        if self.env.user.company:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
+                                                                    "parent_company")
+        elif not self.env.user.company and self.env.user.system_id:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            for sys in self.env.user.system_id:
+                list_child_company += self._system_have_child_company(sys.id)
+        return [('id', 'in', list_child_company)]
+
+    company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
+
+    def _default_system(self):
+        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
+        if not self.env.user.company.ids and self.env.user.system_id.ids:
+            list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            return [('id', 'in', list_systems)]
+        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            # nếu có công ty thì không hiển thị hệ thống
+            return [('id', '=', 0)]
+        return []
+
+    system_id = fields.Many2many('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
 
     @api.constrains('name', 'block_id', 'system_id', 'company', 'department_id')
     def check_permission(self):

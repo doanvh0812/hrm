@@ -1,5 +1,6 @@
 <odoo>
     <data>
+
         <record id="view_employee_profile_form" model="ir.ui.view">
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
@@ -17,7 +18,7 @@
                                 <field name="acc_id" invisible="1"/>
                                 <field name="employee_code_new" readonly="1"/>
                                 <field name="name"/>
-                                <field name="phone_num"/>
+                                <field name="phone_num" attrs="{'readonly': [('state','!=','draft')]}"/>
                                 <field name="email" modifiers="{'readonly': false, 'required': true}"/>
                                 <field name="identifier"/>
                                 <field name="work_start_date"/>
@@ -33,8 +34,7 @@
                                 <field name="system_id"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)],
                                        'readonly': [('check_company', '!=', 'hrm.companies()')]}"
-                                       force_save="1"
-                                />
+                                       force_save="1"/>
                                 <field name="company"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)], }"/>
                                 <field name="department_id"
@@ -50,8 +50,31 @@
                         <group>
                             <field name="auto_create_acc"/>
                         </group>
-                        <notebook attrs="{'invisible': [('approved_name', '=', False)]}">
-                            <page string="Trạng thái phê duyệt">
+                        <notebook>
+                            <page string="Khai báo tài liệu">
+                                <field name="document_declaration">
+                                    <tree>
+
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Khai báo tài liệu">
+                                <field name="document_declaration">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="employee_id"/>
+                                        <field name="type_documents"/>
+                                        <field name="block_id"/>
+                                        <field name="system_id"/>
+                                        <field name="company_id"/>
+                                        <field name="department_id"/>
+                                        <field name="manager_document"/>
+                                        <field name="give_back"/>
+                                        <field name="complete"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Trạng thái phê duyệt" attrs="{'invisible': [('approved_name', '=', False)]}">
                                 <field name="approved_name" readonly="1"/>
                                 <field name="approved_link" readonly="1">
                                     <tree default_order="step ASC">
