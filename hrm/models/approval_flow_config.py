@@ -171,13 +171,13 @@ class Approval_flow_object(models.Model):
     def _onchange_block(self):
         self.company = self.department_id = self.system_id = False
 
-    @api.onchange('company')
-    def _onchange_company(self):
-        self.system_id = False
-        system_ids = []
-        for com in self.company:
-            system_ids.append(com.system_id.id)
-        self.system_id = [(6, 0, system_ids)]
+    # @api.onchange('company')
+    # def _onchange_company(self):
+    #     self.system_id = False
+    #     system_ids = []
+    #     for com in self.company:
+    #         system_ids.append(com.system_id.id)
+    #     self.system_id = [(6, 0, system_ids)]
         # self.write({'system_id': [(6, 0, system_ids)]})
 
     @api.onchange('system_id')
@@ -187,6 +187,14 @@ class Approval_flow_object(models.Model):
             Xoá bỏ công ty nếu trong trường hệ thống không có hệ thống công ty đó thuộc
         """
         if self.system_id:
+            # khi bỏ trường hệ thống thì loại bỏ các cty con của nó
+            current_company_ids = self.company.ids
+            child_company = []
+            for sys in self.system_id:
+                child_company += self._system_have_child_company(sys.id.origin)
+            company_ids = list(set(current_company_ids) & set(child_company))
+            self.company = [(6, 0, company_ids)]
+            # lấy domain cho trường công ty
             if not self.env.user.company:
                 list_id = []
                 for sys_id in self.system_id.ids:
@@ -194,6 +202,7 @@ class Approval_flow_object(models.Model):
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 return {'domain': {'company': self.get_child_company()}}
+        self.company = [(6, 0, [])]
 
     def _system_have_child_company(self, system_id):
         """
