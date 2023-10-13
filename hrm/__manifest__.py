@@ -27,7 +27,8 @@
         'wizard/approval_reason_refusal.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
-        # 'views/hrm.xml',
+        'views/hrm.xml',
+        'views/document_list_view.xml',
         'views/documents_view.xml',
         'views/blocks_view.xml',
         'data/blocks_data.xml',
@@ -41,6 +42,7 @@
         'views/hrm_users_view.xml',
         'views/team_view.xml',
         'views/rank_view.xml',
+        'views/document_declaration_view.xml',
         'views/menu.xml'
     ],
     # only loaded in demonstration mode
