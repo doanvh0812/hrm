@@ -5,7 +5,7 @@ from odoo.exceptions import ValidationError
 from . import constraint
 
 
-class Teams(models.Model):
+class Ranks(models.Model):
     _name = 'hrm.ranks'
     _description = 'Cấp bậc'
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
