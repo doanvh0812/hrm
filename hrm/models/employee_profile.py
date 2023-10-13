@@ -622,7 +622,7 @@ class EmployeeProfile(models.Model):
             })
         return super(EmployeeProfile, self).write(vals)
 
-    @api.constrains("name", "date_receipt", "block_id", "position_id", "work_start_date", "employee_code_old",
+    @api.constrains("name", "date_receipt", "block_id", "position_id", "    work_start_date", "employee_code_old",
                     "employee_code_new", "email", "phone_num", "identifier", "team_marketing", "team_sales", "manager_id",
                     "rank_id", "auto_create_acc", "reason", "acc_id", "approved_name", "approved_link", "company",
                     "system_id")
