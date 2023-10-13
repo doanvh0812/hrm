@@ -222,6 +222,34 @@ class Approval_flow_object(models.Model):
             return [com[0] for com in list_company]
         return []
 
+    def get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
+        list_child_company = []
+        if self.env.user.company:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
+                                                                    "parent_company")
+        elif not self.env.user.company and self.env.user.system_id:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            for sys in self.env.user.system_id:
+                list_child_company += self._system_have_child_company(sys.id)
+        return [('id', 'in', list_child_company)]
+
+    company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
+
+    def _default_system(self):
+        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
+        if not self.env.user.company.ids and self.env.user.system_id.ids:
+            list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
+            return [('id', 'in', list_systems)]
+        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            # nếu có công ty thì không hiển thị hệ thống
+            return [('id', '=', 0)]
+        return []
+
+    system_id = fields.Many2many('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
+
     @api.constrains('name', 'block_id', 'system_id', 'company', 'department_id')
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""

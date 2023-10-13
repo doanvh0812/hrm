@@ -1,5 +1,6 @@
 <odoo>
     <data>
+
         <record id="view_employee_profile_form" model="ir.ui.view">
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
@@ -33,8 +34,7 @@
                                 <field name="system_id"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)],
                                        'readonly': [('check_company', '!=', 'hrm.companies()')]}"
-                                       force_save="1"
-                                />
+                                       force_save="1"/>
                                 <field name="company"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)], }"/>
                                 <field name="department_id"

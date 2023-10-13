@@ -5,6 +5,7 @@ from . import constraint
 from lxml import etree
 import json
 
+
 class EmployeeProfile(models.Model):
     _name = 'hrm.employee.profile'
     _description = 'Bảng thông tin nhân viên'
@@ -14,7 +15,7 @@ class EmployeeProfile(models.Model):
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
     check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
-    check_company = fields.Char(default=lambda self: self.env.user.company)
+    check_company = fields.Boolean(default=lambda self: self.env.user.company)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
@@ -235,12 +236,20 @@ class EmployeeProfile(models.Model):
             view_name = view.name
         if view_type == 'form' and not self.id and view_name == 'hrm.employee.profile.form':
             user_id = self.env.user.id
+            # Kiểm tra trạng thái của bản ghi
+            record_id = self.env.context.get('params', {}).get('id')
+            if record_id:
+                record = self.browse(record_id)
+                if record.state != 'draft':
+                    res['arch'] = res['arch'].replace('<form string="Tạo mới hồ sơ" create="false" edit="true" modifiers="{}">', '<form string="Tạo mới hồ sơ" create="false" edit="false" modifiers="{}">')
+
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
             res['arch'] = res['arch'].replace(
                 '<button name="action_send" string="Gửi duyệt" type="object"/>',
                 f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
             )
+
             doc = etree.XML(res['arch'])
 
             """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
@@ -518,6 +527,17 @@ class EmployeeProfile(models.Model):
         else:
             raise ValidationError("Lỗi không tìm thấy luồng!")
 
+    def action_open_edit_form(self):
+        # Đoạn mã này sẽ mở action sửa thông tin hồ sơ
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Sửa thông tin nhân viên',
+            'res_model': 'hrm.employee.profile',
+            'view_mode': 'form',
+            'view_id': self.env.ref('hrm.view_employee_profile_form').id,
+            'res_id': self.id,
+            'target': 'current',
+        }
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:
@@ -627,7 +647,7 @@ class EmployeeProfile(models.Model):
             })
         return super(EmployeeProfile, self).write(vals)
 
-    @api.constrains("name", "date_receipt", "block_id", "position_id", "work_start_date", "employee_code_old",
+    @api.constrains("name", "date_receipt", "block_id", "position_id", "    work_start_date", "employee_code_old",
                     "employee_code_new", "email", "phone_num", "identifier", "team_marketing", "team_sales", "manager_id",
                     "rank_id", "auto_create_acc", "reason", "acc_id", "approved_name", "approved_link", "company",
                     "system_id")
