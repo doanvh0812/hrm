@@ -1,6 +1,7 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 
+
 class Documents(models.Model):
     _name = 'hrm.documents'
     _description = 'Tài liệu'
