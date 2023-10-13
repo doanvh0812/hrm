@@ -1,5 +1,5 @@
-from . import constraint
 from odoo import models, fields, api, _
+from . import constraint
 from odoo.exceptions import ValidationError, AccessDenied
 
 
@@ -44,11 +44,11 @@ class Approval_flow_object(models.Model):
 
     def _default_system(self):
         """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
-        if not self.env.user.company.ids and self.env.user.system_id.ids:
+        if self.env.user.system_id.ids:
             list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
             return [('id', 'in', list_systems)]
-        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            # nếu có công ty thì không hiển thị hệ thống
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            # nếu khối là văn phòng thì không hiển thị hệ thống
             return [('id', '=', 0)]
         return []
 
@@ -107,7 +107,7 @@ class Approval_flow_object(models.Model):
             """
             self._cr.execute(
                 r"""
-                    select hrm_companies.name from hrm_companies where hrm_companies.system_id in 
+                    select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
                         (WITH RECURSIVE subordinates AS (
                         SELECT id, parent_system
                         FROM hrm_systems
@@ -135,21 +135,22 @@ class Approval_flow_object(models.Model):
             # Nếu có chọn cấu hình công ty thì chỉ cần check theo công ty
             check_duplicate_for_object(self.company, "company")
         if self.system_id:
-            # Nếu hệ thống không có công ty con thì mới đc cấu hình
+            # Hệ thống không có công ty con thì mới đc cấu hình
             for system in self.system_id:
-                list_name_company = [company.name for company in self.company]
-                # nếu hệ thống được chọn không có công ty con trong công ty đã chọn thì mới tiếp tục kiểm tra
-                if not any(elem in system_have_child_company(system.id) for elem in list_name_company):
+                # nếu hệ thống đã chọn không có công ty con trong công ty đã chọn thì mới tiếp tục kiểm tra
+                if not any(com in system_have_child_company(system.id) for com in self.company.ids):
                     # tìm các cấu hình hệ thống đã có trong hệ thống được chọn
                     record_temp_configured = [(rec["name"], rec["system_id"], rec["company"]) for rec in
                                               self.env["hrm.approval.flow.object"].search(
-                                                  [("id", "!=", self.id), ("system_id", "=", system.name)])]
+                                                  [("id", "!=", self.id), ("system_id", "=", system.id)])]
+                    # record[0]: tên luồng cấu hình
+                    # record[1]: hệ thống được cấu hình
+                    # record[2]: công ty được cấu hình
                     for record in record_temp_configured:
-                        list_name_company = [company.name for company in record[2]]
                         for sys in record[1]:
                             # nếu hệ thống không có công ty con trong các bản ghi khác là đã cấu hình
                             if sys.id == system.id and not any(
-                                    elem in system_have_child_company(sys.id) for elem in list_name_company):
+                                    com in system_have_child_company(sys.id) for com in record[2].ids):
                                 raise ValidationError(
                                     f"Luồng phê duyệt cho {sys.name} đã tồn tại trong cấu hình {record[0]}.")
         elif self.block_id:
@@ -173,8 +174,11 @@ class Approval_flow_object(models.Model):
     @api.onchange('company')
     def _onchange_company(self):
         self.system_id = False
+        system_ids = []
         for com in self.company:
-            self.system_id += com.system_id
+            system_ids.append(com.system_id.id)
+        self.system_id = [(6, 0, system_ids)]
+        # self.write({'system_id': [(6, 0, system_ids)]})
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -252,18 +256,20 @@ class Approval_flow_object(models.Model):
         func = self.env['hrm.utils']
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng
-            if self.env.user.department_id.ids:
-                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                    'superior_department')
-                for depart in self.department_id:
-                    if depart.id not in list_department:
-                        raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
-            if self.block_id.name != self.env.user.block_id:
-                raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
+            # if self.env.user.department_id.ids:
+                # nếu user có cấu hình phòng ban thì kiểm tra xem các phòng ban được chọn
+                # có thuộc phòng ban được cấu hình của user hay không
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                'superior_department')
+            for depart in self.department_id:
+                if depart.id not in list_department:
+                    raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             # nếu là khối thương mại
-            if self.env.user.company:
+            if self.env.user.company or self.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
+                for sys in self.env.user.system_id:
+                    list_company += self._system_have_child_company(sys.id)
                 for com in self.company:
                     if com.id not in list_company:
                         raise AccessDenied(_(f"Bạn không có quyền cấu hình công ty {com.name}"))
@@ -272,8 +278,10 @@ class Approval_flow_object(models.Model):
                 for sys in self.system_id:
                     if sys.id not in list_system:
                         raise AccessDenied(_(f"Bạn không có quyền cấu hình hệ thống {sys.name}"))
-            if self.block_id.name != self.env.user.block_id:
-                raise AccessDenied(_("Bạn không có quyền cấu hình khối văn phòng."))
+        if self.block_id.name != self.env.user.block_id and self.env.user.block_id != "full":
+            # nếu không kiểm tra xem khối được chọn có phải là khối được cấu hình hay không
+            raise AccessDenied(_(f"Bạn không có quyền cấu hình khối {self.block_id.name}."))
+
 
 class Approve(models.Model):
     _name = 'hrm.approval.flow'

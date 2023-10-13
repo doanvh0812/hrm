@@ -1,25 +1,23 @@
-odoo.define('hrm.hrm_employee_profile', function (require) {
-    "use strict";
-
+odoo.define('hrm.hide_button_edit', function (require) {
+"use strict";
+    console.log('hide_button_edit');
     var FormController = require('web.FormController');
     var viewRegistry = require('web.view_registry');
     var FormView = require('web.FormView');
-
     var MyFormController = FormController.extend({
         _updateButtons: function () {
             this._super.apply(this, arguments);
+            console.log('button' + this.renderer.state.data.state);
+            console.log('button 2 ' + this.$buttons);
             if (this.$buttons) {
-                // Lấy trạng thái dữ liệu từ renderer
-                var dataState = this.renderer.state.data.state;
-
-                // Kiểm tra trạng thái dữ liệu và ẩn nút "Edit" nếu cần
-                if (dataState !== 'draft') {
+                if (this.renderer.state.data.state !== 'draft'){
                     this.$buttons.find('.o_form_button_edit').hide();
                 } else {
                     this.$buttons.find('.o_form_button_edit').show();
                 }
             }
         },
+
     });
 
     var MyFormView = FormView.extend({
@@ -27,6 +25,5 @@ odoo.define('hrm.hrm_employee_profile', function (require) {
             Controller: MyFormController,
         }),
     });
-
     viewRegistry.add('custom_form', MyFormView);
 });

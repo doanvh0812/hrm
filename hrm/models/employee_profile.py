@@ -1,11 +1,9 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 import re
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
-
-
 
 
 class EmployeeProfile(models.Model):
@@ -21,7 +19,6 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
-
 
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
@@ -76,31 +73,27 @@ class EmployeeProfile(models.Model):
 
         domain = []
         # Lay domain theo cac truong
-        if company_config:
-            domain.append(('company', 'in', company_config))
-        elif system_config:
-            domain.append(('system_id', 'in', system_config))
-        elif department_config:
-            domain.append(('department_id', 'in', department_config))
-        elif block_config:
-            # Neu la full thi domain = []
-            if block_config == 'full':
-                pass
+        if not user.has_group("hrm.hrm_group_create_edit"):
+            if company_config:
+                domain.append(('company', 'in', company_config))
+            elif system_config:
+                domain.append(('system_id', 'in', system_config))
+            elif department_config:
+                domain.append(('department_id', 'in', department_config))
+            elif block_config:
+                # Neu la full thi domain = []
+                if block_config != 'full':
+                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
+                    if block_id:
+                        domain.append(('block_id', '=', block_id.id))
 
-            else:
-                # Neu khac thi search trong bang block xem khoi nay id la bao nhieu de gan vao domain
-                block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
-                if block_id:
-                    domain.append(('block_id', '=', block_id.id))
-        if domain:
             self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
 
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
         profile = self.env['hrm.employee.profile'].sudo().search([('state', '!=', 'draft')])
         for p in profile:
-            approve = p.approved_link.approve.ids
-            if self.env.user.id in approve:
+            if self.env.user.id in p.approved_link.approve.ids:
                 p.can_see_approved_record = True
             else:
                 p.can_see_approved_record = False
@@ -127,7 +120,7 @@ class EmployeeProfile(models.Model):
                         AND excess_level = true
                       ))
                     );
-                    """
+                """
             self._cr.execute(query)
             list_id = self._cr.fetchall()
             list_id_last = [i[0] for i in list_id]
@@ -267,14 +260,16 @@ class EmployeeProfile(models.Model):
                 cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
                     field_name = field.get("name")
-                    if field_name != 'employee_code_new' or field_name != 'employee_':
-                        modifiers = field.attrib.get('modifiers', '')
-                        modifiers = json.loads(modifiers) if modifiers else {}
-                        modifiers.update({'readonly': [["id", "!=", False], ["create_uid", "!=", user_id]]})
-                        if field_name in ['phone_num', 'email', 'identifier']:
-                            modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False],
-                                                           ["create_uid", "!=", user_id]]})
-                        field.attrib['modifiers'] = json.dumps(modifiers)
+                    if not (field_name != 'employee_code_new' or field_name != 'employee_'):
+                        continue
+                    modifiers = field.attrib.get('modifiers', '')
+                    modifiers = json.loads(modifiers) if modifiers else {}
+                    modifiers.update({'readonly': [["id", "!=", False], ["create_uid", "!=", user_id]]})
+                    if field_name not in ['phone_num', 'email', 'identifier']:
+                        continue
+                    modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False],
+                                                   ["create_uid", "!=", user_id]]})
+                    field.attrib['modifiers'] = json.dumps(modifiers)
 
                 # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
@@ -299,12 +294,12 @@ class EmployeeProfile(models.Model):
             # Ngược lại không phải khối văn phòng
             else:
                 # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-                if record.system_id.name:
+                if record.system_id.name and not record.employee_code_new:
                     name = str.split(record.system_id.name, '.')[0]
                     last_employee_code = self._get_last_employee_code('like', name)
                     record.employee_code_new = self._generate_employee_code(name, last_employee_code)
                 # Ngược lại chưa chọn hệ thống ra mã là rỗng
-                else:
+                elif not record.employee_code_new:
                     record.employee_code_new = ''
 
     @api.model
@@ -342,13 +337,11 @@ class EmployeeProfile(models.Model):
     @api.onchange('company')
     def _onchange_company(self):
         """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
-             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào"""
-        if self.company:
-            company_system = self.company.system_id
-            if company_system:
-                self.system_id = company_system
-            else:
-                self.system_id = False
+             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+        """
+        if not self.company:
+            return
+        self.system_id = self.company.system_id
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -356,16 +349,15 @@ class EmployeeProfile(models.Model):
             decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
         """
-
-        if self.system_id != self.company.system_id:  # khi đổi hệ thống thì clear company
+        if self.system_id != self.company.system_id: #khi đổi hệ thống thì clear company
             self.position_id = self.company = self.team_sales = self.team_marketing = False
         if self.system_id:
             if not self.env.user.company:
                 list_id = self._system_have_child_company(self.system_id.id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
+                self.company = False
                 return {'domain': {'company': self.get_child_company()}}
-                self.company = ''
 
     @api.onchange('block_id')
     def _onchange_block_id(self):
@@ -425,7 +417,7 @@ class EmployeeProfile(models.Model):
     def onchange_position_id(self):
         # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
         if self.position_id.block != self.block_id.name:
-            self.position_id = ''
+            self.position_id = False
 
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
@@ -478,7 +470,7 @@ class EmployeeProfile(models.Model):
     def action_send(self):
         # Khi ấn button Gửi duyệt sẽ chuyển từ draft sang pending
         orders = self.filtered(lambda s: s.state == 'draft')
-        records = self.env['hrm.approval.flow.object'].search([('block_id', '=', self.block_id.id)])
+        records = self.env['hrm.approval.flow.object'].sudo().search([('block_id', '=', self.block_id.id)])
         approved_id = None
         if records:
             # Nếu có ít nhất 1 cấu hình cho khối của hồ sơ đang thuộc
@@ -520,13 +512,13 @@ class EmployeeProfile(models.Model):
             })
 
             # Sử dụng phương thức create để chèn danh sách dữ liệu vào tab trạng thái
-            self.approved_link.create(approved_link_data)
+            self.sudo().approved_link.create(approved_link_data)
 
             # đè base thay đổi lịch sử theo  mình
             message_body = "Đã Gửi Phê Duyệt"
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
             # self.reload_window()
-            orders.write({'state': 'pending'})
+            orders.sudo().write({'state': 'pending'})
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         else:
             raise ValidationError("LỖI KHÔNG TÌM THẤY LUỒNG")
@@ -651,33 +643,29 @@ class EmployeeProfile(models.Model):
             })
         return super(EmployeeProfile, self).write(vals)
 
-    @api.constrains("name")
+    @api.constrains("name", "date_receipt", "block_id", "position_id", "work_start_date", "employee_code_old",
+                    "employee_code_new", "email", "phone_num", "identifier", "team_marketing", "team_sales", "manager_id",
+                    "rank_id", "auto_create_acc", "reason", "acc_id", "approved_name", "approved_link", "company",
+                    "system_id")
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
         func = self.env['hrm.utils']
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
-            # nếu là khối văn phòng
-            if self.env.user.department_id.ids:
-                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                    'superior_department')
-                for depart in self.department_id:
-                    if depart.id not in list_department:
-                        raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
-            if self.block_id.name != self.env.user.block_id:
+            # nếu là khối văn phòng và có cấu hình phòng ban
+            # if self.env.user.department_id.ids:
+            list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                'superior_department')
+            for depart in self.department_id:
+                if depart.id not in list_department:
+                    raise AccessDenied(_(f"Bạn không có quyền cấu hình phòng ban {depart.name}"))
+            if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 raise AccessDenied(_("Bạn không có quyền cấu hình khối thương mại."))
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            if self.env.user.company:
-                list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
-                if self.company.id not in list_company:
-                    raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.company.name}")
-            elif self.env.user.system_id and not self.env.user.company:
-                list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
-                if self.system_id.id not in list_system:
-                    raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
-
-
-   
-
-
-
-
+            # if self.env.user.company:
+            list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
+            if self.company.id not in list_company:
+                raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.company.name}")
+            # elif self.env.user.system_id and not self.env.user.company:
+            list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
+            if self.system_id.id not in list_system:
+                raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
