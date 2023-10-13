@@ -18,7 +18,7 @@
                                 <field name="acc_id" invisible="1"/>
                                 <field name="employee_code_new" readonly="1"/>
                                 <field name="name"/>
-                                <field name="phone_num"/>
+                                <field name="phone_num" attrs="{'readonly': [('state','!=','draft')]}"/>
                                 <field name="email" modifiers="{'readonly': false, 'required': true}"/>
                                 <field name="identifier"/>
                                 <field name="work_start_date"/>

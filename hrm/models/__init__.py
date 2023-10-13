@@ -11,3 +11,4 @@ from . import documents
 from . import rank
 from . import team
 from . import document_declaration
+from . import document_list
