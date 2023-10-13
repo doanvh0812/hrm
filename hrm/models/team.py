@@ -10,14 +10,15 @@ class Teams(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'utm.mixin']
 
     name = fields.Char(string='Tên hiển thị', compute='_compute_name_team', store=True)
-    team_name = fields.Char(string='Tên team',)
-    type_team = fields.Selection(selection=constraint.SELECT_TYPE_TEAM, string='Loại hình đội ngũ',)
-    system_id = fields.Many2one('hrm.systems', string='Hệ thống')
-    company_id = fields.Many2one('hrm.companies', string='Công ty')
+    team_name = fields.Char(string='Tên team',required=True)
+    type_team = fields.Selection(selection=constraint.SELECT_TYPE_TEAM, string='Loại hình đội ngũ',required=True)
+    system_id = fields.Many2one('hrm.systems', string='Hệ thống',required=True)
+    company_id = fields.Many2one('hrm.companies', string='Công ty',required=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
+    change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
 
     @api.onchange('company_id')
-    def _onchange_parent_company(self):
+    def _onchange_company(self):
         """ decorator này  chọn cty
             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
         """
@@ -28,6 +29,7 @@ class Teams(models.Model):
             self.system_id = self.change_system_id
         else:
             self.system_id = False
+
     @api.constrains("team_name")
     def _check_valid_name(self):
         """
@@ -57,9 +59,6 @@ class Teams(models.Model):
 
             name_parts = [part for part in [name_prefix, team_name, name_company] if part]
             rec.name = '_'.join(name_parts)
-
-
-
 
     @api.constrains('name', 'type_company')
     def _check_name_combination(self):
