@@ -8,3 +8,5 @@ from . import approval_flow_config
 from . import hrm_users
 from . import utils
 from . import documents
+from . import rank
+from . import team

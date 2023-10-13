@@ -6,6 +6,12 @@ SELECT_TYPE_COMPANY = [
     ('upsale', 'Upsale')
 ]
 
+SELECT_TYPE_TEAM = [
+    ('marketing', 'Marketing'),
+    ('sale', 'Sale'),
+    ('resale', 'Resale')
+]
+
 PROFILE_STATUS = [
     ('incomplete', 'Chưa hoàn thiện'),
     ('complete', 'Hoàn thiện')

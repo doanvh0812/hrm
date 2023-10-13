@@ -28,6 +28,7 @@
         'security/security.xml',
         'security/ir.model.access.csv',
         'views/hrm.xml',
+        'views/documents_view.xml',
         'views/blocks_view.xml',
         'data/blocks_data.xml',
         'views/systems_views.xml',
@@ -38,6 +39,8 @@
         'views/approval_view.xml',
         'views/approval_flow_config.xml',
         'views/hrm_users_view.xml',
+        'views/team_view.xml',
+        'views/rank_view.xml',
         'views/menu.xml'
     ],
     # only loaded in demonstration mode
