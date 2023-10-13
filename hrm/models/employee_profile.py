@@ -18,7 +18,6 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
-
     position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
@@ -234,7 +233,7 @@ class EmployeeProfile(models.Model):
         if view_id:
             view = self.env['ir.ui.view'].browse(view_id)
             view_name = view.name
-        if view_type == 'form' and not self.id and view_name != 'hrm.employee.approval.form':
+        if view_type == 'form' and not self.id and view_name == 'hrm.employee.profile.form':
             user_id = self.env.user.id
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
@@ -249,22 +248,28 @@ class EmployeeProfile(models.Model):
             config_group = doc.xpath("//group")
             if config_group and not self.env.user.has_group("hrm.hrm_group_config_access"):
                 cf = config_group[0]
-                for field in cf.xpath("//field[@name]"):
-                    field_name = field.get("name")
-                    if not (field_name != 'employee_code_new' or field_name != 'employee_'):
-                        continue
-                    modifiers = field.attrib.get('modifiers', '')
-                    modifiers = json.loads(modifiers) if modifiers else {}
-                    modifiers.update({'readonly': [["id", "!=", False], ["create_uid", "!=", user_id]]})
-                    if field_name not in ['phone_num', 'email', 'identifier']:
-                        continue
-                    modifiers.update({'readonly': [["acc_id", "!=", user_id], ["id", "!=", False],
-                                                   ["create_uid", "!=", user_id]]})
-                    field.attrib['modifiers'] = json.dumps(modifiers)
-
+                has_group_readonly = self.env.user.has_group("hrm.hrm_group_read_only")
+                if not has_group_readonly:
+                    # nếu user login không có quyền chỉ đọc thì update lại các thuộc tính readonly
+                    for field in cf.xpath("//field[@name]"):
+                        field_name = field.get("name")
+                        modifiers = field.attrib.get('modifiers', '')
+                        modifiers = json.loads(modifiers) if modifiers else {}
+                        if field_name != 'employee_code_new':
+                            modifiers.update({'readonly': ["|",['id', '!=', False],['create_uid', '!=', user_id],['state','!=','draft']]})
+                        if field_name in ['phone_num', 'email', 'identifier']:
+                            modifiers.update({'readonly': ["|",["id", "!=", False],
+                                                           ["create_uid", "!=", user_id],['state','!=','draft']]})
+                        field.attrib['modifiers'] = json.dumps(modifiers)
+                else:
+                    # nếu user login có quyền chỉ đọc thì set các field readonly
+                    for field in cf.xpath("//field[@name]"):
+                        modifiers = field.attrib.get('modifiers', '')
+                        modifiers = json.loads(modifiers) if modifiers else {}
+                        modifiers.update({'readonly': [[1,'=',1]]})
+                        field.attrib['modifiers'] = json.dumps(modifiers)
                 # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
-
         return res
 
     def default_block_profile(self):

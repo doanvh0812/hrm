@@ -27,7 +27,7 @@
         'wizard/approval_reason_refusal.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
-        'views/hrm.xml',
+        # 'views/hrm.xml',
         'views/blocks_view.xml',
         'data/blocks_data.xml',
         'views/systems_views.xml',
