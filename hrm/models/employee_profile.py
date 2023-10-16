@@ -255,30 +255,30 @@ class EmployeeProfile(models.Model):
 
             """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
+            has_group_readonly = self.env.user.has_group("hrm.hrm_group_read_only")
+            has_group_config = self.env.user.has_group("hrm.hrm_group_config_access")
             config_group = doc.xpath("//group")
-            if config_group and not self.env.user.has_group("hrm.hrm_group_config_access"):
+            if config_group and not has_group_readonly:
                 cf = config_group[0]
-                has_group_readonly = self.env.user.has_group("hrm.hrm_group_read_only")
-                if not has_group_readonly:
-                    # nếu user login không có quyền chỉ đọc thì update lại các thuộc tính readonly
-                    for field in cf.xpath("//field[@name]"):
-                        field_name = field.get("name")
-                        modifiers = field.attrib.get('modifiers', '')
-                        modifiers = json.loads(modifiers) if modifiers else {}
-                        if field_name != 'employee_code_new':
-                            modifiers.update({'readonly': ["|",['id', '!=', False],['create_uid', '!=', user_id],['state','!=','draft']]})
-                        if field_name in ['phone_num', 'email', 'identifier']:
-                            modifiers.update({'readonly': ["|",["id", "!=", False],
-                                                           ["create_uid", "!=", user_id],['state','!=','draft']]})
-                        field.attrib['modifiers'] = json.dumps(modifiers)
-                else:
-                    # nếu user login có quyền chỉ đọc thì set các field readonly
-                    for field in cf.xpath("//field[@name]"):
-                        modifiers = field.attrib.get('modifiers', '')
-                        modifiers = json.loads(modifiers) if modifiers else {}
-                        modifiers.update({'readonly': [[1,'=',1]]})
-                        field.attrib['modifiers'] = json.dumps(modifiers)
-                # Gán lại 'arch' cho res với các thay đổi mới
+                # nếu user login không có quyền chỉ đọc thì update lại các thuộc tính readonly
+                for field in cf.xpath("//field[@name]"):
+                    modifiers = field.attrib.get('modifiers', '')
+                    modifiers = json.loads(modifiers) if modifiers else {}
+                    if field.get("name") != 'employee_code_new':
+                        modifiers.update({'readonly': ["|",['id', '!=', False],['create_uid', '!=', user_id],['state','!=','draft']]})
+                    if field.get("name") in ['phone_num', 'email', 'identifier'] and not has_group_config:
+                        modifiers.update({'readonly': ["|",["id", "!=", False],
+                                                       ["create_uid", "!=", user_id],['state','!=','draft']]})
+                    field.attrib['modifiers'] = json.dumps(modifiers)
+            elif config_group and has_group_readonly:
+                # nếu user login có quyền chỉ đọc thì set các field readonly
+                cf = config_group[0]
+                for field in cf.xpath("//field[@name]"):
+                    modifiers = field.attrib.get('modifiers', '')
+                    modifiers = json.loads(modifiers) if modifiers else {}
+                    modifiers.update({'readonly': [[1,'=',1]]})
+                    field.attrib['modifiers'] = json.dumps(modifiers)
+            # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
         return res
 
