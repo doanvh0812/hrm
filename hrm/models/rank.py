@@ -14,3 +14,15 @@ class Ranks(models.Model):
     abbreviations = fields.Char(string='Tên viết tắt')
     department = fields.Many2one('hrm.departments', string='Phòng/Ban', required=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
+
+    @api.constrains('name', 'abbreviations')
+    def check_duplicate(self):
+        """ Kiểm tra trùng lặp dữ liệu không phân biệt hoa thường """
+        for record in self:
+            name = self.search([('id', '!=', record.id), ('active', 'in', (True, False))])
+            for n in name:
+                if n['name'].lower() == record.name.lower() and n.department == self.department:
+                    raise ValidationError(constraint.DUPLICATE_RECORD % 'Cấp bậc')
+                if (self.abbreviations and n['abbreviations'] and
+                        n['abbreviations'].lower() == record.abbreviations.lower() and n.department == self.department):
+                    raise ValidationError(constraint.DUPLICATE_RECORD % 'Tên viết tắt')

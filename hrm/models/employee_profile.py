@@ -54,6 +54,7 @@ class EmployeeProfile(models.Model):
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
+    document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
