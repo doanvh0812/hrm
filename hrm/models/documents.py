@@ -10,3 +10,8 @@ class Documents(models.Model):
     document_code = fields.Char(string='Mã tài liệu', required=True)
     numbers_of_photos = fields.Integer(string='Số lượng ảnh', required=True)
     numbers_of_document = fields.Integer(string='Số lượng tài liệu', required=True)
+
+    @api.constrains('numbers_of_photos','numbers_of_document')
+    def check_negative_numbers(self):
+        if self.numbers_of_photos < 0 or self.numbers_of_document < 0:
+            raise ValidationError('Số lượng ảnh và tài liệu không thể là số âm!!!')
