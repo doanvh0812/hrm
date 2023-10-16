@@ -64,7 +64,7 @@ class Teams(models.Model):
     def _check_name_combination(self):
         # Kiểm tra sự trùng lặp dựa trên kết hợp của name và type_company
         for record in self:
-            name = self.search([('id', '!=', record.id)])
+            name = self.search([('id', '!=', record.id), ('active', 'in', (True, False))])
             for n in name:
                 if n['name'].lower() == record.name.lower() and n.type_team == self.type_team:
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Đội ngũ")
