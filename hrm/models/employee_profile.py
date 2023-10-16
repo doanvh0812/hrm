@@ -252,7 +252,7 @@ class EmployeeProfile(models.Model):
             )
             res['arch'] = res['arch'].replace(
                 '<button name="action_cancel" string="Hủy" type="object"/>',
-                f'<button name="action_cancel" string="Hủy" type="object" modifiers=\'{{"invisible":["|",["state","!=","pending"],["create_uid", "!=", {user_id}]]}}\'/>'
+                f'<button name="action_cancel" string="Hủy" type="object" style="background-color: #FD5050; border-radius: 5px;color:#fff;" modifiers=\'{{"invisible":["|",["state","!=","pending"],["create_uid", "!=", {user_id}]]}}\'/>'
             )
 
             doc = etree.XML(res['arch'])
@@ -508,7 +508,7 @@ class EmployeeProfile(models.Model):
         if approved_id:
             self.approved_name = approved_id.id
             # Clear cấu hình cũ
-            self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
+            self.env['hrm.approval.flow.profile'].sudo().search([('profile_id', '=', self.id)]).unlink()
 
             # Tạo danh sách chứa giá trị dữ liệu từ approval_flow_link
             approved_link_data = approved_id.approval_flow_link.mapped(lambda rec: {
