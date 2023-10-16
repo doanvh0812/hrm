@@ -247,8 +247,12 @@ class EmployeeProfile(models.Model):
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
             res['arch'] = res['arch'].replace(
-                '<button name="action_send" string="Gửi duyệt" type="object"/>',
-                f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
+                '<button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>',
+                f'<button name="action_send" string="Gửi duyệt" type="object" class="btn-primary" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
+            )
+            res['arch'] = res['arch'].replace(
+                '<button name="action_cancel" string="Hủy" type="object"/>',
+                f'<button name="action_cancel" string="Hủy" type="object" modifiers=\'{{"invisible":["|",["state","!=","pending"],["create_uid", "!=", {user_id}]]}}\'/>'
             )
 
             doc = etree.XML(res['arch'])
@@ -528,6 +532,12 @@ class EmployeeProfile(models.Model):
         else:
             raise ValidationError("Lỗi không tìm thấy luồng!")
 
+    def action_cancel(self):
+        """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái phê duyệt"""
+        print("access cancel")
+        if self.state == "pending":
+            self.sudo().write({'state': 'draft'})
+
     def action_open_edit_form(self):
         # Đoạn mã này sẽ mở action sửa thông tin hồ sơ
         return {
@@ -589,12 +599,6 @@ class EmployeeProfile(models.Model):
                 if dept[0] in rec.department_id.ids:
                     return rec
 
-    def find_company(self, records, lis_company):
-        for company_id in lis_company:
-            for cf in records:
-                if company_id[0] == cf.company.id:
-                    return cf
-
     def find_block(self, records):
         for approved in records:
             if not approved.department_id and not approved.system_id:
@@ -624,7 +628,7 @@ class EmployeeProfile(models.Model):
     def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
-                if company_id[0] == cf.company.id:
+                if cf.company and company_id[0] in cf.company.ids:
                     return cf
 
     # hàm này để hiển thị lịch sử lưu trữ
