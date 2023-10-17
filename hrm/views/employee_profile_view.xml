@@ -9,7 +9,8 @@
                     <field name="id" invisible="1"/>
                     <field name="create_uid" invisible="1"/>
                     <header attrs="{'invisible': [('id', '=', False)]}">
-                        <button name="action_send" string="Gửi duyệt" type="object"/>
+                        <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
+                        <button name="action_cancel" string="Hủy" type="object"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
                     <sheet>
@@ -50,11 +51,13 @@
                         <group>
                             <field name="auto_create_acc"/>
                         </group>
-                        <notebook>
-                            <page string="Khai báo tài liệu">
-                                <field name="document_declaration">
+                        <notebook attrs="{'invisible': [('id', '=', False)]}">
+                            <page string="Danh sách tài liệu">
+                                <field name="document_config" readonly="1"/>
+                                <field name="document_list">
                                     <tree>
-
+                                        <field name="name"/>
+                                        <field name="status_doc"/>
                                     </tree>
                                 </field>
                             </page>
@@ -62,14 +65,6 @@
                                 <field name="document_declaration">
                                     <tree>
                                         <field name="name"/>
-                                        <field name="employee_id"/>
-                                        <field name="type_documents"/>
-                                        <field name="block_id"/>
-                                        <field name="system_id"/>
-                                        <field name="company_id"/>
-                                        <field name="department_id"/>
-                                        <field name="manager_document"/>
-                                        <field name="give_back"/>
                                         <field name="complete"/>
                                     </tree>
                                 </field>

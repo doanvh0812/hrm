@@ -24,4 +24,5 @@ class DocumentList(models.Model):
 
     document_id = fields.Many2one('hrm.document.list.config')
     doc = fields.Many2one('hrm.documents', string='Tên tài liệu')
+    name = fields.Char(related='doc.name')
     status_doc = fields.Boolean(string='Trạng thái')
