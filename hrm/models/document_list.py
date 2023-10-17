@@ -4,6 +4,7 @@ from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 from . import constraint
 
+
 class DocumentListConfig(models.Model):
     _name = 'hrm.document.list.config'
     _description = 'Cấu hình danh sách tài liệu'
@@ -15,6 +16,8 @@ class DocumentListConfig(models.Model):
     system_id = fields.Many2one('hrm.systems', string="Hệ thống")
     company = fields.Many2one('hrm.companies', string="Công ty")
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
+
+
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
     _description = 'Danh sách tài liệu'
