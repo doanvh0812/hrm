@@ -1,6 +1,6 @@
 from odoo import models, fields, api
 import re
-from odoo.exceptions import ValidationError, AccessDenied
+from odoo.exceptions import ValidationError, AccessDenied #FD5050; border-radius: 5px;color:#fff;
 from . import constraint
 from lxml import etree
 import json
@@ -433,15 +433,19 @@ class EmployeeProfile(models.Model):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
         orders = self.sudo().filtered(lambda s: s.state in ['pending'])
         id_access = self.env.user.id
-        step = 0
+        step = 0 #step 
+        step_excess_level = 0 #step vượt cấp
         for rec in orders.approved_link:
-            if rec.approve.id == id_access:
+            if rec.approve.id == id_access and rec.excess_level == False:
                 step = rec.step
+            elif rec.approve.id == id_access and rec.excess_level == True:
+                step_excess_level = rec.step
+        for rec in orders.approved_link:
+            if (step and rec.step <= step and rec.approve_status == 'pending') or step_excess_level == rec.step:
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
-        for rec in orders.approved_link:
-            if rec.step <= step and rec.approve_status == 'pending':
-                rec.approve_status = 'confirm'
+            elif step_excess_level and rec.step < step_excess_level and rec.approve_status == 'pending':
+                rec.approve_status = 'confirm_excess_level'
                 rec.time = fields.Datetime.now()
 
         message_body = f"Chờ Duyệt => Đã Phê Duyệt Tài Khoản - {self.name}"
@@ -454,7 +458,7 @@ class EmployeeProfile(models.Model):
         self._cr.execute(query)
         max_step = self._cr.fetchone()
         state = 'pending'
-        if max_step[0] <= step:
+        if max_step[0] <= step or max_step[0] <= step_excess_level:
             state = 'approved'
         orders.write({'state': state})
         return {'type': 'ir.actions.client', 'tag': 'reload'}
@@ -525,7 +529,7 @@ class EmployeeProfile(models.Model):
             self.sudo().approved_link.create(approved_link_data)
 
             # đè base thay đổi lịch sử theo  mình
-            message_body = "Đã Gửi Phê Duyệt"
+            message_body = "Đã gửi phê duyệt."
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
             orders.sudo().write({'state': 'pending'})
             return {'type': 'ir.actions.client', 'tag': 'reload'}
@@ -533,10 +537,10 @@ class EmployeeProfile(models.Model):
             raise ValidationError("Lỗi không tìm thấy luồng!")
 
     def action_cancel(self):
-        """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái phê duyệt"""
-        print("access cancel")
+        """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái chờ phê duyệt"""
         if self.state == "pending":
             self.sudo().write({'state': 'draft'})
+            self.message_post(body="Hủy bỏ phê duyệt.", subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
 
     def action_open_edit_form(self):
         # Đoạn mã này sẽ mở action sửa thông tin hồ sơ
