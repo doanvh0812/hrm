@@ -253,39 +253,43 @@ class EmployeeProfile(models.Model):
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
             res['arch'] = res['arch'].replace(
-                '<button name="action_send" string="Gửi duyệt" type="object"/>',
-                f'<button name="action_send" string="Gửi duyệt" type="object" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
+                '<button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>',
+                f'<button name="action_send" string="Gửi duyệt" type="object" class="btn-primary" modifiers=\'{{"invisible":["|",["state","in",["pending","approved"]],["create_uid", "!=", {user_id}]]}}\'/>'
+            )
+            res['arch'] = res['arch'].replace(
+                '<button name="action_cancel" string="Hủy" type="object"/>',
+                f'<button name="action_cancel" string="Hủy" type="object" style="background-color: #FD5050; border-radius: 5px;color:#fff;" modifiers=\'{{"invisible":["|",["state","!=","pending"],["create_uid", "!=", {user_id}]]}}\'/>'
             )
 
             doc = etree.XML(res['arch'])
 
             """Đoạn code dưới để readonly các trường nếu acc_id bản ghi đó != user.id """
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
+            has_group_readonly = self.env.user.has_group("hrm.hrm_group_read_only")
+            has_group_config = self.env.user.has_group("hrm.hrm_group_config_access")
             config_group = doc.xpath("//group")
-            if config_group and not self.env.user.has_group("hrm.hrm_group_config_access"):
+            if config_group and not has_group_readonly:
                 cf = config_group[0]
-                has_group_readonly = self.env.user.has_group("hrm.hrm_group_read_only")
-                if not has_group_readonly:
-                    # nếu user login không có quyền chỉ đọc thì update lại các thuộc tính readonly
-                    for field in cf.xpath("//field[@name]"):
-                        field_name = field.get("name")
-                        modifiers = field.attrib.get('modifiers', '')
-                        modifiers = json.loads(modifiers) if modifiers else {}
-                        if field_name != 'employee_code_new':
-                            modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
-                                                           ['state', '!=', 'draft']]})
-                        if field_name in ['phone_num', 'email', 'identifier']:
-                            modifiers.update({'readonly': ["|", ["id", "!=", False],
-                                                           ["create_uid", "!=", user_id], ['state', '!=', 'draft']]})
-                        field.attrib['modifiers'] = json.dumps(modifiers)
-                else:
-                    # nếu user login có quyền chỉ đọc thì set các field readonly
-                    for field in cf.xpath("//field[@name]"):
-                        modifiers = field.attrib.get('modifiers', '')
-                        modifiers = json.loads(modifiers) if modifiers else {}
-                        modifiers.update({'readonly': [[1, '=', 1]]})
-                        field.attrib['modifiers'] = json.dumps(modifiers)
-                # Gán lại 'arch' cho res với các thay đổi mới
+                # nếu user login không có quyền chỉ đọc thì update lại các thuộc tính readonly
+                for field in cf.xpath("//field[@name]"):
+                    modifiers = field.attrib.get('modifiers', '')
+                    modifiers = json.loads(modifiers) if modifiers else {}
+                    if field.get("name") != 'employee_code_new':
+                        modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
+                                                       ['state', '!=', 'draft']]})
+                    if field.get("name") in ['phone_num', 'email', 'identifier'] and not has_group_config:
+                        modifiers.update({'readonly': ["|", ["id", "!=", False],
+                                                       ["create_uid", "!=", user_id], ['state', '!=', 'draft']]})
+                    field.attrib['modifiers'] = json.dumps(modifiers)
+            elif config_group and has_group_readonly:
+                # nếu user login có quyền chỉ đọc thì set các field readonly
+                cf = config_group[0]
+                for field in cf.xpath("//field[@name]"):
+                    modifiers = field.attrib.get('modifiers', '')
+                    modifiers = json.loads(modifiers) if modifiers else {}
+                    modifiers.update({'readonly': [[1, '=', 1]]})
+                    field.attrib['modifiers'] = json.dumps(modifiers)
+            # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
         return res
 
@@ -511,7 +515,7 @@ class EmployeeProfile(models.Model):
         if approved_id:
             self.approved_name = approved_id.id
             # Clear cấu hình cũ
-            self.env['hrm.approval.flow.profile'].search([('profile_id', '=', self.id)]).unlink()
+            self.env['hrm.approval.flow.profile'].sudo().search([('profile_id', '=', self.id)]).unlink()
 
             # Tạo danh sách chứa giá trị dữ liệu từ approval_flow_link
             approved_link_data = approved_id.approval_flow_link.mapped(lambda rec: {
@@ -534,6 +538,12 @@ class EmployeeProfile(models.Model):
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         else:
             raise ValidationError("Lỗi không tìm thấy luồng!")
+
+    def action_cancel(self):
+        """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái phê duyệt"""
+        print("access cancel")
+        if self.state == "pending":
+            self.sudo().write({'state': 'draft'})
 
     def action_open_edit_form(self):
         # Đoạn mã này sẽ mở action sửa thông tin hồ sơ
@@ -597,12 +607,6 @@ class EmployeeProfile(models.Model):
                 if dept[0] in rec.department_id.ids:
                     return rec
 
-    def find_company(self, records, lis_company):
-        for company_id in lis_company:
-            for cf in records:
-                if company_id[0] == cf.company.id:
-                    return cf
-
     def find_block(self, records):
         for approved in records:
             if not approved.department_id and not approved.system_id:
@@ -632,7 +636,7 @@ class EmployeeProfile(models.Model):
     def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
-                if company_id[0] == cf.company.id:
+                if cf.company and company_id[0] in cf.company.ids:
                     return cf
 
     # hàm này để hiển thị lịch sử lưu trữ
