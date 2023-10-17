@@ -50,11 +50,13 @@
                         <group>
                             <field name="auto_create_acc"/>
                         </group>
-                        <notebook>
-                            <page string="Khai báo tài liệu">
-                                <field name="document_declaration">
+                        <notebook attrs="{'invisible': [('id', '=', False)]}">
+                            <page string="Danh sách tài liệu">
+                                <field name="document_config" readonly="1"/>
+                                <field name="document_list">
                                     <tree>
-
+                                        <field name="name"/>
+                                        <field name="status_doc"/>
                                     </tree>
                                 </field>
                             </page>
@@ -62,14 +64,6 @@
                                 <field name="document_declaration">
                                     <tree>
                                         <field name="name"/>
-                                        <field name="employee_id"/>
-                                        <field name="type_documents"/>
-                                        <field name="block_id"/>
-                                        <field name="system_id"/>
-                                        <field name="company_id"/>
-                                        <field name="department_id"/>
-                                        <field name="manager_document"/>
-                                        <field name="give_back"/>
                                         <field name="complete"/>
                                     </tree>
                                 </field>
