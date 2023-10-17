@@ -274,7 +274,7 @@ class EmployeeProfile(models.Model):
                 for field in cf.xpath("//field[@name]"):
                     modifiers = field.attrib.get('modifiers', '')
                     modifiers = json.loads(modifiers) if modifiers else {}
-                    if field.get("name") != 'employee_code_new':
+                    if field.get("name") not in ['employee_code_new', 'document_config', 'document_list']:
                         modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                        ['state', '!=', 'draft']]})
                     if field.get("name") in ['phone_num', 'email', 'identifier'] and not has_group_config:
