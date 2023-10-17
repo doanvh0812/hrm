@@ -38,7 +38,7 @@ class EmployeeProfile(models.Model):
     team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
 
     manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
-    rank_id = fields.Char(string='Cấp bậc')
+    rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
@@ -56,19 +56,23 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
     document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
+    document_config = fields.Many2one('hrm.document.list.config')
+    document_list = fields.One2many(related='document_config.document_list')
+
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
     see_record_with_config = fields.Boolean()
 
-
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
-        self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write({'see_record_with_config': False})
+        self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write(
+            {'see_record_with_config': False})
         user = self.env.user
         # Tim tat ca cac cong ty, he thong, phong ban con
         company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
         system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
-        department_config = self.env['hrm.utils'].get_child_id(user.department_id, 'hrm_departments', "superior_department")
+        department_config = self.env['hrm.utils'].get_child_id(user.department_id, 'hrm_departments',
+                                                               "superior_department")
         block_config = user.block_id
 
         domain = []
@@ -242,7 +246,9 @@ class EmployeeProfile(models.Model):
             if record_id:
                 record = self.browse(record_id)
                 if record.state != 'draft':
-                    res['arch'] = res['arch'].replace('<form string="Tạo mới hồ sơ" create="false" edit="true" modifiers="{}">', '<form string="Tạo mới hồ sơ" create="false" edit="false" modifiers="{}">')
+                    res['arch'] = res['arch'].replace(
+                        '<form string="Tạo mới hồ sơ" create="false" edit="true" modifiers="{}">',
+                        '<form string="Tạo mới hồ sơ" create="false" edit="false" modifiers="{}">')
 
             # Tạo một biểu thức domain mới để xác định xem nút có nên hiển thị hay không
             # Thuộc tính của trường phụ thuộc vào modifiers
@@ -268,11 +274,12 @@ class EmployeeProfile(models.Model):
                 for field in cf.xpath("//field[@name]"):
                     modifiers = field.attrib.get('modifiers', '')
                     modifiers = json.loads(modifiers) if modifiers else {}
-                    if field.get("name") != 'employee_code_new':
-                        modifiers.update({'readonly': ["|",['id', '!=', False],['create_uid', '!=', user_id],['state','!=','draft']]})
+                    if field.get("name") not in ['employee_code_new', 'document_config', 'document_list']:
+                        modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
+                                                       ['state', '!=', 'draft']]})
                     if field.get("name") in ['phone_num', 'email', 'identifier'] and not has_group_config:
-                        modifiers.update({'readonly': ["|",["id", "!=", False],
-                                                       ["create_uid", "!=", user_id],['state','!=','draft']]})
+                        modifiers.update({'readonly': ["|", ["id", "!=", False],
+                                                       ["create_uid", "!=", user_id], ['state', '!=', 'draft']]})
                     field.attrib['modifiers'] = json.dumps(modifiers)
             elif config_group and has_group_readonly:
                 # nếu user login có quyền chỉ đọc thì set các field readonly
@@ -280,7 +287,7 @@ class EmployeeProfile(models.Model):
                 for field in cf.xpath("//field[@name]"):
                     modifiers = field.attrib.get('modifiers', '')
                     modifiers = json.loads(modifiers) if modifiers else {}
-                    modifiers.update({'readonly': [[1,'=',1]]})
+                    modifiers.update({'readonly': [[1, '=', 1]]})
                     field.attrib['modifiers'] = json.dumps(modifiers)
             # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
@@ -359,7 +366,7 @@ class EmployeeProfile(models.Model):
             decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
         """
-        if self.system_id != self.company.system_id: #khi đổi hệ thống thì clear company
+        if self.system_id != self.company.system_id:  # khi đổi hệ thống thì clear company
             self.position_id = self.company = self.team_sales = self.team_marketing = False
         if self.system_id:
             if not self.env.user.company:
@@ -553,6 +560,7 @@ class EmployeeProfile(models.Model):
             'res_id': self.id,
             'target': 'current',
         }
+
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:
@@ -657,7 +665,8 @@ class EmployeeProfile(models.Model):
         return super(EmployeeProfile, self).write(vals)
 
     @api.constrains("name", "date_receipt", "block_id", "position_id", "    work_start_date", "employee_code_old",
-                    "employee_code_new", "email", "phone_num", "identifier", "team_marketing", "team_sales", "manager_id",
+                    "employee_code_new", "email", "phone_num", "identifier", "team_marketing", "team_sales",
+                    "manager_id",
                     "rank_id", "auto_create_acc", "reason", "acc_id", "approved_name", "approved_link", "company",
                     "system_id")
     def check_permission(self):
