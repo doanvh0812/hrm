@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import models, fields, api
 
 
 class DocumentDeclaration(models.Model):
@@ -19,3 +19,7 @@ class DocumentDeclaration(models.Model):
     attachments = fields.Binary(string='Tệp đính kèm')
     attachment_ids = fields.Many2many('ir.attachment', 'model_attachment_rel', 'model_id', 'attachment_id',
                                       string='Tệp đính kèm')
+
+    @api.onchange('attachment_ids', 'attachments')
+    def attachment_print(self):
+        print(self.attachments, self.attachments)
