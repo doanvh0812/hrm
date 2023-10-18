@@ -13,7 +13,17 @@ class DocumentListConfig(models.Model):
     system_id = fields.Many2one('hrm.systems', string="Hệ thống")
     company = fields.Many2one('hrm.companies', string="Công ty")
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
-    sequence = fields.Integer()
+    related = fields.Boolean(compute='_compute_related_')
+
+    @api.depends('block_id')
+    def _compute_related_(self):
+        # Lấy giá trị của trường related để check điều kiện hiển thị
+        for record in self:
+            record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
+
+    @api.onchange('block_id')
+    def _onchange_block(self):
+        self.company = self.department_id = self.system_id = False
 
     @api.onchange('document_list')
     def set_sequence(self):

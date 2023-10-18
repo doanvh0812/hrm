@@ -2,9 +2,9 @@
 <odoo>
 
     <template id="assets_backend_hrm_employee" name="hrm_employee_custom" inherit_id="web.assets_backend">
-        <xpath expr="script[last()]" position="after">
-<!--            <script type="text/javascript" src="hrm/static/src/js/hide_button_edit.js"/>-->
-<!--            <link rel="stylesheet" href="/hrm/static/css/style.css"/>-->
+        <xpath expr="script[last()]" position="before">
+<!--           <script type="text/javascript" src="hrm/static/src/js/hide_button_edit.js"/>-->
+            <link rel="stylesheet" href="/hrm/static/src/css/style.css"/>
         </xpath>
     </template>
 

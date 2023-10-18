@@ -7,8 +7,10 @@
                 <field name="can_see_button_approval" invisible="1"/>
                 <header>
                     <button name="%(hrm.approval_reason_refusal_action)d" string="Từ chối" type="action"
+                            style="background-color: #FD5050;border-radius: 5px;color:#fff;"
                             attrs="{'invisible': ['|', ('state', 'in', ('draft','approved')), ('can_see_button_approval', '=', False)]}"/>
                     <button name="action_confirm" string="Phê duyệt" type="object"
+                            style="background-color: #009900; border-radius: 5px;color:#fff;"
                             attrs="{'invisible': ['|', ('state', 'in', ('draft','approved')), ('can_see_button_approval', '=', False)]}"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                 </header>
@@ -97,5 +99,10 @@
         <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_approval_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_approval_form')})]"/>
+        <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Chưa có hồ sơ nào cần phê duyệt.
+              </p>
+        </field>
     </record>
 </odoo>
