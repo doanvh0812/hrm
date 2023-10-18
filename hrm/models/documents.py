@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, tools
 from odoo.exceptions import ValidationError
 import re
 from . import constraint
@@ -10,7 +10,7 @@ class Documents(models.Model):
     name = fields.Char(string='Tên hiển thị', required=True)
     document_code = fields.Char(string='Mã tài liệu', required=True)
     numbers_of_photos = fields.Integer(string='Số lượng ảnh', required=True)
-    numbers_of_document = fields.Integer(string='Số lượng tài liệu', required=True)
+    numbers_of_documents = fields.Integer(string='Số lượng tài liệu', required=True)
 
 
     @api.onchange('numbers_of_photos', 'numbers_of_document')
@@ -25,3 +25,4 @@ class Documents(models.Model):
             for n in name:
                 if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Tài liệu")
+

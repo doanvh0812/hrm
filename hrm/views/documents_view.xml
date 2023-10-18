@@ -10,7 +10,7 @@
                             <field name="name"/>
                             <field name="document_code"/>
                             <field name="numbers_of_photos"/>
-                            <field name="numbers_of_document"/>
+                            <field name="numbers_of_documents"/>
                         </group>
                     </sheet>
                 </form>
@@ -25,7 +25,7 @@
                     <field name="name"/>
                     <field name="document_code"/>
                     <field name="numbers_of_photos"/>
-                    <field name="numbers_of_document"/>
+                    <field name="numbers_of_documents"/>
                 </tree>
             </field>
         </record>

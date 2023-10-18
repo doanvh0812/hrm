@@ -27,7 +27,7 @@
         'wizard/approval_reason_refusal.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
-        # 'views/hrm.xml',
+        'views/hrm.xml',
         'views/document_list_view.xml',
         'views/documents_view.xml',
         'views/blocks_view.xml',
@@ -48,9 +48,6 @@
     # only loaded in demonstration mode
     'demo': [
         'demo/demo.xml',
-    ],
-    'css': [
-        'static/src/css/style.css',
     ],
 }
 # -*- coding: utf-8 -*-

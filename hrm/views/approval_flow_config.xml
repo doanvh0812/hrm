@@ -25,7 +25,7 @@
                     <notebook>
                         <page string="Chi tiết luồng" name="approval_flow_link">
                             <field name="approval_flow_link">
-                                <tree editable="bottom" default_order="step ASC">
+                                <tree editable="bottom" default_order="step ASC" class="custom_css">
                                     <field name="step"/>
                                     <field name="approve"/>
                                     <field name="obligatory"/>

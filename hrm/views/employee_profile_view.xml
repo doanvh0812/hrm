@@ -31,6 +31,8 @@
                                 <field name="related" invisible="1"/>
                                 <field name="check_blocks" invisible="1"/>
                                 <field name="check_company" invisible="1"/>
+                                <field name="require_team_marketing" invisible="1"/>
+                                <field name="require_team_sale" invisible="1"/>
                                 <field name="block_id" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
                                 <field name="system_id"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)],
@@ -40,9 +42,9 @@
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)], }"/>
                                 <field name="department_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
-                                <field name="position_id"/>
-                                <field name="team_marketing" attrs="{'invisible': [('related', '=', True)]}"/>
-                                <field name="team_sales" attrs="{'invisible': [('related', '=', True)]}"/>
+                                <field name="position_id" />
+                                <field name="team_marketing" attrs="{'invisible': [('related', '=', True)],'required': [('require_team_marketing','=',True)]}"/>
+                                <field name="team_sales" attrs="{'invisible': [('related', '=', True)],'required': [('require_team_sale','=',True)]}"/>
                                 <field name="manager_id" attrs="{'invisible': [('related', '=', False)]}"/>
                                 <field name="rank_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
@@ -53,11 +55,12 @@
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
                             <page string="Danh sách tài liệu">
-                                <field name="document_config" readonly="1"/>
-                                <field name="document_list" readonly="1">
+                                <field name="document_config" />
+                                <field name="document_list" readonly="1" oder="sequence" force_save="1">
                                     <tree>
+                                        <field name="sequence"/>
                                         <field name="name"/>
-                                        <field name="status_doc"/>
+                                        <field name="obligatory"/>
                                     </tree>
                                 </field>
                             </page>

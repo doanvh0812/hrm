@@ -1,8 +1,5 @@
-import re
-
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
-from . import constraint
+from odoo.exceptions import ValidationError, AccessDenied
 
 
 class DocumentListConfig(models.Model):
@@ -16,6 +13,43 @@ class DocumentListConfig(models.Model):
     system_id = fields.Many2one('hrm.systems', string="Hệ thống")
     company = fields.Many2one('hrm.companies', string="Công ty")
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
+    related = fields.Boolean(compute='_compute_related_')
+
+    @api.depends('block_id')
+    def _compute_related_(self):
+        # Lấy giá trị của trường related để check điều kiện hiển thị
+        for record in self:
+            record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
+
+    @api.onchange('block_id')
+    def _onchange_block(self):
+        self.company = self.department_id = self.system_id = False
+
+    @api.onchange('document_list')
+    def set_sequence(self):
+        i = 1
+        for document in self.document_list:
+            document.sequence = i
+            i += 1
+
+    def unlink(self):
+        for record in self:
+            document = self.env['hrm.employee.profile'].sudo().search([('document_config', '=', record.id)])
+            if document:
+                raise AccessDenied("Không thể xoá " + record.name)
+        return super(DocumentListConfig, self).unlink()
+
+    @api.constrains('document_list')
+    def check_approval_flow_link(self):
+        if not self.document_list:
+            raise ValidationError('Không thể tạo khi không có tài liệu nào trong danh sách tài liệu.')
+        else:
+            list_check = []
+            for item in self.document_list:
+                if item.obligatory:
+                    list_check.append(True)
+            if not any(list_check):
+                raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
 
 
 class DocumentList(models.Model):
@@ -23,6 +57,7 @@ class DocumentList(models.Model):
     _description = 'Danh sách tài liệu'
 
     document_id = fields.Many2one('hrm.document.list.config')
+    sequence = fields.Integer(string="STT")
     doc = fields.Many2one('hrm.documents', string='Tên tài liệu')
     name = fields.Char(related='doc.name')
-    status_doc = fields.Boolean(string='Trạng thái')
+    obligatory = fields.Boolean(string='Bắt buộc')

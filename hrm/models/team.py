@@ -122,3 +122,4 @@ class Teams(models.Model):
         return [('id', 'in', list_child_company)]
 
     company_id = fields.Many2one('hrm.companies', string='Công ty', required=True, domain=get_child_company)
+
