@@ -2,6 +2,7 @@
 .custom-table {
     width: 100%;
     border-collapse: collapse;
+    background-color: red;
 }
 
 .custom-table th, .custom-table td {
