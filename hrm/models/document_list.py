@@ -1,7 +1,7 @@
 import re
 
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 
 
@@ -16,6 +16,21 @@ class DocumentListConfig(models.Model):
     system_id = fields.Many2one('hrm.systems', string="Hệ thống")
     company = fields.Many2one('hrm.companies', string="Công ty")
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
+    sequence = fields.Integer()
+
+    @api.onchange('document_list')
+    def set_sequence(self):
+        i = 1
+        for document in self.document_list:
+            document.sequence = i
+            i += 1
+
+    def unlink(self):
+        for record in self:
+            document = self.env['hrm.employee.profile'].sudo().search([('document_config', '=', record.id)])
+            if document:
+                raise AccessDenied("Không thể xoá " + record.name)
+        return super(DocumentListConfig, self).unlink()
 
 
 class DocumentList(models.Model):
@@ -23,6 +38,7 @@ class DocumentList(models.Model):
     _description = 'Danh sách tài liệu'
 
     document_id = fields.Many2one('hrm.document.list.config')
+    sequence = fields.Integer(string="STT")
     doc = fields.Many2one('hrm.documents', string='Tên tài liệu')
     name = fields.Char(related='doc.name')
-    status_doc = fields.Boolean(string='Trạng thái')
+    status_doc = fields.Boolean(string='Bắt buộc')

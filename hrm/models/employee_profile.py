@@ -56,7 +56,7 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
     document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
-    document_config = fields.Many2one('hrm.document.list.config')
+    document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
     document_list = fields.One2many(related='document_config.document_list')
 
     can_see_approved_record = fields.Boolean()
@@ -541,21 +541,8 @@ class EmployeeProfile(models.Model):
 
     def action_cancel(self):
         """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái phê duyệt"""
-        print("access cancel")
         if self.state == "pending":
             self.sudo().write({'state': 'draft'})
-
-    def action_open_edit_form(self):
-        # Đoạn mã này sẽ mở action sửa thông tin hồ sơ
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Sửa thông tin nhân viên',
-            'res_model': 'hrm.employee.profile',
-            'view_mode': 'form',
-            'view_id': self.env.ref('hrm.view_employee_profile_form').id,
-            'res_id': self.id,
-            'target': 'current',
-        }
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
@@ -576,6 +563,7 @@ class EmployeeProfile(models.Model):
                 INNER JOIN search ch ON t.id = ch.{parent}
             )
             SELECT id FROM search;"""
+        # Lấy từ nhỏ -> lớn
         self._cr.execute(query)
         result = self._cr.fetchall()
         return result
@@ -687,3 +675,50 @@ class EmployeeProfile(models.Model):
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 if self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+
+    def compute_documents_list(self):
+        # Tìm cấu hình dựa trên block_id
+        records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
+
+        if records:
+            document_id = None
+            if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
+                # Nếu là khối thương mại
+                list_company = self.get_all_parent('hrm_companies', 'parent_company', self.company.id)
+                # Tìm cấu hình công ty
+                for company_id in list_company:
+                    records = self.env['hrm.document.list.config'].sudo().search([('company', '=', company_id)])
+                    if records:
+                        document_id = records
+                        break
+                # Nếu không có cấu hình công ty thì tìm hệ thống
+                if not document_id:
+                    list_system = self.get_all_parent('hrm_systems', 'parent_system', self.system_id.id)
+                    for system_id in list_system:
+                        records = self.env['hrm.document.list.config'].sudo().search([('system_id', '=', system_id)])
+                        if records:
+                            document_id = records
+                            break
+            else:
+                # Nếu là khối văn phòng
+                # Tìm cấu hình phòng ban
+                list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
+                for department_id in list_dept:
+                    records = self.env['hrm.document.list.config'].sudo().search([('department_id', '=', department_id)])
+                    if records:
+                        document_id = records
+                        break
+
+            if not document_id:
+                document_id = self.env['hrm.document.list.config'].sudo().search(
+                    [('block_id', '=', self.block_id.id), ('company', '=', False), ('system_id', '=', False),
+                     ('department_id', '=', False)])
+
+            if document_id:
+                self.document_config = document_id
+            else:
+                # Không tìm được cấu hình nào phù hợp
+                self.document_config = False
+        else:
+            self.document_config = False
+
