@@ -55,17 +55,3 @@ class DocumentDeclaration(models.Model):
         if len(self.attachment_ids) > max_attachments:
             self.attachment_ids = False
             raise ValidationError('Vượt quá số lượng tệp tài liệu tối đa cho phép!')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
