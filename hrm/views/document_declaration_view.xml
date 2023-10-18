@@ -23,8 +23,17 @@
                                 <field name="give_back"/>
                                 <field name="complete"/>
                             </group>
+                            <group>
+                                <field name="block_id" readonly="1"/>
+                                <field name="system_id" readonly="1"/>
+                                <field name="company_id" readonly="1"/>
+                                <field name="department_id" readonly="1"/>
+                            </group>
                         </group>
                         <group>
+                            <group>
+                                <field name="attachment_image_ids" widget="many2many_binary"/>
+                            </group>
                             <group>
                                 <field name="attachment_ids" widget="many2many_binary"/>
                                 <field name="image_ids" widget="many2many_binary"/>
@@ -33,13 +42,6 @@
                     </sheet>
                 </form>
             </field>
-        </record>
-
-        <record id="action_document_declaration" model="ir.actions.act_window">
-            <field name="name">Khai báo tài liệu</field>
-            <field name="type">ir.actions.act_window</field>
-            <field name="res_model">hrm.document_declaration</field>
-            <field name="view_mode">form</field>
         </record>
     </data>
 </odoo>
