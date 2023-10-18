@@ -634,7 +634,6 @@ class EmployeeProfile(models.Model):
                 # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
                 if dept[0] in rec.department_id.ids:
                     return rec
-
     def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
