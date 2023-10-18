@@ -1,5 +1,6 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
+from . import constraint
 
 
 class DocumentListConfig(models.Model):
