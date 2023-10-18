@@ -53,9 +53,10 @@
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
                             <page string="Danh sách tài liệu">
-                                <field name="document_config" readonly="1"/>
-                                <field name="document_list" readonly="1">
+                                <field name="document_config" />
+                                <field name="document_list" readonly="1" oder="sequence" force_save="1">
                                     <tree>
+                                        <field name="sequence"/>
                                         <field name="name"/>
                                         <field name="status_doc"/>
                                     </tree>
