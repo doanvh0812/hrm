@@ -1,8 +1,5 @@
-import re
-
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
-from . import constraint
 
 
 class DocumentListConfig(models.Model):
@@ -32,6 +29,18 @@ class DocumentListConfig(models.Model):
                 raise AccessDenied("Không thể xoá " + record.name)
         return super(DocumentListConfig, self).unlink()
 
+    @api.constrains('document_list')
+    def check_approval_flow_link(self):
+        if not self.document_list:
+            raise ValidationError('Không thể tạo khi không có tài liệu nào trong danh sách tài liệu.')
+        else:
+            list_check = []
+            for item in self.document_list:
+                if item.obligatory:
+                    list_check.append(True)
+            if not any(list_check):
+                raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
+
 
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
@@ -41,4 +50,4 @@ class DocumentList(models.Model):
     sequence = fields.Integer(string="STT")
     doc = fields.Many2one('hrm.documents', string='Tên tài liệu')
     name = fields.Char(related='doc.name')
-    status_doc = fields.Boolean(string='Bắt buộc')
+    obligatory = fields.Boolean(string='Bắt buộc')

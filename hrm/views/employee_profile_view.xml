@@ -58,7 +58,7 @@
                                     <tree>
                                         <field name="sequence"/>
                                         <field name="name"/>
-                                        <field name="status_doc"/>
+                                        <field name="obligatory"/>
                                     </tree>
                                 </field>
                             </page>

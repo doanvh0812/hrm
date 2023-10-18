@@ -20,7 +20,7 @@
                                     <tree editable="bottom">
                                         <field name="sequence" readonly="1" force_save="1"/>
                                         <field name="doc"/>
-                                        <field name="status_doc"/>
+                                        <field name="obligatory"/>
                                     </tree>
                                 </field>
                             </page>
