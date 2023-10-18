@@ -448,7 +448,7 @@ class EmployeeProfile(models.Model):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
         orders = self.sudo().filtered(lambda s: s.state in ['pending'])
         id_access = self.env.user.id
-        step = 0 #step 
+        step = 0 #step đến lượt
         step_excess_level = 0 #step vượt cấp
         for rec in orders.approved_link:
             if rec.approve.id == id_access and rec.excess_level == False:
@@ -460,6 +460,7 @@ class EmployeeProfile(models.Model):
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
             elif step_excess_level and rec.step < step_excess_level and rec.approve_status == 'pending':
+                # nếu là duyệt vượt cấp thì các trạng thái trước đó là pending chuyển qua confirm_excess_level
                 rec.approve_status = 'confirm_excess_level'
                 rec.time = fields.Datetime.now()
 
