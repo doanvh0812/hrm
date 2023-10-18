@@ -621,12 +621,6 @@ class EmployeeProfile(models.Model):
                 if dept[0] in rec.department_id.ids:
                     return rec
 
-    def find_company(self, records, lis_company):
-        for company_id in lis_company:
-            for cf in records:
-                if company_id[0] == cf.company.id:
-                    return cf
-
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):
         """
