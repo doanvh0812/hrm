@@ -63,6 +63,9 @@ class EmployeeProfile(models.Model):
     can_see_button_approval = fields.Boolean()
     see_record_with_config = fields.Boolean()
 
+    require_team_marketing = fields.Boolean(default=False)
+    require_team_sale = fields.Boolean(default=False)
+
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
         self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write(
@@ -433,8 +436,13 @@ class EmployeeProfile(models.Model):
     @api.onchange('position_id')
     def onchange_position_id(self):
         # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
+        self.require_team_marketing = self.require_team_sale = False
         if self.position_id.block != self.block_id.name:
             self.position_id = False
+        if self.position_id.team_id.type_team == "marketing":
+            self.require_team_marketing = True
+        elif self.position_id.team_id.type_team == "sale":
+            self.require_team_sale = True
 
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
