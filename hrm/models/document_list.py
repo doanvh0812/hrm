@@ -33,7 +33,7 @@ class DocumentListConfig(models.Model):
                                  ('system_id', '=', system_id), ('company', '=', company)])
             return check.ids
 
-        if self.position_id and check_exist_object(position_id=self.position_id.id, department_id=self.department_id.id):
+        if self.position_id and check_exist_object(position_id=self.position_id.id, department_id=self.department_id.id, system_id=self.system_id.id, company=self.company.id):
             raise ValidationError(f"Đã có cấu hình danh sách tài liệu cho vị trí {self.position_id.work_position}")
         elif not self.position_id and self.department_id and check_exist_object(department_id=self.department_id.id):
             raise ValidationError(f"Đã có cấu hình danh sách tài liệu cho phòng ban {self.department_id.name}")
