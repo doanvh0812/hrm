@@ -11,6 +11,14 @@
                                 <field name="name"/>
                                 <field name="employee_id"/>
                                 <field name="type_documents"/>
+                                <field name="block_id"/>
+                                <field name="system_id"/>
+                                <field name="company_id"/>
+                                <field name="department_id"/>
+                                <field name="max_photos"/>
+                                <field name="max_files"/>
+                            </group>
+                            <group>
                                 <field name="manager_document"/>
                                 <field name="give_back"/>
                                 <field name="complete"/>
@@ -28,11 +36,43 @@
                             </group>
                             <group>
                                 <field name="attachment_ids" widget="many2many_binary"/>
+                                <field name="image_ids" widget="many2many_binary"/>
                             </group>
                         </group>
                     </sheet>
                 </form>
             </field>
+        </record>
+
+        <record id="view_document_declaration_tree" model="ir.ui.view">
+            <field name="name">hrm.document_declaration.tree</field>
+            <field name="model">hrm.document_declaration</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <field name="employee_id"/>
+                    <field name="block_id"/>
+                    <field name="type_documents"/>
+                    <field name="system_id"/>
+                    <field name="company_id"/>
+                    <field name="department_id"/>
+                    <field name="give_back"/>
+                    <field name="manager_document"/>
+                    <field name="complete"/>
+                    <field name="attachment_ids"/>
+                    <field name="attachment_image_ids"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="document_declaration_action" model="ir.actions.act_window">
+            <field name="name">Khai báo tài liệu</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">hrm.document_declaration</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_document_declaration_tree')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_document_declaration_form')})]"/>
         </record>
     </data>
 </odoo>

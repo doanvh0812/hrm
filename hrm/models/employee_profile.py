@@ -1,6 +1,6 @@
 from odoo import models, fields, api
 import re
-from odoo.exceptions import ValidationError, AccessDenied
+from odoo.exceptions import ValidationError, AccessDenied #FD5050; border-radius: 5px;color:#fff;
 from . import constraint
 from lxml import etree
 import json
@@ -56,12 +56,15 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
     document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
-    document_config = fields.Many2one('hrm.document.list.config')
+    document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
     document_list = fields.One2many(related='document_config.document_list')
 
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
     see_record_with_config = fields.Boolean()
+
+    require_team_marketing = fields.Boolean(default=False)
+    require_team_sale = fields.Boolean(default=False)
 
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
@@ -274,7 +277,7 @@ class EmployeeProfile(models.Model):
                 for field in cf.xpath("//field[@name]"):
                     modifiers = field.attrib.get('modifiers', '')
                     modifiers = json.loads(modifiers) if modifiers else {}
-                    if field.get("name") != 'employee_code_new':
+                    if field.get("name") not in ['employee_code_new', 'document_config', 'document_list']:
                         modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                        ['state', '!=', 'draft']]})
                     if field.get("name") in ['phone_num', 'email', 'identifier'] and not has_group_config:
@@ -433,22 +436,32 @@ class EmployeeProfile(models.Model):
     @api.onchange('position_id')
     def onchange_position_id(self):
         # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
+        self.require_team_marketing = self.require_team_sale = False
         if self.position_id.block != self.block_id.name:
             self.position_id = False
+        if self.position_id.team_id.type_team == "marketing":
+            self.require_team_marketing = True
+        elif self.position_id.team_id.type_team == "sale":
+            self.require_team_sale = True
 
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
         orders = self.sudo().filtered(lambda s: s.state in ['pending'])
         id_access = self.env.user.id
-        step = 0
+        step = 0 #step đến lượt
+        step_excess_level = 0 #step vượt cấp
         for rec in orders.approved_link:
-            if rec.approve.id == id_access:
+            if rec.approve.id == id_access and rec.excess_level == False:
                 step = rec.step
+            elif rec.approve.id == id_access and rec.excess_level == True:
+                step_excess_level = rec.step
+        for rec in orders.approved_link:
+            if (step and rec.step <= step and rec.approve_status == 'pending') or step_excess_level == rec.step:
                 rec.approve_status = 'confirm'
                 rec.time = fields.Datetime.now()
-        for rec in orders.approved_link:
-            if rec.step <= step and rec.approve_status == 'pending':
-                rec.approve_status = 'confirm'
+            elif step_excess_level and rec.step < step_excess_level and rec.approve_status == 'pending':
+                # nếu là duyệt vượt cấp thì các trạng thái trước đó là pending chuyển qua confirm_excess_level
+                rec.approve_status = 'confirm_excess_level'
                 rec.time = fields.Datetime.now()
 
         message_body = f"Chờ Duyệt => Đã Phê Duyệt Tài Khoản - {self.name}"
@@ -461,7 +474,7 @@ class EmployeeProfile(models.Model):
         self._cr.execute(query)
         max_step = self._cr.fetchone()
         state = 'pending'
-        if max_step[0] <= step:
+        if max_step[0] <= step or max_step[0] <= step_excess_level:
             state = 'approved'
         orders.write({'state': state})
         return {'type': 'ir.actions.client', 'tag': 'reload'}
@@ -532,7 +545,7 @@ class EmployeeProfile(models.Model):
             self.sudo().approved_link.create(approved_link_data)
 
             # đè base thay đổi lịch sử theo  mình
-            message_body = "Đã Gửi Phê Duyệt"
+            message_body = "Đã gửi phê duyệt."
             self.message_post(body=message_body, subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
             orders.sudo().write({'state': 'pending'})
             return {'type': 'ir.actions.client', 'tag': 'reload'}
@@ -540,22 +553,10 @@ class EmployeeProfile(models.Model):
             raise ValidationError("Lỗi không tìm thấy luồng!")
 
     def action_cancel(self):
-        """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái phê duyệt"""
-        print("access cancel")
+        """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái chờ phê duyệt"""
         if self.state == "pending":
             self.sudo().write({'state': 'draft'})
-
-    def action_open_edit_form(self):
-        # Đoạn mã này sẽ mở action sửa thông tin hồ sơ
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Sửa thông tin nhân viên',
-            'res_model': 'hrm.employee.profile',
-            'view_mode': 'form',
-            'view_id': self.env.ref('hrm.view_employee_profile_form').id,
-            'res_id': self.id,
-            'target': 'current',
-        }
+            self.message_post(body="Hủy bỏ phê duyệt.", subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
@@ -576,6 +577,7 @@ class EmployeeProfile(models.Model):
                 INNER JOIN search ch ON t.id = ch.{parent}
             )
             SELECT id FROM search;"""
+        # Lấy từ nhỏ -> lớn
         self._cr.execute(query)
         result = self._cr.fetchall()
         return result
@@ -632,7 +634,6 @@ class EmployeeProfile(models.Model):
                 # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
                 if dept[0] in rec.department_id.ids:
                     return rec
-
     def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
@@ -687,3 +688,50 @@ class EmployeeProfile(models.Model):
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 if self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+
+    def compute_documents_list(self):
+        # Tìm cấu hình dựa trên block_id
+        records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
+
+        if records:
+            document_id = None
+            if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
+                # Nếu là khối thương mại
+                list_company = self.get_all_parent('hrm_companies', 'parent_company', self.company.id)
+                # Tìm cấu hình công ty
+                for company_id in list_company:
+                    records = self.env['hrm.document.list.config'].sudo().search([('company', '=', company_id)])
+                    if records:
+                        document_id = records
+                        break
+                # Nếu không có cấu hình công ty thì tìm hệ thống
+                if not document_id:
+                    list_system = self.get_all_parent('hrm_systems', 'parent_system', self.system_id.id)
+                    for system_id in list_system:
+                        records = self.env['hrm.document.list.config'].sudo().search([('system_id', '=', system_id)])
+                        if records:
+                            document_id = records
+                            break
+            else:
+                # Nếu là khối văn phòng
+                # Tìm cấu hình phòng ban
+                list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
+                for department_id in list_dept:
+                    records = self.env['hrm.document.list.config'].sudo().search([('department_id', '=', department_id)])
+                    if records:
+                        document_id = records
+                        break
+
+            if not document_id:
+                document_id = self.env['hrm.document.list.config'].sudo().search(
+                    [('block_id', '=', self.block_id.id), ('company', '=', False), ('system_id', '=', False),
+                     ('department_id', '=', False)])
+
+            if document_id:
+                self.document_config = document_id
+            else:
+                # Không tìm được cấu hình nào phù hợp
+                self.document_config = False
+        else:
+            self.document_config = False
+
