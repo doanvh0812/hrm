@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import re
+=======
+>>>>>>> f2970bdf921e6ee721f8c69e98d47dfc54683398
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
@@ -16,7 +19,17 @@ class DocumentListConfig(models.Model):
     system_id = fields.Many2one('hrm.systems', string="Hệ thống")
     company = fields.Many2one('hrm.companies', string="Công ty")
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
-    sequence = fields.Integer()
+    related = fields.Boolean(compute='_compute_related_')
+
+    @api.depends('block_id')
+    def _compute_related_(self):
+        # Lấy giá trị của trường related để check điều kiện hiển thị
+        for record in self:
+            record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
+
+    @api.onchange('block_id')
+    def _onchange_block(self):
+        self.company = self.department_id = self.system_id = False
 
     @api.onchange('document_list')
     def set_sequence(self):
@@ -56,6 +69,18 @@ class DocumentListConfig(models.Model):
     #     print(request.env['ir.http'].session_info())
     #     print(request.env.user)
 
+    @api.constrains('document_list')
+    def check_approval_flow_link(self):
+        if not self.document_list:
+            raise ValidationError('Không thể tạo khi không có tài liệu nào trong danh sách tài liệu.')
+        else:
+            list_check = []
+            for item in self.document_list:
+                if item.obligatory:
+                    list_check.append(True)
+            if not any(list_check):
+                raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
+
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
     _description = 'Danh sách tài liệu'
@@ -64,4 +89,4 @@ class DocumentList(models.Model):
     sequence = fields.Integer(string="STT")
     doc = fields.Many2one('hrm.documents', string='Tên tài liệu')
     name = fields.Char(related='doc.name')
-    status_doc = fields.Boolean(string='Bắt buộc')
+    obligatory = fields.Boolean(string='Bắt buộc')
