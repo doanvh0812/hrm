@@ -2,6 +2,7 @@ import re
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
+from odoo.http import request
 
 
 class DocumentListConfig(models.Model):
@@ -51,6 +52,9 @@ class DocumentListConfig(models.Model):
                 raise AccessDenied("Không thể xoá " + record.name)
         return super(DocumentListConfig, self).unlink()
 
+    # def test_action(self):
+    #     print(request.env['ir.http'].session_info())
+    #     print(request.env.user)
 
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
