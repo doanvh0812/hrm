@@ -1,6 +1,6 @@
 from odoo import api, models, fields
 from odoo.exceptions import ValidationError
-
+from . import constraint
 
 
 class DocumentDeclaration(models.Model):
@@ -10,6 +10,7 @@ class DocumentDeclaration(models.Model):
     name = fields.Char(string='Tên hiển thị')
     profile_id = fields.Many2one('hrm.employee.profile')
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, related='employee_id.block_id')
+    related = fields.Boolean(compute='_compute_related_')
     employee_id = fields.Many2one('hrm.employee.profile', string='Nhân viên')
     type_documents = fields.Many2one('hrm.documents', string='Loại tài liệu', required=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', related='employee_id.system_id')
@@ -55,3 +56,10 @@ class DocumentDeclaration(models.Model):
         if len(self.attachment_ids) > max_attachments:
             self.attachment_ids = False
             raise ValidationError('Vượt quá số lượng tệp tài liệu tối đa cho phép!')
+
+    @api.depends('block_id')
+    def _compute_related_(self):
+        # Lấy giá trị của trường related để check điều kiện hiển thị
+        for record in self:
+            record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
+            print(record.related)
