@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 import re
-=======
->>>>>>> f2970bdf921e6ee721f8c69e98d47dfc54683398
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
