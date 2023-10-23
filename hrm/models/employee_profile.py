@@ -21,7 +21,6 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
-    position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(
@@ -571,6 +570,18 @@ class EmployeeProfile(models.Model):
 
     department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
 
+    def _default_position_block(self):
+        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME and not self.department_id:
+            position = self.env['hrm.position'].search([('block', '=', self.env.user.block_id)])
+            return [('id', 'in', position.ids)]
+        elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME and self.department_id:
+            position = self.env['hrm.position'].search([('block', '=', self.env.user.block_id)])
+            return [('id', 'in', position.ids)]
+        else:
+            return []
+
+    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block)
+
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
             WITH RECURSIVE search AS (
@@ -702,6 +713,17 @@ class EmployeeProfile(models.Model):
                         document_id = self.find_document_list(list_company, "system_id")
             else:
                 # Nếu là khối văn phòng
+
+                # Tìm cấu hình phòng ban
+                list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
+                for department_id in list_dept:
+                    records = self.env['hrm.document.list.config'].sudo().search(
+                        [('department_id', '=', department_id)])
+                    if records:
+                        document_id = records
+                        break
+
+            if not document_id:
                 # Tìm theo vị trí của phòng ban
                 document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id),
@@ -721,6 +743,13 @@ class EmployeeProfile(models.Model):
                      ('department_id', '=', False)])
         else:
             self.document_config = False
+
+    @api.onchange('department_id')
+    def _default_position(self):
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            if self.department_id:
+                position = self.env['hrm.position'].search([('department', '=', self.department_id.id)])
+                return {'domain': {'position_id': [('id', 'in', position.ids)]}}
 
     def find_document_list(self, object_list, colum_name):
         """Hàm này để tìm id tài liệu được cấu hình theo thứ tự ưu tiên từ con đến cha"""
