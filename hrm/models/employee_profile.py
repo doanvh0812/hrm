@@ -1,6 +1,6 @@
 from odoo import models, fields, api
 import re
-from odoo.exceptions import ValidationError, AccessDenied #FD5050; border-radius: 5px;color:#fff;
+from odoo.exceptions import ValidationError, AccessDenied  # FD5050; border-radius: 5px;color:#fff;
 from . import constraint
 from lxml import etree
 import json
@@ -19,7 +19,6 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
-    position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(
@@ -448,8 +447,8 @@ class EmployeeProfile(models.Model):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
         orders = self.sudo().filtered(lambda s: s.state in ['pending'])
         id_access = self.env.user.id
-        step = 0 #step đến lượt
-        step_excess_level = 0 #step vượt cấp
+        step = 0  # step đến lượt
+        step_excess_level = 0  # step vượt cấp
         for rec in orders.approved_link:
             if rec.approve.id == id_access and rec.excess_level == False:
                 step = rec.step
@@ -556,7 +555,8 @@ class EmployeeProfile(models.Model):
         """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái chờ phê duyệt"""
         if self.state == "pending":
             self.sudo().write({'state': 'draft'})
-            self.message_post(body="Hủy bỏ phê duyệt.", subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+            self.message_post(body="Hủy bỏ phê duyệt.",
+                              subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
@@ -567,6 +567,18 @@ class EmployeeProfile(models.Model):
             return [('id', 'in', list_department)]
 
     department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
+
+    def _default_position_block(self):
+        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME and not self.department_id:
+            position = self.env['hrm.position'].search([('block', '=', self.env.user.block_id)])
+            return [('id', 'in', position.ids)]
+        elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME and self.department_id:
+            position = self.env['hrm.position'].search([('block', '=', self.env.user.block_id)])
+            return [('id', 'in', position.ids)]
+        else:
+            return []
+
+    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
@@ -609,31 +621,6 @@ class EmployeeProfile(models.Model):
                 if dept[0] in rec.department_id.ids:
                     return rec
 
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
-
-    def find_system(self, systems, records):
-        # systems là danh sách id hệ thống có quan hệ cha con
-        # records là danh sách bản ghi cấu hình luồng phê duyệt
-        # Duyệt qua 2 danh sách
-        for sys in systems:
-            for rec in records:
-                # Nếu cấu hình không có công ty
-                # Hệ thống có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if not rec.company and sys[0] in rec.system_id.ids:
-                    return rec
-
-    def find_department(self, list_dept, records):
-        # list_dept là danh sách id hệ thống có quan hệ cha con
-        # records là danh sách bản ghi cấu hình luồng phê duyệt
-        # Duyệt qua 2 danh sách
-        for dept in list_dept:
-            for rec in records:
-                # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if dept[0] in rec.department_id.ids:
-                    return rec
     def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
@@ -717,7 +704,8 @@ class EmployeeProfile(models.Model):
                 # Tìm cấu hình phòng ban
                 list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
                 for department_id in list_dept:
-                    records = self.env['hrm.document.list.config'].sudo().search([('department_id', '=', department_id)])
+                    records = self.env['hrm.document.list.config'].sudo().search(
+                        [('department_id', '=', department_id)])
                     if records:
                         document_id = records
                         break
@@ -735,3 +723,9 @@ class EmployeeProfile(models.Model):
         else:
             self.document_config = False
 
+    @api.onchange('department_id')
+    def _default_position(self):
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            if self.department_id:
+                position = self.env['hrm.position'].search([('department', '=', self.department_id.id)])
+                return {'domain': {'position_id': [('id', 'in', position.ids)]}}
