@@ -709,7 +709,7 @@ class EmployeeProfile(models.Model):
                 if not document_id:
                     # Không tìm được vị trí thì tìm theo phòng ban cha con
                     list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
-                    document_id = self.find_document_list(list_company, "department_id")
+                    document_id = self.find_document_list(list_dept, "department_id")
 
             if document_id:
                 # Tìm bản ghi dựa vào id tìm được
