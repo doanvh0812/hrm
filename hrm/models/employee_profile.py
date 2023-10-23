@@ -725,6 +725,9 @@ class EmployeeProfile(models.Model):
     def find_document_list(self, object_list, colum_name):
         """Hàm này để tìm id tài liệu được cấu hình theo thứ tự ưu tiên từ con đến cha"""
         query = f"""
+            IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_name = 'query_hrm_document_list_config') THEN
+                DROP FUNCTION query_hrm_document_list_config(integer[]);
+            END IF;
             CREATE FUNCTION query_hrm_document_list_config(object_list integer[])
             RETURNS TABLE (id integer) AS $$
             DECLARE
@@ -738,7 +741,6 @@ class EmployeeProfile(models.Model):
             $$ LANGUAGE plpgsql;
             
             SELECT * FROM query_hrm_document_list_config(ARRAY{object_list});
-            DROP FUNCTION query_hrm_document_list_config(integer[]);
         """
         self._cr.execute(query)
         records = self._cr.fetchall()
