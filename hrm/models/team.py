@@ -12,6 +12,7 @@ class Teams(models.Model):
     name = fields.Char(string='Tên hiển thị', compute='_compute_name_team', store=True)
     team_name = fields.Char(string='Tên team', required=True)
     type_team = fields.Selection(selection=constraint.SELECT_TYPE_TEAM, string='Loại hình đội ngũ', required=True)
+    system_id = fields.Many2one('hrm.systems', string='Hệ thống', required=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
 
@@ -83,7 +84,7 @@ class Teams(models.Model):
         """
         self._cr.execute(
             r"""
-                select hrm_companies.id from hrm_companies where hrm_companies.system_id in
+                     select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
                     (WITH RECURSIVE subordinates AS (
                     SELECT id, parent_system
                     FROM hrm_systems
@@ -102,6 +103,7 @@ class Teams(models.Model):
         if len(list_company) > 0:
             return [com[0] for com in list_company]
         return []
+
 
     @api.onchange('system_id')
     def _onchange_system(self):
@@ -143,4 +145,7 @@ class Teams(models.Model):
     def _check_department_access(self):
         if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             raise ValidationError("Bạn không có quyền thực hiện tác vụ này trong khối văn phòng")
+
+
+
 
