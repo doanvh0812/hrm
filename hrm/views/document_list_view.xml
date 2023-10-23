@@ -4,6 +4,9 @@
             <field name="name">hrm.documents.list.form</field>
             <field name="model">hrm.document.list.config</field>
             <field name="arch" type="xml">
+<!--                <header>-->
+<!--                    <button name="test_action" string="Test" type="object"/>-->
+<!--                </header>-->
                 <form>
                     <sheet>
                         <group>
@@ -11,6 +14,7 @@
                             <field name="check_blocks" invisible="1"/>
                             <field name="check_company" invisible="1"/>
                             <field name="name" string="Tên hiển thị"/>
+<<<<<<< HEAD
                             <field name="block_id" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
                             <field name="department_id" attrs="{'invisible': [('related', '!=', True)]}"/>
                             <field name="system_id"
@@ -18,6 +22,12 @@
                                    store="1" />
                             <field name="company" attrs="{'invisible': [('related', '=', True)]}"
                                    />
+=======
+                            <field name="block_id"/>
+                            <field name="department_id" attrs="{'invisible': [('related', '!=', True)]}"/>
+                            <field name="system_id" attrs="{'invisible': [('related', '=', True)]}" store="1"/>
+                            <field name="company" attrs="{'invisible': [('related', '=', True)]}"/>
+>>>>>>> 6dbdc4117d690afee041fadb3347f927b52ceacf
                             <field name="position_id"/>
                         </group>
                         <notebook>
@@ -44,9 +54,9 @@
                     <field name="name"/>
                     <field name="block_id"/>
                     <field name="department_id"/>
-                    <field name="position_id"/>
                     <field name="system_id"/>
                     <field name="company"/>
+                    <field name="position_id"/>
                 </tree>
             </field>
         </record>
