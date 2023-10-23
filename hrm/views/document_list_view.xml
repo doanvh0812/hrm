@@ -4,6 +4,9 @@
             <field name="name">hrm.documents.list.form</field>
             <field name="model">hrm.document.list.config</field>
             <field name="arch" type="xml">
+<!--                <header>-->
+<!--                    <button name="test_action" string="Test" type="object"/>-->
+<!--                </header>-->
                 <form>
                     <sheet>
                         <group>

@@ -274,17 +274,17 @@ class EmployeeProfile(models.Model):
             has_group_config = self.env.user.has_group("hrm.hrm_group_config_access")
             config_group = doc.xpath("//group")
             if config_group and not has_group_readonly:
-                cf = config_group[0]
                 # nếu user login không có quyền chỉ đọc thì update lại các thuộc tính readonly
+                cf = config_group[0]
                 for field in cf.xpath("//field[@name]"):
                     modifiers = field.attrib.get('modifiers', '')
                     modifiers = json.loads(modifiers) if modifiers else {}
                     if field.get("name") not in ['employee_code_new', 'document_config', 'document_list']:
                         modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                        ['state', '!=', 'draft']]})
-                    if field.get("name") in ['phone_num', 'email', 'identifier'] and not has_group_config:
+                    if field.get("name") in ['phone_num', 'email', 'identifier']:
                         modifiers.update({'readonly': ["|", ["id", "!=", False],
-                                                       ["create_uid", "!=", user_id], ['state', '!=', 'draft']]})
+                                                       ["create_uid", "!=", user_id], ['state', '=', 'pending']]})
                     field.attrib['modifiers'] = json.dumps(modifiers)
             elif config_group and has_group_readonly:
                 # nếu user login có quyền chỉ đọc thì set các field readonly
