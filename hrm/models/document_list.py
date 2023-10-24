@@ -202,16 +202,19 @@ class DocumentListConfig(models.Model):
                 raise ValidationError(f'Hồ sơ {item.name} đã có trong danh sách tài liệu')
             else:
                 seen.add(item)
+
     @api.constrains('name', 'block_id', 'department_id', 'position_id', 'system_id', 'company')
     def check_duplicate_document_config(self):
         """hàm này để kiểm tra trùng lặp cấu hình danh sách tài liệu cho các đối tượng được áp dụng"""
+
         def check_exist_object(department_id=False, position_id=False, system_id=False, company=False):
             check = self.search([('block_id', '=', self.block_id.id), ('id', 'not in', [self.id, False]),
                                  ('department_id', '=', department_id), ('position_id', '=', position_id),
                                  ('system_id', '=', system_id), ('company', '=', company)])
             return check.ids
 
-        if self.position_id and check_exist_object(position_id=self.position_id.id, department_id=self.department_id.id, system_id=self.system_id.id, company=self.company.id):
+        if self.position_id and check_exist_object(position_id=self.position_id.id, department_id=self.department_id.id,
+                                                   system_id=self.system_id.id, company=self.company.id):
             raise ValidationError(f"Đã có cấu hình danh sách tài liệu cho vị trí {self.position_id.work_position}")
         elif not self.position_id and self.department_id and check_exist_object(department_id=self.department_id.id):
             raise ValidationError(f"Đã có cấu hình danh sách tài liệu cho phòng ban {self.department_id.name}")
@@ -221,7 +224,6 @@ class DocumentListConfig(models.Model):
             raise ValidationError(f"Đã có cấu hình danh sách tài liệu cho hệ thống {self.system_id.name}")
         elif not self.system_id and not self.department_id and check_exist_object():
             raise ValidationError(f"Đã có cấu hình danh sách tài liệu cho khối {self.block_id.name}")
-
 
     def unlink(self):
         for record in self:
@@ -241,6 +243,7 @@ class DocumentListConfig(models.Model):
                     list_check.append(True)
             if not any(list_check):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
+
 
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
