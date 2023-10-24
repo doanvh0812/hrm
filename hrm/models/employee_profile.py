@@ -1,6 +1,8 @@
+from builtins import list
+
 from odoo import models, fields, api
 import re
-from odoo.exceptions import ValidationError, AccessDenied #FD5050; border-radius: 5px;color:#fff;
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
@@ -19,7 +21,6 @@ class EmployeeProfile(models.Model):
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
                                tracking=True)
-    position_id = fields.Many2one('hrm.position', required=True, string='Vị trí', tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(
@@ -448,8 +449,8 @@ class EmployeeProfile(models.Model):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
         orders = self.sudo().filtered(lambda s: s.state in ['pending'])
         id_access = self.env.user.id
-        step = 0 #step đến lượt
-        step_excess_level = 0 #step vượt cấp
+        step = 0  # step đến lượt
+        step_excess_level = 0  # step vượt cấp
         for rec in orders.approved_link:
             if rec.approve.id == id_access and rec.excess_level == False:
                 step = rec.step
@@ -556,7 +557,8 @@ class EmployeeProfile(models.Model):
         """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái chờ phê duyệt"""
         if self.state == "pending":
             self.sudo().write({'state': 'draft'})
-            self.message_post(body="Hủy bỏ phê duyệt.", subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+            self.message_post(body="Hủy bỏ phê duyệt.",
+                              subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
@@ -567,6 +569,18 @@ class EmployeeProfile(models.Model):
             return [('id', 'in', list_department)]
 
     department_id = fields.Many2one('hrm.departments', string='Phòng/Ban', tracking=True, domain=_default_departments)
+
+    def _default_position_block(self):
+        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME and not self.department_id:
+            position = self.env['hrm.position'].search([('block', '=', self.env.user.block_id)])
+            return [('id', 'in', position.ids)]
+        elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME and self.department_id:
+            position = self.env['hrm.position'].search([('block', '=', self.env.user.block_id)])
+            return [('id', 'in', position.ids)]
+        else:
+            return []
+
+    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
@@ -579,7 +593,10 @@ class EmployeeProfile(models.Model):
             SELECT id FROM search;"""
         # Lấy từ nhỏ -> lớn
         self._cr.execute(query)
-        result = self._cr.fetchall()
+        temp = self._cr.fetchall()
+        result = []
+        for res in temp:
+            result.append(res[0])
         return result
 
     def find_block(self, records):
@@ -587,18 +604,6 @@ class EmployeeProfile(models.Model):
             if not approved.department_id and not approved.system_id:
                 return approved
 
-    def find_system(self, systems, records):
-        # systems là danh sách id hệ thống có quan hệ cha con
-        # EX : systems = [(66,) (67,),(68,)]
-        # records là danh sách bản ghi cấu hình luồng phê duyệt
-        # Duyệt qua 2 danh sách
-        for sys in systems:
-            for rec in records:
-                # Nếu cấu hình không có công ty
-                # Hệ thống có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if sys[0] in rec.system_id.ids and self.find_child_company(rec):
-                    return rec
-
     def find_department(self, list_dept, records):
         # list_dept là danh sách id hệ thống có quan hệ cha con
         # records là danh sách bản ghi cấu hình luồng phê duyệt
@@ -606,7 +611,7 @@ class EmployeeProfile(models.Model):
         for dept in list_dept:
             for rec in records:
                 # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if dept[0] in rec.department_id.ids:
+                if dept in rec.department_id.ids:
                     return rec
 
     def find_block(self, records):
@@ -622,7 +627,7 @@ class EmployeeProfile(models.Model):
             for rec in records:
                 # Nếu cấu hình không có công ty
                 # Hệ thống có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if not rec.company and sys[0] in rec.system_id.ids:
+                if not rec.company and sys in rec.system_id.ids:
                     return rec
 
     def find_department(self, list_dept, records):
@@ -634,10 +639,11 @@ class EmployeeProfile(models.Model):
                 # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
                 if dept[0] in rec.department_id.ids:
                     return rec
+
     def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
-                if cf.company and company_id[0] in cf.company.ids:
+                if cf.company and company_id in cf.company.ids:
                     return cf
 
     # hàm này để hiển thị lịch sử lưu trữ
@@ -694,44 +700,48 @@ class EmployeeProfile(models.Model):
         # Tìm cấu hình dựa trên block_id
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
         if records:
-            document_id = None
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
-                # Nếu là khối thương mại
-                list_company = self.get_all_parent('hrm_companies', 'parent_company', self.company.id)
-                # Tìm cấu hình công ty
-                for company_id in list_company:
-                    records = self.env['hrm.document.list.config'].sudo().search([('company', '=', company_id)])
-                    if records:
-                        document_id = records
-                        break
-                # Nếu không có cấu hình công ty thì tìm hệ thống
+                # Tìm id danh sách tài liệu theo vị trí của khối.
+                document_id = self.env['hrm.document.list.config'].sudo().search(
+                    [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id)])
                 if not document_id:
-                    list_system = self.get_all_parent('hrm_systems', 'parent_system', self.system_id.id)
-                    for system_id in list_system:
-                        records = self.env['hrm.document.list.config'].sudo().search([('system_id', '=', system_id)])
-                        if records:
-                            document_id = records
-                            break
+                    # Không tìm được theo vị trí thì tìm theo công ty cha con
+                    list_company = self.get_all_parent('hrm_companies', 'parent_company', self.company.id)
+                    document_id = self.find_document_list(list_company, "company")
+                    if not document_id:
+                        # Không tìm được theo công ty thì tìm theo hệ thống cha con
+                        list_system = self.get_all_parent('hrm_systems', 'parent_system', self.system_id.id)
+                        document_id = self.find_document_list(list_company, "system_id")
             else:
                 # Nếu là khối văn phòng
+
                 # Tìm cấu hình phòng ban
                 list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
                 for department_id in list_dept:
-                    records = self.env['hrm.document.list.config'].sudo().search([('department_id', '=', department_id)])
+                    records = self.env['hrm.document.list.config'].sudo().search(
+                        [('department_id', '=', department_id)])
                     if records:
                         document_id = records
                         break
 
             if not document_id:
+                # Tìm theo vị trí của phòng ban
                 document_id = self.env['hrm.document.list.config'].sudo().search(
-                    [('block_id', '=', self.block_id.id), ('company', '=', False), ('system_id', '=', False),
-                     ('department_id', '=', False)])
+                    [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id),
+                     ('department_id', '=', self.department_id.id)])
+                if not document_id:
+                    # Không tìm được vị trí thì tìm theo phòng ban cha con
+                    list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
+                    document_id = self.find_document_list(list_dept, "department_id")
 
             if document_id:
+                # Tìm bản ghi dựa vào id tìm được
                 self.document_config = document_id
             else:
-                # Không tìm được cấu hình nào phù hợp
-                self.document_config = False
+                # Nếu không tìm được id nào thì tìm theo khối.
+                self.document_config = self.env['hrm.document.list.config'].sudo().search(
+                    [('block_id', '=', self.block_id.id), ('company', '=', False), ('system_id', '=', False),
+                     ('department_id', '=', False)])
         else:
             self.document_config = False
 
@@ -743,3 +753,40 @@ class EmployeeProfile(models.Model):
                     if doc1.name.lower() == doc2.name.lower() and doc1.employee_id.id == doc2.employee_id.id \
                         and doc1.type_documents == doc2.type_documents:
                         raise ValidationError("Không được chọn tài liệu khai báo trùng nhau")
+
+    @api.onchange('department_id')
+    def _default_position(self):
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            if self.department_id:
+                position = self.env['hrm.position'].search([('department', '=', self.department_id.id)])
+                return {'domain': {'position_id': [('id', 'in', position.ids)]}}
+
+    def find_document_list(self, object_list, colum_name):
+        """Hàm này để tìm id tài liệu được cấu hình theo thứ tự ưu tiên từ con đến cha"""
+        query = f"""
+            DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_name = 'query_hrm_document_list_config') THEN
+                        DROP FUNCTION query_hrm_document_list_config(integer[]);
+                END IF;
+            END $$;
+            CREATE FUNCTION query_hrm_document_list_config(object_list integer[])
+            RETURNS TABLE (id integer) AS $$
+            DECLARE
+                object_id integer;
+            BEGIN
+                FOREACH object_id IN ARRAY object_list
+                LOOP
+                    RETURN QUERY SELECT dlc.id FROM hrm_document_list_config dlc WHERE dlc.{colum_name} = object_id;
+                END LOOP;
+            END;
+            $$ LANGUAGE plpgsql;
+            
+            SELECT * FROM query_hrm_document_list_config(ARRAY{object_list});
+        """
+        self._cr.execute(query)
+        records = self._cr.fetchall()
+        if records:
+            return self.env['hrm.document.list.config'].sudo().search([('id', '=', records[0][0])])
+        else:
+            return None
