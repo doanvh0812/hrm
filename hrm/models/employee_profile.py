@@ -2,7 +2,7 @@ from builtins import list
 
 from odoo import models, fields, api
 import re
-from odoo.exceptions import ValidationError, AccessDenied  # FD5050; border-radius: 5px;color:#fff;
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
