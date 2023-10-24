@@ -10,7 +10,7 @@
                             <group>
                                 <field name="profile_id" invisible="1"/>
                                 <field name="name"/>
-                                <field name="employee_id" attrs="{'readonly': [('profile_id', '!=', False)]}"/>
+                                <field name="employee_id" attrs="{'readonly': [('profile_id', '!=', False)]}" force_save="1"/>
                                 <field name="type_documents"/>
                                 <field name="max_photos"/>
                                 <field name="max_files"/>
@@ -22,10 +22,10 @@
                             </group>
                             <group>
                                 <field name="related" invisible="1"/>
-                                <field name="block_id" readonly="1"/>
-                                <field name="system_id" attrs="{'invisible': [('related', '=', True)]}" readonly="1"/>
-                                <field name="company_id" attrs="{'invisible': [('related', '=', True)]}" readonly="1"/>
-                                <field name="department_id" attrs="{'invisible': [('related', '=', False)]}" readonly="1"/>
+                                <field name="block_id" readonly="1" force_save="1"/>
+                                <field name="system_id" attrs="{'invisible': [('related', '=', True)]}" readonly="1" force_save="1"/>
+                                <field name="company_id" attrs="{'invisible': [('related', '=', True)]}" readonly="1" force_save="1"/>
+                                <field name="department_id" attrs="{'invisible': [('related', '=', False)]}" readonly="1" force_save="1"/>
                             </group>
                         </group>
                         <group>

@@ -751,7 +751,7 @@ class EmployeeProfile(models.Model):
             for doc1 in self.document_declaration:
                 for doc2 in self.document_declaration:
                     if doc1.name.lower() == doc2.name.lower() and doc1.employee_id.id == doc2.employee_id.id \
-                        and doc1.type_documents == doc2.type_documents:
+                        and doc1.type_documents == doc2.type_documents and doc1.id != doc2.id:
                         raise ValidationError("Không được chọn tài liệu khai báo trùng nhau")
 
     @api.onchange('department_id')
