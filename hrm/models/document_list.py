@@ -2,8 +2,7 @@ import re
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
-from odoo.http import request
-
+from odoo import http
 
 class DocumentListConfig(models.Model):
     _name = 'hrm.document.list.config'
@@ -61,10 +60,6 @@ class DocumentListConfig(models.Model):
             if document:
                 raise AccessDenied("Không thể xoá " + record.name)
         return super(DocumentListConfig, self).unlink()
-
-    # def test_action(self):
-    #     print(request.env['ir.http'].session_info())
-    #     print(request.env.user)
 
     @api.constrains('document_list')
     def check_approval_flow_link(self):

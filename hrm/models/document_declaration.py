@@ -62,3 +62,9 @@ class DocumentDeclaration(models.Model):
         # Lấy giá trị của trường related để check điều kiện hiển thị
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
+
+    @api.onchange('name')
+    def default_employee(self):
+        """Gán giá trị của trường nhân viên khi tạo mới bản ghi tại màn Tạo mới hồ sơ."""
+        if self.profile_id:
+            self.employee_id = self.profile_id.id

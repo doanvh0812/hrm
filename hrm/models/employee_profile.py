@@ -653,6 +653,7 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Bỏ lưu trữ")
 
     def write(self, vals):
+        # print(vals)
         if 'email' in vals:
             login = vals['email']
             user = self.env['res.users'].sudo().search([("id", "=", self.acc_id)])
@@ -692,7 +693,6 @@ class EmployeeProfile(models.Model):
     def compute_documents_list(self):
         # Tìm cấu hình dựa trên block_id
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
-
         if records:
             document_id = None
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
@@ -735,3 +735,11 @@ class EmployeeProfile(models.Model):
         else:
             self.document_config = False
 
+    @api.onchange("document_declaration")
+    def check_duplicate_document_declaration(self):
+        if self.document_declaration:
+            for doc1 in self.document_declaration:
+                for doc2 in self.document_declaration:
+                    if doc1.name.lower() == doc2.name.lower() and doc1.employee_id.id == doc2.employee_id.id \
+                        and doc1.type_documents == doc2.type_documents:
+                        raise ValidationError("Không được chọn tài liệu khai báo trùng nhau")
