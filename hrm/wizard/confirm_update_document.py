@@ -13,7 +13,8 @@ class ConfirmUpdateDocument(models.TransientModel):
 
     update_confirm_document = fields.Selection(selection=UPDATE_CONFIRM_DOCUMENT, string="Cập nhật tài liệu")
 
-    # def action_confirm_update_document(self):
+    def action_confirm_update_document(self):
+        pass
     #     # lấy bản ghi đang được chọn và gọi action duyệt
     #     leads = self.env['hrm.employee.profile'].sudo().browse(self.env.context.get('active_ids'))
     #     if self.update_confirm_document == 'all':
