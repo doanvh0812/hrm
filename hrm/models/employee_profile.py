@@ -714,7 +714,6 @@ class EmployeeProfile(models.Model):
                         document_id = self.find_document_list(list_company, "system_id")
             else:
                 # Nếu là khối văn phòng
-
                 # Tìm cấu hình phòng ban
                 list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
                 for department_id in list_dept:
