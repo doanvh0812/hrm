@@ -14,12 +14,10 @@ class ConfirmUpdateDocument(models.TransientModel):
     update_confirm_document = fields.Selection(selection=UPDATE_CONFIRM_DOCUMENT, string="Cập nhật tài liệu")
 
     def action_confirm_update_document(self):
-        pass
-    #     # lấy bản ghi đang được chọn và gọi action duyệt
-    #     leads = self.env['hrm.employee.profile'].sudo().browse(self.env.context.get('active_ids'))
-    #     if self.update_confirm_document == 'all':
-    #         print(leads)
-    #         # return leads.write()
-    #     elif self.update_confirm_document == 'not_approved_and_new':
-    #         print(leads)
-            # return leads.write()
+        # lấy bản ghi đang được chọn và gọi action update document
+        record = self.env['hrm.document.list.config'].sudo().browse(self.env.context.get('active_ids'))
+        if self.update_confirm_document == 'all':
+            return record.action_update_document('all')
+        elif self.update_confirm_document == 'not_approved_and_new':
+            return record.action_update_document('not_approved_and_new')
+        return record.action_update_document('new')

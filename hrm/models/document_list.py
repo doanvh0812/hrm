@@ -244,6 +244,16 @@ class DocumentListConfig(models.Model):
             if not any(list_check):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
 
+    def action_update_document(self, object_update):
+        # object_update 1: tất cả các bản ghi
+        # object_update 2: chỉ các bản ghi chưa được phê duyệt và bản ghi mới
+        # object_update 3: chỉ các bản ghi mới
+        if object_update == 'all':
+            self.env['hrm.employee.profile'].sudo().search(['document_config', '=', self.id]).write({
+                'apply_document_config': True})
+        elif object_update == 'not_approved_and_new':
+            self.env['hrm.employee.profile'].sudo().search(['state', '=', 'pending'], ['document_config', '=', self.id]).write({
+                'apply_document_config': True})
 
 class DocumentList(models.Model):
     _name = 'hrm.document.list'

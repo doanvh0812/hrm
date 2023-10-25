@@ -67,6 +67,8 @@ class EmployeeProfile(models.Model):
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
 
+    apply_document_config = fields.Boolean(default=False)
+
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
         self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write(
@@ -714,16 +716,6 @@ class EmployeeProfile(models.Model):
                         document_id = self.find_document_list(list_company, "system_id")
             else:
                 # Nếu là khối văn phòng
-                # Tìm cấu hình phòng ban
-                list_dept = self.get_all_parent('hrm_departments', 'superior_department', self.department_id.id)
-                for department_id in list_dept:
-                    records = self.env['hrm.document.list.config'].sudo().search(
-                        [('department_id', '=', department_id)])
-                    if records:
-                        document_id = records
-                        break
-
-            if not document_id:
                 # Tìm theo vị trí của phòng ban
                 document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id),
@@ -750,7 +742,7 @@ class EmployeeProfile(models.Model):
             for doc1 in self.document_declaration:
                 for doc2 in self.document_declaration:
                     if doc1.name.lower() == doc2.name.lower() and doc1.employee_id.id == doc2.employee_id.id \
-                        and doc1.type_documents == doc2.type_documents and doc1.id != doc2.id:
+                            and doc1.type_documents == doc2.type_documents and doc1.id != doc2.id:
                         raise ValidationError("Không được chọn tài liệu khai báo trùng nhau")
 
     @api.onchange('department_id')
@@ -780,7 +772,7 @@ class EmployeeProfile(models.Model):
                 END LOOP;
             END;
             $$ LANGUAGE plpgsql;
-            
+
             SELECT * FROM query_hrm_document_list_config(ARRAY{object_list});
         """
         self._cr.execute(query)
