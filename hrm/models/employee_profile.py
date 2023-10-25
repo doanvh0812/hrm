@@ -366,9 +366,9 @@ class EmployeeProfile(models.Model):
         self.team_marketing = self.team_sales = False
         if self.company:
             list_team_marketing = self.env['hrm.teams'].search(
-                [('company_id', '=', self.company.id), ('type_team', '=', 'marketing')])
+                [('company', '=', self.company.id), ('type_team', '=', 'marketing')])
             list_team_sale = self.env['hrm.teams'].search(
-                [('company_id', '=', self.company.id), ('type_team', 'in', ('sale', 'resale'))])
+                [('company', '=', self.company.id), ('type_team', 'in', ('sale', 'resale'))])
 
             return {
                 'domain': {
@@ -461,21 +461,6 @@ class EmployeeProfile(models.Model):
             self.require_team_marketing = True
         elif self.position_id.team_type == "sale":
             self.require_team_sale = True
-
-
-
-
-
-    # @api.onchange('position_id')
-    # def onchange_position_id(self):
-    #     # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
-    #     self.require_team_marketing = self.require_team_sale = False
-    #     if self.position_id.block != self.block_id.name:
-    #         self.position_id = False
-    #     if self.position_id.team_id.type_team == "marketing":
-    #         self.require_team_marketing = True
-    #     elif self.position_id.team_id.type_team == "sale":
-    #         self.require_team_sale = True
 
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved

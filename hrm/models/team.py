@@ -126,7 +126,6 @@ class Teams(models.Model):
             # nếu có công ty thì không hiển thị hệ thống
             return [('id', '=', 0)]
         return []
-
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
 
     def get_child_company(self):
@@ -143,9 +142,5 @@ class Teams(models.Model):
 
     @api.constrains('name', 'type_team', 'team_name', 'active',' change_system_id')
     def _check_department_access(self):
-        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            raise ValidationError("Bạn không có quyền thực hiện tác vụ này trong khối văn phòng")
-
-
-
-
+        if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
+            raise ValidationError("Bạn không có quyền thực hiện tác vụ này!")
