@@ -2,8 +2,7 @@ import re
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
-from odoo.http import request
-
+from odoo import http
 
 class DocumentListConfig(models.Model):
     _name = 'hrm.document.list.config'
@@ -230,10 +229,6 @@ class DocumentListConfig(models.Model):
                 raise AccessDenied("Không thể xoá " + record.name)
         return super(DocumentListConfig, self).unlink()
 
-    # def test_action(self):
-    #     print(request.env['ir.http'].session_info())
-    #     print(request.env.user)
-
     @api.constrains('document_list')
     def check_approval_flow_link(self):
         if not self.document_list:
@@ -246,6 +241,17 @@ class DocumentListConfig(models.Model):
             if not any(list_check):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
 
+
+    def action_update_document(self, object_update):
+        # object_update 1: tất cả các bản ghi
+        # object_update 2: chỉ các bản ghi chưa được phê duyệt và bản ghi mới
+        # object_update 3: chỉ các bản ghi mới
+        if object_update == 'all':
+            self.env['hrm.employee.profile'].sudo().search(['document_config', '=', self.id]).write({
+                'apply_document_config': True})
+        elif object_update == 'not_approved_and_new':
+            self.env['hrm.employee.profile'].sudo().search(['state', '=', 'pending'], ['document_config', '=', self.id]).write({
+                'apply_document_config': True})
 
 class DocumentList(models.Model):
     _name = 'hrm.document.list'

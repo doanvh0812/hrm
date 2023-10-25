@@ -34,9 +34,10 @@ class EmployeeProfile(models.Model):
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
-
-    team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
-    team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
+    def _default_team(self):
+        return [('id', '=', 0)]
+    team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
+    team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
     manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
@@ -66,6 +67,8 @@ class EmployeeProfile(models.Model):
 
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
+
+    apply_document_config = fields.Boolean(default=False)
 
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
@@ -358,11 +361,26 @@ class EmployeeProfile(models.Model):
     @api.onchange('company')
     def _onchange_company(self):
         """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
-             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+             sẽ tự hiển thị đội ngũ mkt và sale nó thuộc vào
         """
-        if not self.company:
-            return
+        self.team_marketing = self.team_sales = False
+        if self.company:
+            list_team_marketing = self.env['hrm.teams'].search(
+                [('company_id', '=', self.company.id), ('type_team', '=', 'marketing')])
+            list_team_sale = self.env['hrm.teams'].search(
+                [('company_id', '=', self.company.id), ('type_team', 'in', ('sale', 'resale'))])
+
+            return {
+                'domain': {
+                    'team_marketing': [('id', 'in', list_team_marketing.ids)],
+                    'team_sales': [('id', 'in', list_team_sale.ids)]
+                }
+            }
+        else:
+            return {}
         self.system_id = self.company.system_id
+
+
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -433,17 +451,31 @@ class EmployeeProfile(models.Model):
             if rec.name:
                 if re.search(r"[\W]+", rec.name.replace(" ", "")) or "_" in rec.name:
                     raise ValidationError(constraint.ERROR_NAME % '')
-
     @api.onchange('position_id')
     def onchange_position_id(self):
-        # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
+        """
+        Khi thay đổi vị trí sẽ check loại đội ngũ là gì.
+        """
         self.require_team_marketing = self.require_team_sale = False
-        if self.position_id.block != self.block_id.name:
-            self.position_id = False
-        if self.position_id.team_id.type_team == "marketing":
+        if self.position_id.team_type == 'marketing':
             self.require_team_marketing = True
-        elif self.position_id.team_id.type_team == "sale":
+        elif self.position_id.team_type == "sale":
             self.require_team_sale = True
+
+
+
+
+
+    # @api.onchange('position_id')
+    # def onchange_position_id(self):
+    #     # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
+    #     self.require_team_marketing = self.require_team_sale = False
+    #     if self.position_id.block != self.block_id.name:
+    #         self.position_id = False
+    #     if self.position_id.team_id.type_team == "marketing":
+    #         self.require_team_marketing = True
+    #     elif self.position_id.team_id.type_team == "sale":
+    #         self.require_team_sale = True
 
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
@@ -659,6 +691,7 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Bỏ lưu trữ")
 
     def write(self, vals):
+        # print(vals)
         if 'email' in vals:
             login = vals['email']
             user = self.env['res.users'].sudo().search([("id", "=", self.acc_id)])
@@ -733,6 +766,15 @@ class EmployeeProfile(models.Model):
         else:
             self.document_config = False
 
+    @api.onchange("document_declaration")
+    def check_duplicate_document_declaration(self):
+        if self.document_declaration:
+            for doc1 in self.document_declaration:
+                for doc2 in self.document_declaration:
+                    if doc1.name.lower() == doc2.name.lower() and doc1.employee_id.id == doc2.employee_id.id \
+                            and doc1.type_documents == doc2.type_documents and doc1.id != doc2.id:
+                        raise ValidationError("Không được chọn tài liệu khai báo trùng nhau")
+
     @api.onchange('department_id')
     def _default_position(self):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
@@ -760,7 +802,7 @@ class EmployeeProfile(models.Model):
                 END LOOP;
             END;
             $$ LANGUAGE plpgsql;
-            
+
             SELECT * FROM query_hrm_document_list_config(ARRAY{object_list});
         """
         self._cr.execute(query)
