@@ -17,7 +17,7 @@
         </record>
 
         <record id="action_hrm_confirm_update_document" model="ir.actions.act_window">
-            <field name="name">Áp dụng tài liệu</field>
+            <field name="name">Chọn đối tượng áp dụng tài liệu</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.confirm_update_document</field>
             <field name="view_mode">form</field>

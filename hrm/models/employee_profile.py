@@ -57,7 +57,7 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
     document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
-    document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
+    document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list', store=True)
     document_list = fields.One2many(related='document_config.document_list')
 
     can_see_approved_record = fields.Boolean()
@@ -67,7 +67,7 @@ class EmployeeProfile(models.Model):
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
 
-    apply_document_config = fields.Boolean(default=False)
+    apply_document_config = fields.Boolean(default=True)
 
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
@@ -691,11 +691,11 @@ class EmployeeProfile(models.Model):
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             if self.env.user.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
-                if self.company.id not in list_company:
+                if self.company.id and self.company.id not in list_company:
                     raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.company.name}")
             elif self.env.user.system_id and not self.env.user.company:
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
-                if self.system_id.id not in list_system:
+                if self.system_id.id and self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
 
     def compute_documents_list(self):

@@ -248,11 +248,19 @@ class DocumentListConfig(models.Model):
         # object_update 1: tất cả các bản ghi
         # object_update 2: chỉ các bản ghi chưa được phê duyệt và bản ghi mới
         # object_update 3: chỉ các bản ghi mới
-        if object_update == 'all':
-            self.env['hrm.employee.profile'].sudo().search(['document_config', '=', self.id]).write({
+        print(self.id)
+        if object_update == 'not_approved_and_new':
+            a = self.env['hrm.employee.profile'].sudo().search(
+                [('state', '!=', 'pending'), ('document_config', '=', self.id)])
+            self.env['hrm.employee.profile'].sudo().search([('state', '!=', 'pending'), ('document_config', '=', self.id)]).write({
+                'apply_document_config': False})
+            self.env['hrm.employee.profile'].sudo().search([('state', '=', 'pending'), ('document_config', '=', self.id)]).write({
                 'apply_document_config': True})
-        elif object_update == 'not_approved_and_new':
-            self.env['hrm.employee.profile'].sudo().search(['state', '=', 'pending'], ['document_config', '=', self.id]).write({
+        elif object_update == 'new':
+            self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id)]).write({
+                'apply_document_config': False})
+        elif object_update == 'all':
+            self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id)]).write({
                 'apply_document_config': True})
 
 class DocumentList(models.Model):
