@@ -27,7 +27,7 @@ class Ranks(models.Model):
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Tên viết tắt')
 
     def _default_department(self):
-        if self.env.user.department_id.id:
+        if self.env.user.department_id:
             list_department = self.env['hrm.utils'].get_child_id(self.env.user.department_id,
                                                                  'hrm_departments', "superior_department")
             return [('id', 'in', list_department)]

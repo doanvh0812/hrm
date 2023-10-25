@@ -4,6 +4,7 @@ from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from odoo import http
 
+
 class DocumentListConfig(models.Model):
     _name = 'hrm.document.list.config'
     _description = 'Cấu hình danh sách tài liệu'
@@ -71,10 +72,8 @@ class DocumentListConfig(models.Model):
 
     def _default_department(self):
         if self.env.user.department_id:
-            list_department = []
-            for department in self.env.user.department_id:
-                list_department += self.env['hrm.utils'].get_child_id(self.env.user.department_id,
-                                                                     'hrm_departments', "superior_department")
+            list_department = self.env['hrm.utils'].get_child_id(self.env.user.department_id,
+                                                                 'hrm_departments', "superior_department")
             return [('id', 'in', list_department)]
 
     department_id = fields.Many2one('hrm.departments', string='Phòng ban', tracking=True, domain=_default_department)
@@ -218,7 +217,6 @@ class DocumentListConfig(models.Model):
             if not any(list_check):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
 
-
     def action_update_document(self, object_update):
         # object_update 1: tất cả các bản ghi
         # object_update 2: chỉ các bản ghi chưa được phê duyệt và bản ghi mới
@@ -227,8 +225,10 @@ class DocumentListConfig(models.Model):
             self.env['hrm.employee.profile'].sudo().search(['document_config', '=', self.id]).write({
                 'apply_document_config': True})
         elif object_update == 'not_approved_and_new':
-            self.env['hrm.employee.profile'].sudo().search(['state', '=', 'pending'], ['document_config', '=', self.id]).write({
+            self.env['hrm.employee.profile'].sudo().search(['state', '=', 'pending'],
+                                                           ['document_config', '=', self.id]).write({
                 'apply_document_config': True})
+
 
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
