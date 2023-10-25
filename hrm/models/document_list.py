@@ -15,9 +15,6 @@ class DocumentListConfig(models.Model):
     check_company = fields.Char(default=lambda self: self.env.user.company)
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
     related = fields.Boolean(compute='_compute_related_')
-    can_see_approved_record = fields.Boolean()
-    can_see_button_approval = fields.Boolean()
-    see_record_with_config = fields.Boolean()
 
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
