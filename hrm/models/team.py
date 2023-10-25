@@ -1,6 +1,6 @@
 import re
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError,AccessDenied
 from . import constraint
 
 
@@ -77,70 +77,22 @@ class Teams(models.Model):
             else:
                 record.message_post(body="Bỏ lưu trữ")
 
-    def _system_have_child_company(self, system_id):
-        """
-        Kiểm tra hệ thống có công ty con hay không
-        Nếu có thì trả về list tên công ty con
-        """
-        self._cr.execute(
-            r"""
-                     select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
-                    (WITH RECURSIVE subordinates AS (
-                    SELECT id, parent_system
-                    FROM hrm_systems
-                    WHERE id = %s
-                    UNION ALL
-                    SELECT t.id, t.parent_system
-                    FROM hrm_systems t
-                    INNER JOIN subordinates s ON t.parent_system = s.id
-                    )
-            SELECT id FROM subordinates);
-            """, (system_id,)
-        )
-        # kiểm tra company con của hệ thống cần tìm
-        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
-        list_company = self._cr.fetchall()
-        if len(list_company) > 0:
-            return [com[0] for com in list_company]
-        return []
-
-
-    @api.onchange('system_id')
-    def _onchange_system(self):
-        if self.system_id != self.company.system_id:
-           self.company = False
-        if self.system_id:
-            if not self.env.user.company:
-                list_id = self._system_have_child_company(self.system_id.id)
-                return {'domain': {'company': [('id', 'in', list_id)]}}
+    def default_company(self):
+        if self.env.user.system_id:
+            func = self.env['hrm.utils']
+            list_child_company = []
+            if self.env.user.company:
+                list_child_company += func.get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
             else:
-                self.company = False
-                return {'domain': {'company': self.get_child_company()}}
-
-    def _default_system(self):
-        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
-        if not self.env.user.company.ids and self.env.user.system_id.ids:
-            list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
-            return [('id', 'in', list_systems)]
-        if self.env.user.company.ids and self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            # nếu có công ty thì không hiển thị hệ thống
+                for sys in self.env.user.system_id:
+                    list_child_company += func._system_have_child_company(sys.id)
+            return [('id', 'in', list_child_company)]
+        elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             return [('id', '=', 0)]
-        return []
-    system_id = fields.Many2one('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
 
-    def get_child_company(self):
-        list_child_company = []
-        if self.env.user.company:
-            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
-                                                                    "parent_company")
-        elif self.env.user.system_id:
-            for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
-        return [('id', 'in', list_child_company)]
+    company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=default_company)
 
-    company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=get_child_company)
-
-    @api.constrains('name', 'type_team', 'team_name', 'active',' change_system_id')
+    @api.constrains('name', 'type_team', 'team_name', 'active', ' change_system_id')
     def _check_department_access(self):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
-            raise ValidationError("Bạn không có quyền thực hiện tác vụ này!")
+            raise AccessDenied("Bạn không có quyền thực hiện tác vụ này!")

@@ -40,4 +40,30 @@ class Utils(models.Model):
                 list_object.append(t)
         return list_object
 
+    def _system_have_child_company(self, system_id):
+        """
+        Kiểm tra hệ thống có công ty con hay không
+        Nếu có thì trả về list tên công ty con
+        """
+        self._cr.execute(
+            r"""
+                select hrm_companies.id from hrm_companies where hrm_companies.system_id in
+                    (WITH RECURSIVE subordinates AS (
+                    SELECT id, parent_system
+                    FROM hrm_systems
+                    WHERE id = %s
+                    UNION ALL
+                    SELECT t.id, t.parent_system
+                    FROM hrm_systems t
+                    INNER JOIN subordinates s ON t.parent_system = s.id
+                    )
+            SELECT id FROM subordinates);
+            """, (system_id,)
+        )
+        # kiểm tra company con của hệ thống cần tìm
+        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
+        list_company = self._cr.fetchall()
+        if len(list_company) > 0:
+            return [com[0] for com in list_company]
+        return []
 

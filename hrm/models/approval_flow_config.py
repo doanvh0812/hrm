@@ -26,8 +26,9 @@ class Approval_flow_object(models.Model):
         elif not self.env.user.company and self.env.user.system_id:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
+            func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
+                list_child_company += func._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
@@ -181,47 +182,22 @@ class Approval_flow_object(models.Model):
             # khi bỏ trường hệ thống thì loại bỏ các cty con của nó
             current_company_ids = self.company.ids
             child_company = []
+            func = self.env['hrm.utils']
             for sys in self.system_id:
-                child_company += self._system_have_child_company(sys.id.origin)
+                child_company += func._system_have_child_company(sys.id.origin)
             # lấy ra cty chung trong hai list cty
             company_ids = list(set(current_company_ids) & set(child_company))
             self.company = [(6, 0, company_ids)]
             # lấy domain cho trường công ty
             if not self.env.user.company:
                 list_id = []
+                fun = self.env['hrm.utils']
                 for sys_id in self.system_id.ids:
-                    list_id += self._system_have_child_company(sys_id)
+                    list_id += func._system_have_child_company(sys_id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 return {'domain': {'company': self.get_child_company()}}
         self.company = [(6, 0, [])]
-
-    def _system_have_child_company(self, system_id):
-        """
-        Kiểm tra hệ thống có công ty con hay không
-        Nếu có thì trả về list tên công ty con
-        """
-        self._cr.execute(
-            r"""
-                select hrm_companies.id from hrm_companies where hrm_companies.system_id in
-                    (WITH RECURSIVE subordinates AS (
-                    SELECT id, parent_system
-                    FROM hrm_systems
-                    WHERE id = %s
-                    UNION ALL
-                    SELECT t.id, t.parent_system
-                    FROM hrm_systems t
-                    INNER JOIN subordinates s ON t.parent_system = s.id
-                    )
-            SELECT id FROM subordinates);
-            """, (system_id,)
-        )
-        # kiểm tra company con của hệ thống cần tìm
-        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
-        list_company = self._cr.fetchall()
-        if len(list_company) > 0:
-            return [com[0] for com in list_company]
-        return []
 
     def get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
@@ -233,8 +209,9 @@ class Approval_flow_object(models.Model):
         elif not self.env.user.company and self.env.user.system_id:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
+            func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
+                list_child_company += func._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
@@ -267,7 +244,7 @@ class Approval_flow_object(models.Model):
             if self.env.user.company or self.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
                 for sys in self.env.user.system_id:
-                    list_company += self._system_have_child_company(sys.id)
+                    list_company += func._system_have_child_company(sys.id)
                 for com in self.company:
                     if com.id not in list_company:
                         raise AccessDenied(f"Bạn không có quyền cấu hình công ty {com.name}")
