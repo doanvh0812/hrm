@@ -26,9 +26,9 @@ class Approval_flow_object(models.Model):
         elif not self.env.user.company and self.env.user.system_id:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
-            fun = self.env['hrm.utils']
+            func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
-                list_child_company += fun._system_have_child_company(sys.id)
+                list_child_company += func._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
@@ -182,9 +182,9 @@ class Approval_flow_object(models.Model):
             # khi bỏ trường hệ thống thì loại bỏ các cty con của nó
             current_company_ids = self.company.ids
             child_company = []
-            fun = self.env['hrm.utils']
+            func = self.env['hrm.utils']
             for sys in self.system_id:
-                child_company += fun._system_have_child_company(sys.id.origin)
+                child_company += func._system_have_child_company(sys.id.origin)
             # lấy ra cty chung trong hai list cty
             company_ids = list(set(current_company_ids) & set(child_company))
             self.company = [(6, 0, company_ids)]
@@ -193,7 +193,7 @@ class Approval_flow_object(models.Model):
                 list_id = []
                 fun = self.env['hrm.utils']
                 for sys_id in self.system_id.ids:
-                    list_id += fun._system_have_child_company(sys_id)
+                    list_id += func._system_have_child_company(sys_id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 return {'domain': {'company': self.get_child_company()}}
@@ -209,9 +209,9 @@ class Approval_flow_object(models.Model):
         elif not self.env.user.company and self.env.user.system_id:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
-            fun = self.env['hrm.utils']
+            func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
+                list_child_company += func._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)

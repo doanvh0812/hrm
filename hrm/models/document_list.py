@@ -71,10 +71,8 @@ class DocumentListConfig(models.Model):
 
     def _default_department(self):
         if self.env.user.department_id:
-            list_department = []
-            for department in self.env.user.department_id:
-                list_department += self.env['hrm.utils'].get_child_id(self.env.user.department_id,
-                                                                     'hrm_departments', "superior_department")
+            list_department = self.env['hrm.utils'].get_child_id(self.env.user.department_id,
+                                                                 'hrm_departments', "superior_department")
             return [('id', 'in', list_department)]
 
     department_id = fields.Many2one('hrm.departments', string='Phòng ban', tracking=True, domain=_default_department)
