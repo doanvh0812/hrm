@@ -26,3 +26,8 @@ class Ranks(models.Model):
                 if (self.abbreviations and n['abbreviations'] and
                         n['abbreviations'].lower() == record.abbreviations.lower() and n.department == self.department):
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Tên viết tắt')
+
+    @api.constrains('name', 'abbreviations', 'department')
+    def _check_rank_access(self):
+        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            raise ValidationError("Bạn không có quyền thực hiện tác vụ này trong khối thương mại")

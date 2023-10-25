@@ -10,8 +10,6 @@
                             <field name="name"/>
                             <field name="team_name"/>
                             <field name="type_team"/>
-                             <field name="company"/>
-                            <field name="system_id"/>
                             <field name="company"/>
                             <field name="system_id" readonly="True"/>
                         </group>
