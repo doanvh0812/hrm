@@ -39,8 +39,8 @@ class Users(models.Model):
             self.company = False
         list_id = []
         for sys in self.system_id.ids:
-            fun = self.env['hrm.employee.profile']
-            list_id += fun._system_have_child_company(sys)
+            func = self.env['hrm.utils']
+            list_id += func._system_have_child_company(sys)
         return {'domain': {'company': [('id', 'in', list_id)]}}
 
     def write(self, vals):
