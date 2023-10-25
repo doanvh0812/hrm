@@ -12,7 +12,6 @@ class Ranks(models.Model):
 
     name = fields.Char(string='Tên cấp bậc', required=True)
     abbreviations = fields.Char(string='Tên viết tắt')
-    department = fields.Many2one('hrm.departments', string='Phòng/Ban', required=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
 
     @api.constrains('name', 'abbreviations')
@@ -26,3 +25,18 @@ class Ranks(models.Model):
                 if (self.abbreviations and n['abbreviations'] and
                         n['abbreviations'].lower() == record.abbreviations.lower() and n.department == self.department):
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Tên viết tắt')
+
+    def _default_department(self):
+        if self.env.user.department_id.id:
+            list_department = self.env['hrm.utils'].get_child_id(self.env.user.department_id,
+                                                                 'hrm_departments', "superior_department")
+            return [('id', 'in', list_department)]
+
+    department_id = fields.Many2one('hrm.departments', string='Phòng/ban', tracking=True, required=True,
+                                 domain=_default_department)
+
+    def find_department(self, list_dept, records):
+        for dept in list_dept:
+            for rec in records:
+                if dept[0] in rec.department_id.ids:
+                    return rec

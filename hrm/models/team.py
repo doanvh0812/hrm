@@ -145,7 +145,3 @@ class Teams(models.Model):
     def _check_department_access(self):
         if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             raise ValidationError("Bạn không có quyền thực hiện tác vụ này trong khối văn phòng")
-
-
-
-
