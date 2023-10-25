@@ -244,6 +244,7 @@ class DocumentListConfig(models.Model):
             if not any(list_check):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
 
+
     def action_update_document(self, object_update):
         # object_update 1: tất cả các bản ghi
         # object_update 2: chỉ các bản ghi chưa được phê duyệt và bản ghi mới

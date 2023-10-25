@@ -12,7 +12,7 @@
                             <field name="work_position"/>
                             <field name="block" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
                             <field name="department" attrs="{'invisible': [('related', '=', True)]}"/>
-                            <field name="team_id" attrs="{'invisible': [('related', '!=', True)]}"/>
+                            <field name="team_type" attrs="{'invisible': [('related', '!=', True)]}"/>
                         </group>
                     </sheet>
                     <div class="oe_chatter">
@@ -32,7 +32,7 @@
                     <field name="work_position"/>
                     <field name="block"/>
                     <field name="department"/>
-                    <field name="team_id"/>
+                    <field name="team_type"/>
                 </tree>
             </field>
         </record>
