@@ -619,16 +619,6 @@ class EmployeeProfile(models.Model):
                 if not rec.company and sys in rec.system_id.ids:
                     return rec
 
-    def find_department(self, list_dept, records):
-        # list_dept là danh sách id hệ thống có quan hệ cha con
-        # records là danh sách bản ghi cấu hình luồng phê duyệt
-        # Duyệt qua 2 danh sách
-        for dept in list_dept:
-            for rec in records:
-                # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if dept[0] in rec.department_id.ids:
-                    return rec
-
     def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
@@ -748,6 +738,7 @@ class EmployeeProfile(models.Model):
         self._cr.execute(query)
         records = self._cr.fetchall()
         if records:
+            # [0] : Để lấy phần tử đầu tiên tìm thấy và phần tử có dạng (id,) nên cần dùng thêm [0]
             return self.env['hrm.document.list.config'].sudo().search([('id', '=', records[0][0])])
         else:
             return None
