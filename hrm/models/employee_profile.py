@@ -140,33 +140,6 @@ class EmployeeProfile(models.Model):
             else:
                 p.can_see_button_approval = False
 
-    def _system_have_child_company(self, system_id):
-        """
-        Kiểm tra hệ thống có công ty con hay không
-        Nếu có thì trả về list tên công ty con
-        """
-        self._cr.execute(
-            r"""
-                select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
-                    (WITH RECURSIVE subordinates AS (
-                    SELECT id, parent_system
-                    FROM hrm_systems
-                    WHERE id = %s
-                    UNION ALL
-                    SELECT t.id, t.parent_system
-                    FROM hrm_systems t
-                    INNER JOIN subordinates s ON t.parent_system = s.id
-                    )
-            SELECT id FROM subordinates);
-            """, (system_id,)
-        )
-        # kiểm tra company con của hệ thống cần tìm
-        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
-        list_company = self._cr.fetchall()
-        if len(list_company) > 0:
-            return [com[0] for com in list_company]
-        return []
-
     def get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
         list_child_company = []
@@ -177,8 +150,9 @@ class EmployeeProfile(models.Model):
         elif not self.env.user.company and self.env.user.system_id:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
+            func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
+                list_child_company += func._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=get_child_company)
@@ -309,22 +283,20 @@ class EmployeeProfile(models.Model):
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
-        # Chạy qua tất cả bản ghi
-        for record in self:
-            # Nếu khối được chọn có tên là Văn phòng chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-            if record.block_id.name == constraint.BLOCK_OFFICE_NAME:
-                last_employee_code = self._get_last_employee_code('like', 'BH')
-                record.employee_code_new = self._generate_employee_code('BH', last_employee_code)
-            # Ngược lại không phải khối văn phòng
-            else:
-                # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-                if record.system_id.name and not record.employee_code_new:
-                    name = str.split(record.system_id.name, '.')[0]
-                    last_employee_code = self._get_last_employee_code('like', name)
-                    record.employee_code_new = self._generate_employee_code(name, last_employee_code)
-                # Ngược lại chưa chọn hệ thống ra mã là rỗng
-                elif not record.employee_code_new:
-                    record.employee_code_new = ''
+        # Nếu khối được chọn có tên là Văn phòng chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
+        if self.block_id.name == constraint.BLOCK_OFFICE_NAME:
+            last_employee_code = self._get_last_employee_code('like', 'BH')
+            self.employee_code_new = self._generate_employee_code('BH', last_employee_code)
+        # Ngược lại không phải khối văn phòng
+        else:
+            # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
+            if self.system_id.name and not self.id.origin:
+                name = str.split(self.system_id.name, '.')[0]
+                last_employee_code = self._get_last_employee_code('like', name)
+                self.employee_code_new = self._generate_employee_code(name, last_employee_code)
+            # Ngược lại chưa chọn hệ thống ra mã là rỗng
+            elif not self.employee_code_new:
+                self.employee_code_new = ''
 
     @api.model
     def _get_last_employee_code(self, operator, name):
@@ -366,9 +338,9 @@ class EmployeeProfile(models.Model):
         self.team_marketing = self.team_sales = False
         if self.company:
             list_team_marketing = self.env['hrm.teams'].search(
-                [('company_id', '=', self.company.id), ('type_team', '=', 'marketing')])
+                [('company', '=', self.company.id), ('type_team', '=', 'marketing')])
             list_team_sale = self.env['hrm.teams'].search(
-                [('company_id', '=', self.company.id), ('type_team', 'in', ('sale', 'resale'))])
+                [('company', '=', self.company.id), ('type_team', 'in', ('sale', 'resale'))])
 
             return {
                 'domain': {
@@ -392,7 +364,8 @@ class EmployeeProfile(models.Model):
             self.position_id = self.company = self.team_sales = self.team_marketing = False
         if self.system_id:
             if not self.env.user.company:
-                list_id = self._system_have_child_company(self.system_id.id)
+                func = self.env['hrm.utils']
+                list_id = func._system_have_child_company(self.system_id.id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 self.company = False
@@ -404,7 +377,8 @@ class EmployeeProfile(models.Model):
             decorator này khi tạo hồ sơ nhân viên, chọn 1 vị trí nào đó
             khi ta vị trí nó sẽ hiện ra tất cả những vị trí có trong khối đó
         """
-        self.position_id = self.system_id = self.company = self.team_sales = self.team_marketing = self.department_id = self.manager_id = self.rank_id = False
+        self.position_id = self.system_id = self.company = self.team_sales = self.team_marketing = self.department_id \
+            = self.manager_id = self.rank_id = False
         if self.block_id:
             position = self.env['hrm.position'].search([('block', '=', self.block_id.name)])
             return {'domain': {'position_id': [('id', 'in', position.ids)]}}
@@ -462,20 +436,6 @@ class EmployeeProfile(models.Model):
         elif self.position_id.team_type == "sale":
             self.require_team_sale = True
 
-
-
-
-
-    # @api.onchange('position_id')
-    # def onchange_position_id(self):
-    #     # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
-    #     self.require_team_marketing = self.require_team_sale = False
-    #     if self.position_id.block != self.block_id.name:
-    #         self.position_id = False
-    #     if self.position_id.team_id.type_team == "marketing":
-    #         self.require_team_marketing = True
-    #     elif self.position_id.team_id.type_team == "sale":
-    #         self.require_team_sale = True
 
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved

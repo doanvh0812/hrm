@@ -49,41 +49,15 @@ class DocumentListConfig(models.Model):
 
             self.env['hrm.document.list.config'].sudo().search(domain).write({'see_record_with_config': True})
 
-    def _system_have_child_company(self, system_id):
-        """
-        Kiểm tra hệ thống có công ty con hay không
-        Nếu có thì trả về list tên công ty con
-        """
-        self._cr.execute(
-            r"""
-                select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
-                    (WITH RECURSIVE subordinates AS (
-                    SELECT id, parent_system
-                    FROM hrm_systems
-                    WHERE id = %s
-                    UNION ALL
-                    SELECT t.id, t.parent_system
-                    FROM hrm_systems t
-                    INNER JOIN subordinates s ON t.parent_system = s.id
-                    )
-            SELECT id FROM subordinates);
-            """, (system_id,)
-        )
-        # kiểm tra company con của hệ thống cần tìm
-        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
-        list_company = self._cr.fetchall()
-        if len(list_company) > 0:
-            return [com[0] for com in list_company]
-        return []
-
     def get_child_company(self):
         list_child_company = []
         if self.env.user.company:
             list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
                                                                     "parent_company")
         elif not self.env.user.company and self.env.user.system_id:
+            func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
+                list_child_company += func._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=get_child_company)
@@ -99,9 +73,11 @@ class DocumentListConfig(models.Model):
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
 
     def _default_department(self):
-        if self.env.user.department_id.id:
-            list_department = self.env['hrm.utils'].get_child_id(self.env.user.department_id,
-                                                                 'hrm_departments', "superior_department")
+        if self.env.user.department_id:
+            list_department = []
+            for department in self.env.user.department_id:
+                list_department += self.env['hrm.utils'].get_child_id(self.env.user.department_id,
+                                                                     'hrm_departments', "superior_department")
             return [('id', 'in', list_department)]
 
     department_id = fields.Many2one('hrm.departments', string='Phòng ban', tracking=True, domain=_default_department)
@@ -157,7 +133,8 @@ class DocumentListConfig(models.Model):
             self.position_id = self.company = False
         if self.system_id:
             if not self.env.user.company:
-                list_id = self._system_have_child_company(self.system_id.id)
+                func = self.env['hrm.utils']
+                list_id = func._system_have_child_company(self.system_id.id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 self.company = False
