@@ -77,7 +77,6 @@ class DocumentListConfig(models.Model):
                     list_check.append(True)
             if not any(list_check):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
-
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
     _description = 'Danh sách tài liệu'

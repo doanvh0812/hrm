@@ -40,7 +40,7 @@ class Teams(models.Model):
                 if re.search(r"[\W]+", rec.team_name.replace(" ", "")) or "_" in rec.team_name:
                     raise ValidationError(constraint.ERROR_NAME % 'Đội Ngũ')
 
-    @api.depends('team_name', 'company_id')
+    @api.depends('team_name', 'company_id', 'type_team')
     def _compute_name_team(self):
 
         for rec in self:
