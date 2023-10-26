@@ -2,7 +2,7 @@ import re
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
-from odoo.http import request
+from odoo import http
 
 
 class DocumentListConfig(models.Model):
@@ -16,9 +16,6 @@ class DocumentListConfig(models.Model):
     check_company = fields.Char(default=lambda self: self.env.user.company)
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
     related = fields.Boolean(compute='_compute_related_')
-    can_see_approved_record = fields.Boolean()
-    can_see_button_approval = fields.Boolean()
-    see_record_with_config = fields.Boolean()
 
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
@@ -50,41 +47,15 @@ class DocumentListConfig(models.Model):
 
             self.env['hrm.document.list.config'].sudo().search(domain).write({'see_record_with_config': True})
 
-    def _system_have_child_company(self, system_id):
-        """
-        Kiểm tra hệ thống có công ty con hay không
-        Nếu có thì trả về list tên công ty con
-        """
-        self._cr.execute(
-            r"""
-                select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
-                    (WITH RECURSIVE subordinates AS (
-                    SELECT id, parent_system
-                    FROM hrm_systems
-                    WHERE id = %s
-                    UNION ALL
-                    SELECT t.id, t.parent_system
-                    FROM hrm_systems t
-                    INNER JOIN subordinates s ON t.parent_system = s.id
-                    )
-            SELECT id FROM subordinates);
-            """, (system_id,)
-        )
-        # kiểm tra company con của hệ thống cần tìm
-        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
-        list_company = self._cr.fetchall()
-        if len(list_company) > 0:
-            return [com[0] for com in list_company]
-        return []
-
     def get_child_company(self):
         list_child_company = []
         if self.env.user.company:
             list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
                                                                     "parent_company")
         elif not self.env.user.company and self.env.user.system_id:
+            func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
+                list_child_company += func._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=get_child_company)
@@ -100,7 +71,7 @@ class DocumentListConfig(models.Model):
     system_id = fields.Many2one('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
 
     def _default_department(self):
-        if self.env.user.department_id.id:
+        if self.env.user.department_id:
             list_department = self.env['hrm.utils'].get_child_id(self.env.user.department_id,
                                                                  'hrm_departments', "superior_department")
             return [('id', 'in', list_department)]
@@ -158,7 +129,8 @@ class DocumentListConfig(models.Model):
             self.position_id = self.company = False
         if self.system_id:
             if not self.env.user.company:
-                list_id = self._system_have_child_company(self.system_id.id)
+                func = self.env['hrm.utils']
+                list_id = func._system_have_child_company(self.system_id.id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 self.company = False
@@ -233,10 +205,6 @@ class DocumentListConfig(models.Model):
                 raise AccessDenied("Không thể xoá " + record.name)
         return super(DocumentListConfig, self).unlink()
 
-    # def test_action(self):
-    #     print(request.env['ir.http'].session_info())
-    #     print(request.env.user)
-
     @api.constrains('document_list')
     def check_approval_flow_link(self):
         if not self.document_list:
@@ -248,6 +216,18 @@ class DocumentListConfig(models.Model):
                     list_check.append(True)
             if not any(list_check):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
+
+    def action_update_document(self, object_update):
+        # object_update 1: tất cả các bản ghi
+        # object_update 2: chỉ các bản ghi chưa được phê duyệt và bản ghi mới
+        # object_update 3: chỉ các bản ghi mới
+        if object_update == 'all':
+            self.env['hrm.employee.profile'].sudo().search(['document_config', '=', self.id]).write({
+                'apply_document_config': True})
+        elif object_update == 'not_approved_and_new':
+            self.env['hrm.employee.profile'].sudo().search(['state', '=', 'pending'],
+                                                           ['document_config', '=', self.id]).write({
+                'apply_document_config': True})
 
 
 class DocumentList(models.Model):

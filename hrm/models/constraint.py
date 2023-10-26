@@ -35,6 +35,12 @@ TYPE_SYSTEM = [
     ('resale', 'Resale')
 ]
 
+UPDATE_CONFIRM_DOCUMENT = [
+    ('all', 'Áp dụng tất cả hồ sơ.'),
+    ('not_approved_and_new', 'Áp dụng cho hồ sơ chưa được phê duyệt và hồ sơ mới.'),
+    ('new', 'Áp dụng cho hồ sơ mới.')
+]
+
 ERROR_NAME = "Tên %s không được chứa ký tự đặc biệt."
 ERROR_PHONE = "Số điện thoại không hợp lệ"
 DO_NOT_DELETE = "Không thể xoá bản ghi này!"

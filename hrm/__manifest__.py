@@ -25,6 +25,7 @@
     # always loaded
     'data': [
         'wizard/approval_reason_refusal.xml',
+        'wizard/confirm_update_document.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
         'views/hrm.xml',
