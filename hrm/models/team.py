@@ -42,7 +42,7 @@ class Teams(models.Model):
 
     @api.depends('team_name', 'company', 'type_team')
     def _compute_name_team(self):
-
+        # hiển thị theo tên tiền tố 'tiền tố._tênteam._tên công ty'
         for rec in self:
             name_prefix = ""
 
@@ -92,13 +92,7 @@ class Teams(models.Model):
 
     company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=default_company)
 
-    @api.constrains('name', 'type_team', 'team_name', 'active',' change_system_id')
-    def _check_team_access(self):
-        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
-            raise ValidationError("Bạn không có quyền thực hiện tác vụ này trong khối văn phòng")
-
     @api.constrains('name', 'type_team', 'team_name', 'active', ' change_system_id')
-    def _check_team_access(self):
+    def _check_department_access(self):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             raise AccessDenied("Bạn không có quyền thực hiện tác vụ này!")
-
