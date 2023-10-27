@@ -7,11 +7,11 @@ class DocumentDeclaration(models.Model):
     _name = 'hrm.document_declaration'
     _description = 'Khai báo tài liệu'
 
-    name = fields.Char(string='Tên hiển thị')
+    name = fields.Char(string='Tên hiển thị',compute='_compute_name_team',store=True)
     profile_id = fields.Many2one('hrm.employee.profile')
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, related='employee_id.block_id')
     related = fields.Boolean(compute='_compute_related_')
-    employee_id = fields.Many2one('hrm.employee.profile', string='Nhân viên')
+    employee_id = fields.Many2one('hrm.employee.profile', string='Nhân viên', required= True)
     type_documents = fields.Many2one('hrm.documents', string='Loại tài liệu', required=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', related='employee_id.system_id')
     company_id = fields.Many2one('hrm.companies', string='Công ty', related='employee_id.company')
@@ -22,15 +22,32 @@ class DocumentDeclaration(models.Model):
     attachments = fields.Binary(string='Tệp đính kèm')
     attachment_ids = fields.Many2many('ir.attachment', 'model_attachment_rel', 'model_id', 'attachment_id',
                                       string='Tệp đính kèm')
-    attachment_image_ids = fields.Many2many('ir.attachment', 'model_attachment_rel', 'model_id', 'attachment_id',
-                                            string='Tệp tin ảnh')
-
     image = fields.Binary(string='Tệp hình ảnh')
     image_ids = fields.Many2many('ir.attachment', 'model_attachment_rel', 'model_id', 'attachment_id',
                                  string='Tệp hình ảnh')
 
     max_photos = fields.Integer(related='type_documents.numbers_of_photos')
     max_files = fields.Integer(related='type_documents.numbers_of_documents')
+    see_record_with_config = fields.Boolean()
+
+    def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
+        self.env['hrm.utils']._see_record_with_config('hrm.document_declaration')
+        return super(DocumentDeclaration, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
+                                                               submenu=submenu)
+
+    @api.depends('employee_id', 'type_documents')
+    def _compute_name_team(self):
+        """
+        Phần này tự động tạo tên hiển thị dựa trên logic 'Tên nhân viên _ Loại tài liệu'.
+        """
+        for rec in self:
+            employee_name = rec.employee_id.name if rec.employee_id else ''
+            type_name = rec.type_documents.name if rec.type_documents else ''
+
+            if employee_name and type_name:
+                rec.name = f"{employee_name} _ {type_name}"
+            else:
+                rec.name = ''
 
     @api.onchange('type_documents', 'image_ids', 'attachment_ids')
     def onchange_type_documents(self):
@@ -68,3 +85,5 @@ class DocumentDeclaration(models.Model):
         """Gán giá trị của trường nhân viên khi tạo mới bản ghi tại màn Tạo mới hồ sơ."""
         if self.profile_id:
             self.employee_id = self.profile_id.id
+
+

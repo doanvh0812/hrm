@@ -39,7 +39,10 @@ class EmployeeProfile(models.Model):
     team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
     team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
-    manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
+
+    team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
+    team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
@@ -213,7 +216,7 @@ class EmployeeProfile(models.Model):
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
                                                            submenu=submenu)
-        self._see_record_with_config()
+        self.env['hrm.utils']._see_record_with_config('hrm.employee.profile')
         self.see_own_approved_record()
         self.logic_button()
 
@@ -291,7 +294,7 @@ class EmployeeProfile(models.Model):
         # Ngược lại không phải khối văn phòng
         else:
             # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-            if self.system_id.name and not self.id:
+            if self.system_id.name and not isinstance(self.id, int) and not self.id.origin:
                 name = str.split(self.system_id.name, '.')[0]
                 last_employee_code = self._get_last_employee_code('like', name)
                 self.employee_code_new = self._generate_employee_code(name, last_employee_code)
@@ -573,7 +576,7 @@ class EmployeeProfile(models.Model):
         else:
             return []
 
-    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block)
+    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block, required=True)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
@@ -708,6 +711,7 @@ class EmployeeProfile(models.Model):
         if records:
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # Tìm id danh sách tài liệu theo vị trí của khối.
+                print(self.position_id.id)
                 document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id)])
                 if not document_id:

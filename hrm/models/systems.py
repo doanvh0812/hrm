@@ -69,7 +69,7 @@ class Systems(models.Model):
             name = self.search([('id', '!=', record.id), ('active', 'in', (True, False))])
             for n in name:
                 if n['name'].lower() == record.name.lower() and n.type_system == self.type_system:
-                    raise ValidationError(constraint.DUPLICATE_RECORD % "Vị trí")
+                    raise ValidationError(constraint.DUPLICATE_RECORD % "Hệ thống")
 
     # hàm này để hiển thị lịch sử lưu trữ
     def toggle_active(self):

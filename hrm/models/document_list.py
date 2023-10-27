@@ -16,6 +16,7 @@ class DocumentListConfig(models.Model):
     check_company = fields.Char(default=lambda self: self.env.user.company)
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
     related = fields.Boolean(compute='_compute_related_')
+    see_record_with_config = fields.Boolean()
 
     update_confirm_document = fields.Selection(selection=constraint.UPDATE_CONFIRM_DOCUMENT, string="Cập nhật tài liệu")
 
@@ -52,6 +53,11 @@ class DocumentListConfig(models.Model):
                         domain.append(('block_id', '=', block_id.id))
 
             self.env['hrm.document.list.config'].sudo().search(domain).write({'see_record_with_config': True})
+
+    def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
+        self.env['hrm.utils']._see_record_with_config('hrm.document.list.config')
+        return super(DocumentListConfig, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
+                                                               submenu=submenu)
 
     def get_child_company(self):
         list_child_company = []
@@ -142,29 +148,6 @@ class DocumentListConfig(models.Model):
                 self.company = False
                 return {'domain': {'company': self.get_child_company()}}
 
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
-
-    def find_system(self, systems, records):
-        for sys in systems:
-            for rec in records:
-                if sys[0] in rec.system_id.ids and self.find_child_company(rec):
-                    return rec
-
-    def find_department(self, list_dept, records):
-        for dept in list_dept:
-            for rec in records:
-                if dept[0] in rec.department_id.ids:
-                    return rec
-
-    def find_company(self, record, list_company):
-        for company_id in list_company:
-            for cf in record:
-                if cf.company and company_id[0] in cf.company.ids:
-                    return cf
-
     @api.onchange('document_list')
     def set_sequence(self):
         i = 1
@@ -211,8 +194,40 @@ class DocumentListConfig(models.Model):
                 raise AccessDenied("Không thể xoá " + record.name)
         return super(DocumentListConfig, self).unlink()
 
+    @api.constrains('name', 'block_id', 'system_id', 'department_id', 'company', 'document_list')
+    def check_access_config_hrm(self):
+        """Kiểm tra lại quyền khi lưu"""
+        user = self.env.user
+        # Khối đang cấu hình khác full và khác với khối trên bản ghi
+        if user.block_id != 'full' and user.block_id != self.block_id.name:
+            raise AccessDenied("Bạn không có quyền thao tác trên khối đang chọn!")
+        else:
+            # func là gọi từ hrm.utils để sử dụng lại hàm
+            # Sử dụng get_child_id() là để lấy tất cả các phần tử là con của đối tượng được cấu hình
+            func = self.env['hrm.utils']
+            # Nếu người dùng được cấu hình công ty
+            if self.env.user.company:
+                list_child_company = func.get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+                if self.company.id not in list_child_company:
+                    raise AccessDenied("Bạn không có quyền thao tác hoặc công ty đang chọn chưa cấu hình quyền cho bạn!")
+            # Nếu người dùng được cấu hình hệ thống (không có cấu hình công ty)
+            if self.env.user.system_id and not self.env.user.company:
+                list_child_system = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems',
+                                                                       "parent_system")
+                if self.system_id.id not in list_child_system:
+                    raise AccessDenied(
+                        "Bạn không có quyền thao tác hoặc hệ thống đang chọn chưa cấu hình quyền cho bạn!")
+            # Nếu người dùng được cấu hình phòng ban
+            if self.env.user.department_id:
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                    'superior_department')
+                if self.department_id and self.department_id.id not in list_department:
+                    raise AccessDenied(
+                        "Bạn không có quyền thao tác hoặc phòng ban đang chọn chưa cấu hình quyền cho bạn!")
+
     @api.constrains('document_list')
     def check_approval_flow_link(self):
+        """Kiểm tra xem danh sách tài liệu có phần tử nào chưa, và ít nhất phải có 1 tài liệu tích bắt buộc"""
         if not self.document_list:
             raise ValidationError('Không thể tạo khi không có tài liệu nào trong danh sách tài liệu.')
         else:

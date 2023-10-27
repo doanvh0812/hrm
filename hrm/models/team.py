@@ -42,7 +42,7 @@ class Teams(models.Model):
 
     @api.depends('team_name', 'company', 'type_team')
     def _compute_name_team(self):
-
+        # hiển thị theo tên tiền tố 'tiền tố._tênteam._tên công ty'
         for rec in self:
             name_prefix = ""
 
@@ -78,11 +78,12 @@ class Teams(models.Model):
                 record.message_post(body="Bỏ lưu trữ")
 
     def default_company(self):
+        """Hàm này đặt domain cho trường comany dựa theo cấu hình quyền"""
         if self.env.user.system_id:
             func = self.env['hrm.utils']
             list_child_company = []
             if self.env.user.company:
-                list_child_company += func.get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
+                list_child_company = func.get_child_id(self.env.user.company, 'hrm_companies', "parent_company")
             else:
                 for sys in self.env.user.system_id:
                     list_child_company += func._system_have_child_company(sys.id)
