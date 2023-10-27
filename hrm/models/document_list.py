@@ -19,39 +19,9 @@ class DocumentListConfig(models.Model):
     see_record_with_config = fields.Boolean()
 
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
-        self._see_record_with_config()
+        self.env['hrm.utils']._see_record_with_config('hrm.document.list.config')
         return super(DocumentListConfig, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
                                                                submenu=submenu)
-
-    def _see_record_with_config(self):
-        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
-        self.env['hrm.document.list.config'].sudo().search([('see_record_with_config', '=', True)]).write(
-            {'see_record_with_config': False})
-        user = self.env.user
-        # Tim tat ca cac cong ty, he thong, phong ban con
-        company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
-        system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
-        department_config = self.env['hrm.utils'].get_child_id(user.department_id, 'hrm_departments',
-                                                               "superior_department")
-        block_config = user.block_id
-
-        domain = []
-        # Lay domain theo cac truong
-        if not user.has_group("hrm.hrm_group_create_edit"):
-            if company_config:
-                domain.append(('company', 'in', company_config))
-            elif system_config:
-                domain.append(('system_id', 'in', system_config))
-            elif department_config:
-                domain.append(('department_id', 'in', department_config))
-            elif block_config:
-                # Neu la full thi domain = []
-                if block_config != 'full':
-                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
-                    if block_id:
-                        domain.append(('block_id', '=', block_id.id))
-
-            self.env['hrm.document.list.config'].sudo().search(domain).write({'see_record_with_config': True})
 
     def get_child_company(self):
         list_child_company = []
@@ -141,29 +111,6 @@ class DocumentListConfig(models.Model):
             else:
                 self.company = False
                 return {'domain': {'company': self.get_child_company()}}
-
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
-
-    def find_system(self, systems, records):
-        for sys in systems:
-            for rec in records:
-                if sys[0] in rec.system_id.ids and self.find_child_company(rec):
-                    return rec
-
-    def find_department(self, list_dept, records):
-        for dept in list_dept:
-            for rec in records:
-                if dept[0] in rec.department_id.ids:
-                    return rec
-
-    def find_company(self, record, list_company):
-        for company_id in list_company:
-            for cf in record:
-                if cf.company and company_id[0] in cf.company.ids:
-                    return cf
 
     @api.onchange('document_list')
     def set_sequence(self):
