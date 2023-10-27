@@ -240,7 +240,6 @@ class DocumentListConfig(models.Model):
 
     def action_update_document(self, object_update):
         self.sudo().write({'update_confirm_document': object_update})
-        print(self.create_date > self.write_date)
         if object_update == 'all':
             self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id)]).write({'type_update_document': 'all'})
             self.all = [(6, 0, self.document_list.ids)]

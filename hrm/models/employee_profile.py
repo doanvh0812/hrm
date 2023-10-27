@@ -39,9 +39,6 @@ class EmployeeProfile(models.Model):
     team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
     team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
-
-    team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
-    team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
     manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
@@ -645,7 +642,6 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Bỏ lưu trữ")
 
     def write(self, vals):
-        # print(vals)
         if 'email' in vals:
             login = vals['email']
             user = self.env['res.users'].sudo().search([("id", "=", self.acc_id)])
@@ -688,12 +684,10 @@ class EmployeeProfile(models.Model):
             return []
         elif apply_object == 'not_approved_and_new':
             record = self.search([('document_config', '=', self.document_config.id), ('state', 'in', ['draft', 'pending'])])
-            print(record.write_date >= self.document_config.create_date)
             return {[('id', 'in', record.ids)]}
         elif apply_object == 'new':
             record = self.search([('document_config', '=', self.document_config.id), ('state', '=', 'draft')])
             return {'domain': {'document_list': [('id', 'in', record.ids)]}}
-            print(record.write_date >= self.document_config.create_date)
 
     def compute_documents_list(self):
         # Tìm cấu hình dựa trên block_id
@@ -708,11 +702,9 @@ class EmployeeProfile(models.Model):
 
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
         document_id = False
-        print(self.type_update_document)
         if records:
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # Tìm id danh sách tài liệu theo vị trí của khối.
-                print(self.position_id.id)
                 document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id)])
                 if not document_id:
