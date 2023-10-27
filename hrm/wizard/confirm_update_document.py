@@ -20,5 +20,3 @@ class ConfirmUpdateDocument(models.TransientModel):
             return record.action_update_document('all')
         elif self.update_confirm_document == 'not_approved_and_new':
             return record.action_update_document('not_approved_and_new')
-        elif self.update_confirm_document == 'new':
-            return record.action_update_document('new')

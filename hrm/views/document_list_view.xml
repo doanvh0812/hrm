@@ -24,6 +24,10 @@
                             />
                             <field name="position_id"/>
                         </group>
+                        <group>
+                            <field name="not_approved_and_new"/>
+                            <field name="all"/>
+                        </group>
                         <notebook>
                             <page string="Danh sách tài liệu" name="document_list">
                                 <field name="document_list" oder="sequence">

@@ -34,11 +34,12 @@ class EmployeeProfile(models.Model):
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
+    def _default_team(self):
+        return [('id', '=', 0)]
+    team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
+    team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
-    team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
-    team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
-
-    manager_id = fields.Many2one('res.users', string='Quản lý', tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
@@ -57,8 +58,11 @@ class EmployeeProfile(models.Model):
     approved_name = fields.Many2one('hrm.approval.flow.object')
     document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
-    document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list', store=True)
-    document_list = fields.One2many(related='document_config.document_list')
+    document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
+    type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
+                                           default='new')
+
+    document_list = fields.One2many('hrm.document.list', inverse_name='employee_id')
 
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
@@ -66,8 +70,6 @@ class EmployeeProfile(models.Model):
 
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
-
-    apply_document_config = fields.Boolean(default=True)
 
     def _see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
@@ -139,33 +141,6 @@ class EmployeeProfile(models.Model):
             else:
                 p.can_see_button_approval = False
 
-    def _system_have_child_company(self, system_id):
-        """
-        Kiểm tra hệ thống có công ty con hay không
-        Nếu có thì trả về list tên công ty con
-        """
-        self._cr.execute(
-            r"""
-                select hrm_companies.id from hrm_companies where hrm_companies.system_id in 
-                    (WITH RECURSIVE subordinates AS (
-                    SELECT id, parent_system
-                    FROM hrm_systems
-                    WHERE id = %s
-                    UNION ALL
-                    SELECT t.id, t.parent_system
-                    FROM hrm_systems t
-                    INNER JOIN subordinates s ON t.parent_system = s.id
-                    )
-            SELECT id FROM subordinates);
-            """, (system_id,)
-        )
-        # kiểm tra company con của hệ thống cần tìm
-        # nếu câu lệnh có kết quả trả về thì có nghĩa là hệ thống có công ty con
-        list_company = self._cr.fetchall()
-        if len(list_company) > 0:
-            return [com[0] for com in list_company]
-        return []
-
     def get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
         list_child_company = []
@@ -176,8 +151,9 @@ class EmployeeProfile(models.Model):
         elif not self.env.user.company and self.env.user.system_id:
             # nếu user chỉ đc cấu hình hệ thống
             # lấy list id công ty con của hệ thống đã chọn
+            func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
-                list_child_company += self._system_have_child_company(sys.id)
+                list_child_company += func._system_have_child_company(sys.id)
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=get_child_company)
@@ -308,22 +284,20 @@ class EmployeeProfile(models.Model):
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
-        # Chạy qua tất cả bản ghi
-        for record in self:
-            # Nếu khối được chọn có tên là Văn phòng chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-            if record.block_id.name == constraint.BLOCK_OFFICE_NAME:
-                last_employee_code = self._get_last_employee_code('like', 'BH')
-                record.employee_code_new = self._generate_employee_code('BH', last_employee_code)
-            # Ngược lại không phải khối văn phòng
-            else:
-                # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-                if record.system_id.name and not record.employee_code_new:
-                    name = str.split(record.system_id.name, '.')[0]
-                    last_employee_code = self._get_last_employee_code('like', name)
-                    record.employee_code_new = self._generate_employee_code(name, last_employee_code)
-                # Ngược lại chưa chọn hệ thống ra mã là rỗng
-                elif not record.employee_code_new:
-                    record.employee_code_new = ''
+        # Nếu khối được chọn có tên là Văn phòng chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
+        if self.block_id.name == constraint.BLOCK_OFFICE_NAME:
+            last_employee_code = self._get_last_employee_code('like', 'BH')
+            self.employee_code_new = self._generate_employee_code('BH', last_employee_code)
+        # Ngược lại không phải khối văn phòng
+        else:
+            # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
+            if self.system_id.name and not self.id:
+                name = str.split(self.system_id.name, '.')[0]
+                last_employee_code = self._get_last_employee_code('like', name)
+                self.employee_code_new = self._generate_employee_code(name, last_employee_code)
+            # Ngược lại chưa chọn hệ thống ra mã là rỗng
+            elif not self.employee_code_new:
+                self.employee_code_new = ''
 
     @api.model
     def _get_last_employee_code(self, operator, name):
@@ -360,11 +334,26 @@ class EmployeeProfile(models.Model):
     @api.onchange('company')
     def _onchange_company(self):
         """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
-             sẽ tự hiển thị hệ thống mà công ty đó thuộc vào
+             sẽ tự hiển thị đội ngũ mkt và sale nó thuộc vào
         """
-        if not self.company:
-            return
+        self.team_marketing = self.team_sales = False
+        if self.company:
+            list_team_marketing = self.env['hrm.teams'].search(
+                [('company', '=', self.company.id), ('type_team', '=', 'marketing')])
+            list_team_sale = self.env['hrm.teams'].search(
+                [('company', '=', self.company.id), ('type_team', 'in', ('sale', 'resale'))])
+
+            return {
+                'domain': {
+                    'team_marketing': [('id', 'in', list_team_marketing.ids)],
+                    'team_sales': [('id', 'in', list_team_sale.ids)]
+                }
+            }
+        else:
+            return {}
         self.system_id = self.company.system_id
+
+
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -376,7 +365,8 @@ class EmployeeProfile(models.Model):
             self.position_id = self.company = self.team_sales = self.team_marketing = False
         if self.system_id:
             if not self.env.user.company:
-                list_id = self._system_have_child_company(self.system_id.id)
+                func = self.env['hrm.utils']
+                list_id = func._system_have_child_company(self.system_id.id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
                 self.company = False
@@ -388,7 +378,8 @@ class EmployeeProfile(models.Model):
             decorator này khi tạo hồ sơ nhân viên, chọn 1 vị trí nào đó
             khi ta vị trí nó sẽ hiện ra tất cả những vị trí có trong khối đó
         """
-        self.position_id = self.system_id = self.company = self.team_sales = self.team_marketing = self.department_id = self.manager_id = self.rank_id = False
+        self.position_id = self.system_id = self.company = self.team_sales = self.team_marketing = self.department_id \
+            = self.manager_id = self.rank_id = False
         if self.block_id:
             position = self.env['hrm.position'].search([('block', '=', self.block_id.name)])
             return {'domain': {'position_id': [('id', 'in', position.ids)]}}
@@ -435,17 +426,17 @@ class EmployeeProfile(models.Model):
             if rec.name:
                 if re.search(r"[\W]+", rec.name.replace(" ", "")) or "_" in rec.name:
                     raise ValidationError(constraint.ERROR_NAME % '')
-
     @api.onchange('position_id')
     def onchange_position_id(self):
-        # Khi thay đổi khối của vị trí đang chọn trong màn hình popup thì trường position_id = null
+        """
+        Khi thay đổi vị trí sẽ check loại đội ngũ là gì.
+        """
         self.require_team_marketing = self.require_team_sale = False
-        if self.position_id.block != self.block_id.name:
-            self.position_id = False
-        if self.position_id.team_id.type_team == "marketing":
+        if self.position_id.team_type == 'marketing':
             self.require_team_marketing = True
-        elif self.position_id.team_id.type_team == "sale":
+        elif self.position_id.team_type == "sale":
             self.require_team_sale = True
+
 
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
@@ -632,16 +623,6 @@ class EmployeeProfile(models.Model):
                 if not rec.company and sys in rec.system_id.ids:
                     return rec
 
-    def find_department(self, list_dept, records):
-        # list_dept là danh sách id hệ thống có quan hệ cha con
-        # records là danh sách bản ghi cấu hình luồng phê duyệt
-        # Duyệt qua 2 danh sách
-        for dept in list_dept:
-            for rec in records:
-                # Phòng ban có trong cấu hình luồng phê duyệt nào thì trả về bản ghi cấu hình luồng phê duyệt đó
-                if dept[0] in rec.department_id.ids:
-                    return rec
-
     def find_company(self, records, lis_company):
         for company_id in lis_company:
             for cf in records:
@@ -698,9 +679,32 @@ class EmployeeProfile(models.Model):
                 if self.system_id.id and self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
 
+    def compute_domain_document_list(self):
+        apply_object = self.document_config.update_confirm_document
+        if apply_object == 'all':
+            return []
+        elif apply_object == 'not_approved_and_new':
+            record = self.search([('document_config', '=', self.document_config.id), ('state', 'in', ['draft', 'pending'])])
+            print(record.write_date >= self.document_config.create_date)
+            return {[('id', 'in', record.ids)]}
+        elif apply_object == 'new':
+            record = self.search([('document_config', '=', self.document_config.id), ('state', '=', 'draft')])
+            return {'domain': {'document_list': [('id', 'in', record.ids)]}}
+            print(record.write_date >= self.document_config.create_date)
+
     def compute_documents_list(self):
         # Tìm cấu hình dựa trên block_id
+        def apply_config(document_id):
+            if self.type_update_document == 'not_approved_and_new':
+                self.document_list = document_id.not_approved_and_new.ids
+                print(document_id.not_approved_and_new.ids)
+            elif self.type_update_document == 'all':
+                self.document_list = document_id.all.ids
+            self.write({'document_config': document_id})
+
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
+        document_id = False
+        print(self.type_update_document)
         if records:
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # Tìm id danh sách tài liệu theo vị trí của khối.
@@ -727,12 +731,13 @@ class EmployeeProfile(models.Model):
 
             if document_id:
                 # Tìm bản ghi dựa vào id tìm được
-                self.document_config = document_id
+                apply_config(document_id)
             else:
                 # Nếu không tìm được id nào thì tìm theo khối.
-                self.document_config = self.env['hrm.document.list.config'].sudo().search(
+                document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('block_id', '=', self.block_id.id), ('company', '=', False), ('system_id', '=', False),
                      ('department_id', '=', False)])
+                apply_config(document_id)
         else:
             self.document_config = False
 
@@ -778,6 +783,7 @@ class EmployeeProfile(models.Model):
         self._cr.execute(query)
         records = self._cr.fetchall()
         if records:
+            # [0] : Để lấy phần tử đầu tiên tìm thấy và phần tử có dạng (id,) nên cần dùng thêm [0]
             return self.env['hrm.document.list.config'].sudo().search([('id', '=', records[0][0])])
         else:
             return None

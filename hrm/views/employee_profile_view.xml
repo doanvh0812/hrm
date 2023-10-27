@@ -42,10 +42,13 @@
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)], }"/>
                                 <field name="department_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
-                                <field name="position_id" />
-                                <field name="team_marketing" attrs="{'invisible': [('related', '=', True)],'required': [('require_team_marketing','=',True)]}"/>
-                                <field name="team_sales" attrs="{'invisible': [('related', '=', True)],'required': [('require_team_sale','=',True)]}"/>
-                                <field name="manager_id" attrs="{'invisible': [('related', '=', False)]}"/>
+                                <field name="position_id"/>
+                                <field name="team_marketing"
+                                       attrs="{'invisible': [('related', '=', True)],'required': [('require_team_marketing','=',True)]}"/>
+                                <field name="team_sales"
+                                       attrs="{'invisible': [('related', '=', True)],'required': [('require_team_sale','=',True)]}"/>
+                                <field name="manager_id" attrs="{'invisible': [('related', '=', False)]}" force_save="1"
+                                       readonly="1"/>
                                 <field name="rank_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
                             </group>
@@ -55,7 +58,7 @@
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
                             <page string="Danh sách tài liệu">
-                                <field name="document_config" />
+                                <field name="document_config" readonly="1" force_save="1"/>
                                 <field name="document_list" readonly="1" oder="sequence" force_save="1">
                                     <tree>
                                         <field name="sequence"/>
