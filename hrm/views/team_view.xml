@@ -11,7 +11,8 @@
                             <field name="team_name"/>
                             <field name="type_team"/>
                             <field name="company"/>
-                            <field name="system_id" readonly="True"/>                        </group>
+                            <field name="system_id" readonly="True" force_save="1"/>
+                        </group>
                     </sheet>
                     <div class="oe_chatter">
                         <field name="message_follower_ids"/>

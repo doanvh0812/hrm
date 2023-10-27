@@ -76,6 +76,7 @@ class EmployeeProfile(models.Model):
             {'see_record_with_config': False})
         user = self.env.user
         # Tim tat ca cac cong ty, he thong, phong ban con
+
         company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
         system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
         department_config = self.env['hrm.utils'].get_child_id(user.department_id, 'hrm_departments',
@@ -660,8 +661,7 @@ class EmployeeProfile(models.Model):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng và có cấu hình phòng ban
             if self.env.user.department_id.ids:
-                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                    'superior_department')
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
                 for depart in self.department_id:
                     if depart.id not in list_department:
                         raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
@@ -714,7 +714,6 @@ class EmployeeProfile(models.Model):
                      ('department_id', '=', False)])
         else:
             self.document_config = False
-
     @api.onchange("document_declaration")
     def check_duplicate_document_declaration(self):
         if self.document_declaration:
