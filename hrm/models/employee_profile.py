@@ -39,7 +39,10 @@ class EmployeeProfile(models.Model):
     team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
     team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
-    manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
+
+    team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
+    team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
@@ -59,7 +62,10 @@ class EmployeeProfile(models.Model):
     document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
     document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
-    document_list = fields.One2many(related='document_config.document_list')
+    type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
+                                           default='new')
+
+    document_list = fields.One2many('hrm.document.list', inverse_name='employee_id')
 
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
@@ -68,7 +74,35 @@ class EmployeeProfile(models.Model):
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
 
-    apply_document_config = fields.Boolean(default=False)
+    def _see_record_with_config(self):
+        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
+        self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write(
+            {'see_record_with_config': False})
+        user = self.env.user
+        # Tim tat ca cac cong ty, he thong, phong ban con
+        company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
+        system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
+        department_config = self.env['hrm.utils'].get_child_id(user.department_id, 'hrm_departments',
+                                                               "superior_department")
+        block_config = user.block_id
+
+        domain = []
+        # Lay domain theo cac truong
+        if not user.has_group("hrm.hrm_group_create_edit"):
+            if company_config:
+                domain.append(('company', 'in', company_config))
+            elif system_config:
+                domain.append(('system_id', 'in', system_config))
+            elif department_config:
+                domain.append(('department_id', 'in', department_config))
+            elif block_config:
+                # Neu la full thi domain = []
+                if block_config != 'full':
+                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
+                    if block_id:
+                        domain.append(('block_id', '=', block_id.id))
+
+            self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
 
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
@@ -641,16 +675,40 @@ class EmployeeProfile(models.Model):
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             if self.env.user.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
-                if self.company.id not in list_company:
+                if self.company.id and self.company.id not in list_company:
                     raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.company.name}")
             elif self.env.user.system_id and not self.env.user.company:
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
-                if self.system_id.id not in list_system:
+                if self.system_id.id and self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+
+    def compute_domain_document_list(self):
+        apply_object = self.document_config.update_confirm_document
+        if apply_object == 'all':
+            return []
+        elif apply_object == 'not_approved_and_new':
+            record = self.search([('document_config', '=', self.document_config.id), ('state', 'in', ['draft', 'pending'])])
+            print(record.write_date >= self.document_config.create_date)
+            return {[('id', 'in', record.ids)]}
+        elif apply_object == 'new':
+            record = self.search([('document_config', '=', self.document_config.id), ('state', '=', 'draft')])
+            return {'domain': {'document_list': [('id', 'in', record.ids)]}}
+            print(record.write_date >= self.document_config.create_date)
 
     def compute_documents_list(self):
         # Tìm cấu hình dựa trên block_id
+        def apply_config(document_id):
+            if self.type_update_document == 'new':
+                self.document_list = document_id.document_list.ids
+            elif self.type_update_document == 'all':
+                self.document_list = document_id.all.ids
+            elif self.type_update_document == 'not_approved_and_new':
+                self.document_list = document_id.not_approved_and_new.ids
+            self.write({'document_config': document_id})
+
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
+        document_id = False
+        print(self.type_update_document)
         if records:
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # Tìm id danh sách tài liệu theo vị trí của khối.
@@ -678,12 +736,13 @@ class EmployeeProfile(models.Model):
 
             if document_id:
                 # Tìm bản ghi dựa vào id tìm được
-                self.document_config = document_id
+                apply_config(document_id)
             else:
                 # Nếu không tìm được id nào thì tìm theo khối.
-                self.document_config = self.env['hrm.document.list.config'].sudo().search(
+                document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('block_id', '=', self.block_id.id), ('company', '=', False), ('system_id', '=', False),
                      ('department_id', '=', False)])
+                apply_config(document_id)
         else:
             self.document_config = False
 

@@ -1,7 +1,7 @@
 import re
 
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 
 
@@ -20,11 +20,22 @@ class Ranks(models.Model):
         for record in self:
             name = self.search([('id', '!=', record.id), ('active', 'in', (True, False))])
             for n in name:
-                if n['name'].lower() == record.name.lower() and n.department == self.department:
+                if n['name'].lower() == record.name.lower() and n.department_id == self.department_id:
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Cấp bậc')
                 if (self.abbreviations and n['abbreviations'] and
-                        n['abbreviations'].lower() == record.abbreviations.lower() and n.department == self.department):
+                        n['abbreviations'].lower() == record.abbreviations.lower() and n.department_id == self.department_id):
                     raise ValidationError(constraint.DUPLICATE_RECORD % 'Tên viết tắt')
+
+
+    @api.constrains('name', 'abbreviations', 'department_id')
+    def _check_rank_access(self):
+        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            raise ValidationError("Bạn không có quyền thực hiện tác vụ này trong khối thương mại")
+
+    @api.constrains('name', 'department_id')
+    def _check_department_access(self):
+        if self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
+            raise AccessDenied("Bạn không có quyền thực hiện tác vụ này!")
 
     def _default_department(self):
         if self.env.user.department_id:

@@ -42,7 +42,7 @@ class Teams(models.Model):
 
     @api.depends('team_name', 'company', 'type_team')
     def _compute_name_team(self):
-
+        # hiển thị theo tên tiền tố 'tiền tố._tênteam._tên công ty'
         for rec in self:
             name_prefix = ""
 
