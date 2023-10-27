@@ -18,6 +18,12 @@ class DocumentListConfig(models.Model):
     related = fields.Boolean(compute='_compute_related_')
     see_record_with_config = fields.Boolean()
 
+    update_confirm_document = fields.Selection(selection=constraint.UPDATE_CONFIRM_DOCUMENT, string="Cập nhật tài liệu")
+
+    # các field lưu id của tài liệu tương ứng với cấu hình áp dụng cho HSNS
+    not_approved_and_new = fields.One2many('hrm.document.list', 'not_approved_and_new_id')
+    all = fields.One2many('hrm.document.list', 'all_id')
+
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         self.env['hrm.utils']._see_record_with_config('hrm.document.list.config')
         return super(DocumentListConfig, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
@@ -203,23 +209,23 @@ class DocumentListConfig(models.Model):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
 
     def action_update_document(self, object_update):
-        # object_update 1: tất cả các bản ghi
-        # object_update 2: chỉ các bản ghi chưa được phê duyệt và bản ghi mới
-        # object_update 3: chỉ các bản ghi mới
+        self.sudo().write({'update_confirm_document': object_update})
         if object_update == 'all':
-            self.env['hrm.employee.profile'].sudo().search(['document_config', '=', self.id]).write({
-                'apply_document_config': True})
+            self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id)]).write({'type_update_document': 'all'})
+            self.all = [(6, 0, self.document_list.ids)]
         elif object_update == 'not_approved_and_new':
-            self.env['hrm.employee.profile'].sudo().search(['state', '=', 'pending'],
-                                                           ['document_config', '=', self.id]).write({
-                'apply_document_config': True})
-
+            self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id),
+                    ('state', 'in', ('draft','pending'))]).write({'type_update_document': 'not_approved_and_new'})
+            self.not_approved_and_new = [(6, 0, self.document_list.ids)]
 
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
     _description = 'Danh sách tài liệu'
 
     document_id = fields.Many2one('hrm.document.list.config')
+    not_approved_and_new_id = fields.Many2one('hrm.document.list.config')
+    all_id = fields.Many2one('hrm.document.list.config')
+    employee_id = fields.Many2one('hrm.employee.profile')
     sequence = fields.Integer(string="STT")
     doc = fields.Many2one('hrm.documents', string='Tên tài liệu')
     name = fields.Char(related='doc.name')

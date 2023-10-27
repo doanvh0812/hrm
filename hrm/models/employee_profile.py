@@ -34,20 +34,22 @@ class EmployeeProfile(models.Model):
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
                                       tracking=True)
+
     def _default_team(self):
         return [('id', '=', 0)]
+
     team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
     team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
-    manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
     # lọc duy nhất mã nhân viên
-    _sql_constraints = [
-        ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
-    ]
+    # _sql_constraints = [
+    #     ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
+    # ]
 
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
@@ -59,7 +61,10 @@ class EmployeeProfile(models.Model):
     document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
 
     document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
-    document_list = fields.One2many(related='document_config.document_list')
+    type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
+                                           default='new')
+
+    document_list = fields.One2many('hrm.document.list', inverse_name='employee_id')
 
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
@@ -67,8 +72,6 @@ class EmployeeProfile(models.Model):
 
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
-
-    apply_document_config = fields.Boolean(default=False)
 
 
     def see_own_approved_record(self):
@@ -640,20 +643,47 @@ class EmployeeProfile(models.Model):
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME:
             if self.env.user.company:
                 list_company = func.get_child_id(self.env.user.company, 'hrm_companies', 'parent_company')
-                if self.company.id not in list_company:
+                if self.company.id and self.company.id not in list_company:
                     raise AccessDenied(f"Bạn không có quyền cấu hình công ty {self.company.name}")
             elif self.env.user.system_id and not self.env.user.company:
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
-                if self.system_id.id not in list_system:
+                if self.system_id.id and self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+
+    @api.constrains("employee_code_new")
+    def check_unique_employee_code(self):
+        """Kiểm tra mã nhân viên mới có trùng không"""
+        if self.employee_code_new:
+            if self.search([('employee_code_new', '=', self.employee_code_new), ('id', '!=', self.id)]):
+                raise ValidationError("Mã nhân viên đã tồn tại")
+
+    def compute_domain_document_list(self):
+        apply_object = self.document_config.update_confirm_document
+        if apply_object == 'all':
+            return []
+        elif apply_object == 'not_approved_and_new':
+            record = self.search([('document_config', '=', self.document_config.id), ('state', 'in', ['draft', 'pending'])])
+            return {[('id', 'in', record.ids)]}
+        elif apply_object == 'new':
+            record = self.search([('document_config', '=', self.document_config.id), ('state', '=', 'draft')])
+            return {'domain': {'document_list': [('id', 'in', record.ids)]}}
 
     def compute_documents_list(self):
         # Tìm cấu hình dựa trên block_id
+        def apply_config(document_id):
+            if self.type_update_document == 'new':
+                self.document_list = document_id.document_list.ids
+            elif self.type_update_document == 'all':
+                self.document_list = document_id.all.ids
+            elif self.type_update_document == 'not_approved_and_new':
+                self.document_list = document_id.not_approved_and_new.ids
+            self.write({'document_config': document_id})
+
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
+        document_id = False
         if records:
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # Tìm id danh sách tài liệu theo vị trí của khối.
-                print(self.position_id.id)
                 document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id)])
                 if not document_id:
@@ -677,12 +707,13 @@ class EmployeeProfile(models.Model):
 
             if document_id:
                 # Tìm bản ghi dựa vào id tìm được
-                self.document_config = document_id
+                apply_config(document_id)
             else:
                 # Nếu không tìm được id nào thì tìm theo khối.
-                self.document_config = self.env['hrm.document.list.config'].sudo().search(
+                document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('block_id', '=', self.block_id.id), ('company', '=', False), ('system_id', '=', False),
                      ('department_id', '=', False)])
+                apply_config(document_id)
         else:
             self.document_config = False
     @api.onchange("document_declaration")

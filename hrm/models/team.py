@@ -43,7 +43,7 @@ class Teams(models.Model):
 
     @api.depends('team_name', 'company', 'type_team')
     def _compute_name_team(self):
-
+        # hiển thị theo tên tiền tố 'tiền tố._tênteam._tên công ty'
         for rec in self:
             name_prefix = ""
 
@@ -103,13 +103,11 @@ class Teams(models.Model):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
         a = self.env['hrm.teams'].sudo().search([('see_record_with_config', '=', True)]).write(
             {'see_record_with_config': False})
-        print(a)
         user = self.env.user
         # Tìm tất cả các công ty, hệ thống, phòng ban con
         company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
         system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
         block_config = user.block_id
-        print('abc')
         domain = []
         # Lấy domain theo các trường
         if not user.has_group("hrm.hrm_group_create_edit"):
@@ -125,7 +123,6 @@ class Teams(models.Model):
                         domain.append(('block_id', '=', block_id.id))
 
         b = self.env['hrm.teams'].sudo().search(domain).write({'see_record_with_config': True})
-        print(b)
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         self._can_see_record_with_config()
         return super(Teams, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)

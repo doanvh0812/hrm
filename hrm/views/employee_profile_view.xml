@@ -17,7 +17,7 @@
                         <group col="2">
                             <group>
                                 <field name="acc_id" invisible="1"/>
-                                <field name="employee_code_new" readonly="1"/>
+                                <field name="employee_code_new" readonly="1" force_save="1"/>
                                 <field name="name"/>
                                 <field name="phone_num" attrs="{'readonly': [('state','!=','draft')]}"/>
                                 <field name="email" modifiers="{'readonly': false, 'required': true}"/>
@@ -58,7 +58,7 @@
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
                             <page string="Danh sách tài liệu">
-                                <field name="document_config"/>
+                                <field name="document_config" readonly="1" force_save="1"/>
                                 <field name="document_list" readonly="1" oder="sequence" force_save="1">
                                     <tree>
                                         <field name="sequence"/>
