@@ -28,6 +28,12 @@ class DocumentDeclaration(models.Model):
 
     max_photos = fields.Integer(related='type_documents.numbers_of_photos')
     max_files = fields.Integer(related='type_documents.numbers_of_documents')
+    see_record_with_config = fields.Boolean()
+
+    def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
+        self.env['hrm.utils']._see_record_with_config('hrm.document_declaration')
+        return super(DocumentDeclaration, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
+                                                               submenu=submenu)
 
     @api.depends('employee_id', 'type_documents')
     def _compute_name_team(self):

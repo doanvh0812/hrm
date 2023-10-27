@@ -73,36 +73,6 @@ class EmployeeProfile(models.Model):
 
     apply_document_config = fields.Boolean(default=False)
 
-    def _see_record_with_config(self):
-        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
-        self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write(
-            {'see_record_with_config': False})
-        user = self.env.user
-        # Tim tat ca cac cong ty, he thong, phong ban con
-        company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
-        system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
-        department_config = self.env['hrm.utils'].get_child_id(user.department_id, 'hrm_departments',
-                                                               "superior_department")
-        block_config = user.block_id
-
-        domain = []
-        # Lay domain theo cac truong
-        if not user.has_group("hrm.hrm_group_create_edit"):
-            if company_config:
-                domain.append(('company', 'in', company_config))
-            elif system_config:
-                domain.append(('system_id', 'in', system_config))
-            elif department_config:
-                domain.append(('department_id', 'in', department_config))
-            elif block_config:
-                # Neu la full thi domain = []
-                if block_config != 'full':
-                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
-                    if block_id:
-                        domain.append(('block_id', '=', block_id.id))
-
-            self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
-
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
         profile = self.env['hrm.employee.profile'].sudo().search([('state', '!=', 'draft')])
@@ -215,7 +185,7 @@ class EmployeeProfile(models.Model):
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
                                                            submenu=submenu)
-        self._see_record_with_config()
+        self.env['hrm.utils']._see_record_with_config('hrm.employee.profile')
         self.see_own_approved_record()
         self.logic_button()
 
@@ -293,7 +263,7 @@ class EmployeeProfile(models.Model):
         # Ngược lại không phải khối văn phòng
         else:
             # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-            if self.system_id.name and not self.id.origin:
+            if self.system_id.name and not isinstance(self.id, int) and not self.id.origin:
                 name = str.split(self.system_id.name, '.')[0]
                 last_employee_code = self._get_last_employee_code('like', name)
                 self.employee_code_new = self._generate_employee_code(name, last_employee_code)
@@ -575,7 +545,7 @@ class EmployeeProfile(models.Model):
         else:
             return []
 
-    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block)
+    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block, required=True)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
@@ -687,6 +657,7 @@ class EmployeeProfile(models.Model):
         if records:
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # Tìm id danh sách tài liệu theo vị trí của khối.
+                print(self.position_id.id)
                 document_id = self.env['hrm.document.list.config'].sudo().search(
                     [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id)])
                 if not document_id:
