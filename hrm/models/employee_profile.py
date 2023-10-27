@@ -290,7 +290,7 @@ class EmployeeProfile(models.Model):
         # Ngược lại không phải khối văn phòng
         else:
             # Nếu đã chọn hệ thống chạy qua các hàm lấy mã nhân viên cuối và render ra mã tiếp
-            if self.system_id.name and not self.id.origin:
+            if self.system_id.name and not isinstance(self.id, int) and not self.id.origin:
                 name = str.split(self.system_id.name, '.')[0]
                 last_employee_code = self._get_last_employee_code('like', name)
                 self.employee_code_new = self._generate_employee_code(name, last_employee_code)
