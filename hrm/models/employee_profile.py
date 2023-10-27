@@ -45,9 +45,9 @@ class EmployeeProfile(models.Model):
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
     # lọc duy nhất mã nhân viên
-    _sql_constraints = [
-        ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
-    ]
+    # _sql_constraints = [
+    #     ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
+    # ]
 
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
@@ -677,6 +677,13 @@ class EmployeeProfile(models.Model):
                 list_system = func.get_child_id(self.env.user.system_id, 'hrm_systems', 'parent_system')
                 if self.system_id.id and self.system_id.id not in list_system:
                     raise AccessDenied(f"Bạn không có quyền cấu hình hệ thống {self.system_id.name}")
+
+    @api.constrains("employee_code_new")
+    def check_unique_employee_code(self):
+        """Kiểm tra mã nhân viên mới có trùng không"""
+        if self.employee_code_new:
+            if self.search([('employee_code_new', '=', self.employee_code_new), ('id', '!=', self.id)]):
+                raise ValidationError("Mã nhân viên đã tồn tại")
 
     def compute_domain_document_list(self):
         apply_object = self.document_config.update_confirm_document
