@@ -698,11 +698,12 @@ class EmployeeProfile(models.Model):
     def compute_documents_list(self):
         # Tìm cấu hình dựa trên block_id
         def apply_config(document_id):
-            if self.type_update_document == 'not_approved_and_new':
-                self.document_list = document_id.not_approved_and_new.ids
-                print(document_id.not_approved_and_new.ids)
+            if self.type_update_document == 'new':
+                self.document_list = document_id.document_list.ids
             elif self.type_update_document == 'all':
                 self.document_list = document_id.all.ids
+            elif self.type_update_document == 'not_approved_and_new':
+                self.document_list = document_id.not_approved_and_new.ids
             self.write({'document_config': document_id})
 
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])

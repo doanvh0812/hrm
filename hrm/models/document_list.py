@@ -240,12 +240,13 @@ class DocumentListConfig(models.Model):
 
     def action_update_document(self, object_update):
         self.sudo().write({'update_confirm_document': object_update})
+        print(self.create_date > self.write_date)
         if object_update == 'all':
             self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id)]).write({'type_update_document': 'all'})
             self.all = [(6, 0, self.document_list.ids)]
         elif object_update == 'not_approved_and_new':
             self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id),
-                    ('state', '=', 'pending')]).write({'type_update_document': 'not_approved_and_new'})
+                    ('state', 'in', ('draft','pending'))]).write({'type_update_document': 'not_approved_and_new'})
             self.not_approved_and_new = [(6, 0, self.document_list.ids)]
 
 class DocumentList(models.Model):
