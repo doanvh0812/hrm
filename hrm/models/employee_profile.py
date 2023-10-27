@@ -74,36 +74,6 @@ class EmployeeProfile(models.Model):
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
 
-    def _see_record_with_config(self):
-        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
-        self.env['hrm.employee.profile'].sudo().search([('see_record_with_config', '=', True)]).write(
-            {'see_record_with_config': False})
-        user = self.env.user
-        # Tim tat ca cac cong ty, he thong, phong ban con
-        company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
-        system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
-        department_config = self.env['hrm.utils'].get_child_id(user.department_id, 'hrm_departments',
-                                                               "superior_department")
-        block_config = user.block_id
-
-        domain = []
-        # Lay domain theo cac truong
-        if not user.has_group("hrm.hrm_group_create_edit"):
-            if company_config:
-                domain.append(('company', 'in', company_config))
-            elif system_config:
-                domain.append(('system_id', 'in', system_config))
-            elif department_config:
-                domain.append(('department_id', 'in', department_config))
-            elif block_config:
-                # Neu la full thi domain = []
-                if block_config != 'full':
-                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
-                    if block_id:
-                        domain.append(('block_id', '=', block_id.id))
-
-            self.env['hrm.employee.profile'].sudo().search(domain).write({'see_record_with_config': True})
-
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
         profile = self.env['hrm.employee.profile'].sudo().search([('state', '!=', 'draft')])
