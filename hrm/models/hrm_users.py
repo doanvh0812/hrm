@@ -34,17 +34,42 @@ class Users(models.Model):
             decorator này khi tạo hồ sơ nhân viên, chọn 1 hệ thống nào đó
             khi ta chọn cty nó sẽ hiện ra tất cả những cty có trong hệ thống đó
         """
-        # clear dữ liệu
-        if self.system_id != self.company.system_id:
-            self.company = False
-        list_id = []
-        for sys in self.system_id.ids:
+        if self.system_id:
+            # khi bỏ trường hệ thống thì loại bỏ các cty con của nó
+            current_company_ids = self.company.ids
+            child_company = []
             func = self.env['hrm.utils']
-            list_id += func._system_have_child_company(sys)
-        return {'domain': {'company': [('id', 'in', list_id)]}}
+            for sys in self.system_id:
+                child_company += func._system_have_child_company(sys.id.origin)
+            # lấy ra cty chung trong hai list cty
+            company_ids = list(set(current_company_ids) & set(child_company))
+            self.company = [(6, 0, company_ids)]
+            list_id = []
+            for sys in self.system_id.ids:
+                func = self.env['hrm.utils']
+                list_id += func._system_have_child_company(sys)
+            return {'domain': {'company': [('id', 'in', list_id)]}}
+        self.company = [(6, 0, [])]
+
+    def _remove_system_not_have_company(self):
+        """
+            Xóa hệ thống không có công ty
+        """
+        if self.company:
+            list_system_ids = self.system_id.ids
+            for sys in self.system_id.ids:
+                func = self.env['hrm.utils']
+                if not any(company in func._system_have_child_company(sys) for company in self.company.ids):
+                    self.system_id = [(6, 0, list_system_ids)]
 
     def write(self, vals):
         res = super(Users, self).write(vals)
+        self._remove_system_not_have_company()
         if 'name' in list(vals.keys()) and self.env.user.id == self.id:
             return {'type': 'ir.actions.client', 'tag': 'reload'}
+        return res
+
+    def create(self, vals_list):
+        res = super(Users, self).create(vals_list)
+        self._remove_system_not_have_company()
         return res
