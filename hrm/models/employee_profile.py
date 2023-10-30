@@ -450,7 +450,7 @@ class EmployeeProfile(models.Model):
         if reason_refusal:
             # nếu có lý do từ chối thì gán lý do từ chối vào trường reason_refusal
             self.reason_refusal = reason_refusal
-        orders = self.filtered(lambda s: s.state in ['pending'])
+        orders = self.sudo().filtered(lambda s: s.state in ['pending'])
         # Lấy id người đăng nhập
         id_access = self.env.user.id
         # Duyệt qua bản ghi trong luồng (là những người được duyệt)
@@ -672,12 +672,12 @@ class EmployeeProfile(models.Model):
         # Tìm cấu hình dựa trên block_id
         def apply_config(document_id):
             if self.type_update_document == 'new':
-                self.document_list = document_id.document_list.ids
+                self.sudo().write({"document_list": document_id.document_list.ids})
             elif self.type_update_document == 'all':
-                self.document_list = document_id.all.ids
+                self.sudo().write({"document_list": document_id.all.ids})
             elif self.type_update_document == 'not_approved_and_new':
-                self.document_list = document_id.not_approved_and_new.ids
-            self.write({'document_config': document_id})
+                self.sudo().write({"document_list": document_id.not_approved_and_new.ids})
+            self.sudo().write({'document_config': document_id})
 
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
         document_id = False
