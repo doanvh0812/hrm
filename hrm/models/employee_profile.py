@@ -36,12 +36,10 @@ class EmployeeProfile(models.Model):
                                       tracking=True)
     def _default_team(self):
         return [('id', '=', 0)]
+
     team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
     team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
-
-    team_marketing = fields.Char(string='Đội ngũ marketing', tracking=True)
-    team_sales = fields.Char(string='Đội ngũ bán hàng', tracking=True)
     manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
