@@ -55,6 +55,7 @@
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.teams</field>
             <field name="search_view_id" ref="teams_filter"/>
+            <field name="domain">[('see_record_with_config', '=', True)]</field>
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_teams_tree')}),

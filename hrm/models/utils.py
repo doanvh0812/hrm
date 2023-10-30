@@ -78,7 +78,6 @@ class Utils(models.Model):
         department_config = self.get_child_id(user.department_id, 'hrm_departments',
                                                                "superior_department")
         block_config = user.block_id
-
         domain = []
         # Lay domain theo cac truong
         if not user.has_group("hrm.hrm_group_create_edit"):

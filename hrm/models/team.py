@@ -16,6 +16,7 @@ class Teams(models.Model):
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
 
+    see_record_with_config = fields.Boolean()
     @api.onchange('company')
     def _onchange_company(self):
         """ decorator này  chọn cty
@@ -97,3 +98,31 @@ class Teams(models.Model):
     def _check_department_access(self):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             raise AccessDenied("Bạn không có quyền thực hiện tác vụ này!")
+
+    def _can_see_record_with_config(self):
+        """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
+        a = self.env['hrm.teams'].sudo().search([('see_record_with_config', '=', True)]).write(
+            {'see_record_with_config': False})
+        user = self.env.user
+        # Tìm tất cả các công ty, hệ thống, phòng ban con
+        company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
+        system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
+        block_config = user.block_id
+        domain = []
+        # Lấy domain theo các trường
+        if not user.has_group("hrm.hrm_group_create_edit"):
+            if company_config:
+                domain.append(('company', 'in', company_config))
+            elif system_config:
+                domain.append(('system_id', 'in', system_config))
+            elif block_config:
+                # Nếu là full thì domain = []
+                if block_config != 'full':
+                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
+                    if block_id:
+                        domain.append(('block_id', '=', block_id.id))
+
+        b = self.env['hrm.teams'].sudo().search(domain).write({'see_record_with_config': True})
+    def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
+        self._can_see_record_with_config()
+        return super(Teams, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
