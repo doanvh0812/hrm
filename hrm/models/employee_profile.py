@@ -37,6 +37,7 @@ class EmployeeProfile(models.Model):
 
     def _default_team(self):
         return [('id', '=', 0)]
+
     team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
     team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
@@ -418,7 +419,6 @@ class EmployeeProfile(models.Model):
         elif self.position_id.team_type == "sale":
             self.require_team_sale = True
 
-
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
         orders = self.sudo().filtered(lambda s: s.state in ['pending'])
@@ -459,7 +459,7 @@ class EmployeeProfile(models.Model):
         if reason_refusal:
             # nếu có lý do từ chối thì gán lý do từ chối vào trường reason_refusal
             self.reason_refusal = reason_refusal
-        orders = self.filtered(lambda s: s.state in ['pending'])
+        orders = self.sudo().filtered(lambda s: s.state in ['pending'])
         # Lấy id người đăng nhập
         id_access = self.env.user.id
         # Duyệt qua bản ghi trong luồng (là những người được duyệt)
@@ -642,8 +642,7 @@ class EmployeeProfile(models.Model):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng và có cấu hình phòng ban
             if self.env.user.department_id.ids:
-                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                    'superior_department')
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
                 for depart in self.department_id:
                     if depart.id not in list_department:
                         raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
@@ -714,7 +713,6 @@ class EmployeeProfile(models.Model):
                 apply_config(document_id)
         else:
             self.document_config = False
-
     @api.onchange("document_declaration")
     def check_duplicate_document_declaration(self):
         if self.document_declaration:
