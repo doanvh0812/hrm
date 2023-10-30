@@ -14,7 +14,7 @@ class DocumentDeclaration(models.Model):
     employee_id = fields.Many2one('hrm.employee.profile', string='Nhân viên', required= True)
     type_documents = fields.Many2one('hrm.documents', string='Loại tài liệu', required=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', related='employee_id.system_id')
-    company_id = fields.Many2one('hrm.companies', string='Công ty', related='employee_id.company')
+    company = fields.Many2one('hrm.companies', string='Công ty', related='employee_id.company')
     department_id = fields.Many2one('hrm.departments', string='Phòng ban', related='employee_id.department_id')
     give_back = fields.Boolean(string='Trả lại khi chấm dứt')
     manager_document = fields.Many2one('res.users', string='Quản lý tài liệu')

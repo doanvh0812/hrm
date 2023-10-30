@@ -32,8 +32,8 @@ class EmployeeProfile(models.Model):
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
-    profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ', default='incomplete',
-                                      tracking=True)
+    profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ',
+                                      tracking=True, compute='compute_profile_status', store=True)
 
     def _default_team(self):
         return [('id', '=', 0)]
@@ -72,7 +72,6 @@ class EmployeeProfile(models.Model):
 
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
-
 
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
@@ -222,28 +221,38 @@ class EmployeeProfile(models.Model):
             # Truy cập và sửa đổi modifier của trường 'name' trong form view
             has_group_readonly = self.env.user.has_group("hrm.hrm_group_read_only")
             has_group_config = self.env.user.has_group("hrm.hrm_group_config_access")
+            has_group_own_edit = self.env.user.has_group("hrm.hrm_group_own_edit")
+            has_group_create_edit = self.env.user.has_group("hrm.hrm_group_create_edit")
             config_group = doc.xpath("//group")
-            if config_group and not has_group_readonly:
-                # nếu user login không có quyền chỉ đọc thì update lại các thuộc tính readonly
+            if config_group:
                 cf = config_group[0]
-                for field in cf.xpath("//field[@name]"):
-                    modifiers = field.attrib.get('modifiers', '')
-                    modifiers = json.loads(modifiers) if modifiers else {}
-                    if field.get("name") not in ['employee_code_new', 'document_config', 'document_list']:
-                        modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
-                                                       ['state', '!=', 'draft']]})
-                    if field.get("name") in ['phone_num', 'email', 'identifier']:
-                        modifiers.update({'readonly': ["|", ["id", "!=", False],
-                                                       ["create_uid", "!=", user_id], ['state', '=', 'pending']]})
-                    field.attrib['modifiers'] = json.dumps(modifiers)
-            elif config_group and has_group_readonly:
-                # nếu user login có quyền chỉ đọc thì set các field readonly
-                cf = config_group[0]
-                for field in cf.xpath("//field[@name]"):
-                    modifiers = field.attrib.get('modifiers', '')
-                    modifiers = json.loads(modifiers) if modifiers else {}
-                    modifiers.update({'readonly': [[1, '=', 1]]})
-                    field.attrib['modifiers'] = json.dumps(modifiers)
+                if has_group_create_edit or has_group_config:
+                    # nếu user login có quyền cấu hình
+                    for field in cf.xpath("//field[@name]"):
+                        modifiers = field.attrib.get('modifiers', '')
+                        modifiers = json.loads(modifiers) if modifiers else {}
+                        if field.get("name") not in ['employee_code_new', 'document_config', 'document_list', 'manager_id']:
+                            modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
+                                                           ['state', '!=', 'draft']]})
+                        if field.get("name") in ['phone_num', 'email', 'identifier']:
+                            modifiers.update({'readonly': ["|", ["id", "!=", False],
+                                                           ["create_uid", "!=", user_id], ['state', '=', 'pending']]})
+                        field.attrib['modifiers'] = json.dumps(modifiers)
+                if has_group_own_edit:
+                    # nếu user login có quyền chỉ chỉnh sửa chính mình
+                    for field in cf.xpath("//field[@name]"):
+                        modifiers = field.attrib.get('modifiers', '')
+                        modifiers = json.loads(modifiers) if modifiers else {}
+                        if field.get("name") not in ['phone_num', 'email', 'identifier']:
+                            modifiers.update({'readonly': [[1, '=', 1]]})
+                        field.attrib['modifiers'] = json.dumps(modifiers)
+                if has_group_readonly:
+                    # nếu user login có quyền chỉ đọc thì set các field readonly
+                    for field in cf.xpath("//field[@name]"):
+                        modifiers = field.attrib.get('modifiers', '')
+                        modifiers = json.loads(modifiers) if modifiers else {}
+                        modifiers.update({'readonly': [[1, '=', 1]]})
+                        field.attrib['modifiers'] = json.dumps(modifiers)
             # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
         return res
@@ -251,9 +260,9 @@ class EmployeeProfile(models.Model):
     def default_block_profile(self):
         """kiểm tra điều kiện giữa khối văn phòng và thương mại"""
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
-            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
+            return self.env['hrm.blocks'].sudo().search([('name', '=', constraint.BLOCK_OFFICE_NAME)])
         else:
-            return self.env['hrm.blocks'].search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
+            return self.env['hrm.blocks'].sudo().search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
 
     @api.depends('system_id', 'block_id')
     def render_code(self):
@@ -596,9 +605,9 @@ class EmployeeProfile(models.Model):
                     return rec
 
     def find_company(self, records, lis_company):
-        for company_id in lis_company:
+        for company in lis_company:
             for cf in records:
-                if cf.company and company_id in cf.company.ids:
+                if cf.company and company in cf.company.ids:
                     return cf
 
     # hàm này để hiển thị lịch sử lưu trữ
@@ -614,7 +623,6 @@ class EmployeeProfile(models.Model):
                 record.message_post(body="Bỏ lưu trữ")
 
     def write(self, vals):
-        # print(vals)
         if 'email' in vals:
             login = vals['email']
             user = self.env['res.users'].sudo().search([("id", "=", self.acc_id)])
@@ -657,19 +665,8 @@ class EmployeeProfile(models.Model):
             if self.search([('employee_code_new', '=', self.employee_code_new), ('id', '!=', self.id)]):
                 raise ValidationError("Mã nhân viên đã tồn tại")
 
-    def compute_domain_document_list(self):
-        apply_object = self.document_config.update_confirm_document
-        if apply_object == 'all':
-            return []
-        elif apply_object == 'not_approved_and_new':
-            record = self.search([('document_config', '=', self.document_config.id), ('state', 'in', ['draft', 'pending'])])
-            return {[('id', 'in', record.ids)]}
-        elif apply_object == 'new':
-            record = self.search([('document_config', '=', self.document_config.id), ('state', '=', 'draft')])
-            return {'domain': {'document_list': [('id', 'in', record.ids)]}}
-
     def compute_documents_list(self):
-        # Tìm cấu hình dựa trên block_id
+        """Tìm cấu hình dựa trên block_id"""
         def apply_config(document_id):
             if self.type_update_document == 'new':
                 self.sudo().write({"document_list": document_id.document_list.ids})
@@ -762,3 +759,25 @@ class EmployeeProfile(models.Model):
             return self.env['hrm.document.list.config'].sudo().search([('id', '=', records[0][0])])
         else:
             return None
+
+    @api.depends('document_list', 'document_declaration')
+    def compute_profile_status(self):
+        """Kiểm tra các hồ sơ đã khai báo với danh sách tài liệu để update trạng thái hồ sơ"""
+        if self.document_list:
+            incomplete = True
+            # Duyệt qua danh sách tài liệu để tìm tài liệu bắt buộc
+            for line in self.document_list:
+                if line.obligatory and line.doc.id in self.find_document_declaration_complete():
+                    incomplete = False
+            if incomplete:
+                self.profile_status = 'incomplete'
+            else:
+                self.profile_status = 'complete'
+
+    def find_document_declaration_complete(self):
+        """Tìm danh sách các tài liệu được khai báo và đã tích hoàn thành"""
+        list_complete = []
+        for line in self.document_declaration:
+            if line.complete:
+                list_complete.append(line.type_documents.id)
+        return list_complete
