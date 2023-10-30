@@ -69,6 +69,7 @@ class Users(models.Model):
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         return res
 
+    @api.model
     def create(self, vals_list):
         res = super(Users, self).create(vals_list)
         self._remove_system_not_have_company()
