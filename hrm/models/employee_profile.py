@@ -73,6 +73,7 @@ class EmployeeProfile(models.Model):
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
 
+
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
         profile = self.env['hrm.employee.profile'].sudo().search([('state', '!=', 'draft')])
@@ -410,7 +411,6 @@ class EmployeeProfile(models.Model):
         elif self.position_id.team_type == "sale":
             self.require_team_sale = True
 
-
     def action_confirm(self):
         # Khi ấn button Phê duyệt sẽ chuyển từ pending sang approved
         orders = self.sudo().filtered(lambda s: s.state in ['pending'])
@@ -635,8 +635,7 @@ class EmployeeProfile(models.Model):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng và có cấu hình phòng ban
             if self.env.user.department_id.ids:
-                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
-                                                    'superior_department')
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
                 for depart in self.department_id:
                     if depart.id not in list_department:
                         raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
@@ -718,7 +717,6 @@ class EmployeeProfile(models.Model):
                 apply_config(document_id)
         else:
             self.document_config = False
-
     @api.onchange("document_declaration")
     def check_duplicate_document_declaration(self):
         if self.document_declaration:
