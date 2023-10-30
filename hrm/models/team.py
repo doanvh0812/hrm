@@ -1,8 +1,7 @@
 import re
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError,AccessDenied
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
-
 
 class Teams(models.Model):
     _name = 'hrm.teams'
@@ -92,7 +91,7 @@ class Teams(models.Model):
         elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             return [('id', '=', 0)]
 
-    company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=default_company)
+    company = fields.Many2one('hrm.companies', string="Công ty", required=True, tracking=True, domain=default_company)
 
     @api.constrains('name', 'type_team', 'team_name', 'active', ' change_system_id')
     def _check_department_access(self):
@@ -101,7 +100,7 @@ class Teams(models.Model):
 
     def _can_see_record_with_config(self):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
-        a = self.env['hrm.teams'].sudo().search([('see_record_with_config', '=', True)]).write(
+        self.env['hrm.teams'].sudo().search([('see_record_with_config', '=', True)]).write(
             {'see_record_with_config': False})
         user = self.env.user
         # Tìm tất cả các công ty, hệ thống, phòng ban con
@@ -120,9 +119,9 @@ class Teams(models.Model):
                 if block_config != 'full':
                     block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
                     if block_id:
-                        domain.append(('block_id', '=', block_id.id))
-
-        b = self.env['hrm.teams'].sudo().search(domain).write({'see_record_with_config': True})
+                        print(domain.append(('block_id', '=', block_id.id)))
+        #
+        # self.env['hrm.teams'].sudo().search(domain).write({'see_record_with_config': True})
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         self._can_see_record_with_config()
         return super(Teams, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
