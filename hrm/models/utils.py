@@ -69,7 +69,7 @@ class Utils(models.Model):
 
     def _see_record_with_config(self, db_name):
         """Nhìn thấy tất cả bản ghi trong màn hình tạo mới hồ sơ theo cấu hình quyền"""
-        self.env[f'{db_name}'].sudo().search([('see_record_with_config', '=', True)]).write(
+        self.env[db_name].sudo().search([('see_record_with_config', '=', True)]).write(
             {'see_record_with_config': False})
         user = self.env.user
         # Tim tat ca cac cong ty, he thong, phong ban con
@@ -82,7 +82,7 @@ class Utils(models.Model):
         # Lay domain theo cac truong
         if not user.has_group("hrm.hrm_group_create_edit"):
             if company_config:
-                domain.append(('company', 'in', company_config))
+                domain.append(('company_id', 'in', company_config))
             elif system_config:
                 domain.append(('system_id', 'in', system_config))
             elif department_config:
@@ -94,4 +94,4 @@ class Utils(models.Model):
                     if block_id:
                         domain.append(('block_id', '=', block_id.id))
 
-            self.env[f'{db_name}'].sudo().search(domain).write({'see_record_with_config': True})
+            self.env[db_name].sudo().search(domain).write({'see_record_with_config': True})

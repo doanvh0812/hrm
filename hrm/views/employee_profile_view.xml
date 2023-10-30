@@ -44,11 +44,10 @@
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
                                 <field name="position_id"/>
                                 <field name="team_marketing"
-                                       attrs="{'invisible': [('related', '=', True)],'required': [('require_team_marketing','=',True)]}"/>
+                                       attrs="{'invisible': [('related', '=', True)], 'required': [('require_team_marketing','=',True)]}"/>
                                 <field name="team_sales"
-                                       attrs="{'invisible': [('related', '=', True)],'required': [('require_team_sale','=',True)]}"/>
-                                <field name="manager_id" attrs="{'invisible': [('related', '=', False)]}" force_save="1"
-                                       readonly="1"/>
+                                       attrs="{'invisible': [('related', '=', True)], 'required': [('require_team_sale','=',True)]}"/>
+                                <field name="manager_id" attrs="{'readonly': [('department_id', '!=', False)], 'invisible': [('related', '=', False)]}" force_save="1"/>
                                 <field name="rank_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
                             </group>

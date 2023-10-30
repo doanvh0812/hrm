@@ -93,5 +93,4 @@ class Systems(models.Model):
     #         "SELECT LENGTH(name) - LENGTH(REPLACE(name, '.', '')) as count_dots, id FROM hrm_systems ORDER BY count_dots ASC")
     #     for item in self._cr.fetchall():
     #         sort_lst.append(self.env["hrm.systems"].browse(item[1]))
-    #     print(sort_lst)
     #     return sort_lst
