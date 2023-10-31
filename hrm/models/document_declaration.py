@@ -80,10 +80,15 @@ class DocumentDeclaration(models.Model):
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
-    @api.onchange('name')
+    @api.onchange('profile_id')
     def default_employee(self):
         """Gán giá trị của trường nhân viên khi tạo mới bản ghi tại màn Tạo mới hồ sơ."""
         if self.profile_id:
             self.employee_id = self.profile_id.id
 
+    @api.onchange('employee_id')
+    def default_employee(self):
+        """Gán giá trị của trường nhân viên khi tạo mới bản ghi tại màn Tạo mới hồ sơ."""
+        if self.employee_id:
+            self.profile_id = self.employee_id.id
 
