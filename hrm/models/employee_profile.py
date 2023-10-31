@@ -16,7 +16,7 @@ class EmployeeProfile(models.Model):
     date_receipt = fields.Date(string='Ngày được nhận chính thức', required=True,
                                default=lambda self: self._get_server_date())
     name = fields.Char(string='Họ và tên nhân sự', required=True, tracking=True)
-    check_blocks = fields.Char(default=lambda self: self.env.user.block_id)
+    check_blocks = fields.Char(compute='compute_check_block')
     check_company = fields.Boolean(default=lambda self: self.env.user.company)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                default=lambda self: self.default_block_profile(),
@@ -72,6 +72,10 @@ class EmployeeProfile(models.Model):
 
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
+
+    @api.depends('employee_code_new')
+    def compute_check_block(self):
+        self.check_blocks = self.env.user.block_id
 
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
@@ -237,21 +241,25 @@ class EmployeeProfile(models.Model):
                         if field.get("name") in ['phone_num', 'email', 'identifier']:
                             modifiers.update({'readonly': ["|", ["id", "!=", False],
                                                            ["create_uid", "!=", user_id], ['state', '=', 'pending']]})
+                        if field.get("name") == 'block_id':
+                            modifiers.update({'readonly': ["|", ["check_blocks", "!=", 'full'], ['state', '!=', 'draft']]})
                         field.attrib['modifiers'] = json.dumps(modifiers)
-                if has_group_own_edit:
+                elif has_group_own_edit:
                     # nếu user login có quyền chỉ chỉnh sửa chính mình
                     for field in cf.xpath("//field[@name]"):
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
                         if field.get("name") not in ['phone_num', 'email', 'identifier']:
-                            modifiers.update({'readonly': [[1, '=', 1]]})
+                            modifiers.update({'readonly': True})
+                        else:
+                            modifiers.update({'readonly': ["|", ['state', '!=', 'draft'], ['acc_id', '!=', user_id]]})
                         field.attrib['modifiers'] = json.dumps(modifiers)
-                if has_group_readonly:
+                elif has_group_readonly:
                     # nếu user login có quyền chỉ đọc thì set các field readonly
                     for field in cf.xpath("//field[@name]"):
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
-                        modifiers.update({'readonly': [[1, '=', 1]]})
+                        modifiers.update({'readonly': True})
                         field.attrib['modifiers'] = json.dumps(modifiers)
             # Gán lại 'arch' cho res với các thay đổi mới
             res['arch'] = etree.tostring(doc, encoding='unicode')
