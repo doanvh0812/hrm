@@ -14,7 +14,7 @@ class DocumentDeclaration(models.Model):
     employee_id = fields.Many2one('hrm.employee.profile', string='Nhân viên', required=True)
     type_documents = fields.Many2one('hrm.documents', string='Loại tài liệu', required=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', related='employee_id.system_id')
-    company_id = fields.Many2one('hrm.companies', string='Công ty', related='employee_id.company')
+    company = fields.Many2one('hrm.companies', string='Công ty', related='employee_id.company')
     department_id = fields.Many2one('hrm.departments', string='Phòng ban', related='employee_id.department_id')
     give_back = fields.Boolean(string='Trả lại khi chấm dứt')
     manager_document = fields.Many2one('res.users', string='Quản lý tài liệu')
@@ -25,9 +25,10 @@ class DocumentDeclaration(models.Model):
 
     # image_ids = fields.Many2many('ir.attachment', 'document_image_rel', 'document_id', 'attachment_id',
     #                              string='Tệp hình ảnh')
-    # Todo
-    image_ids = fields.One2many('see.image', 'upload_image_ids', string="Pictures")
 
+    picture_ids = fields.One2many('hrm.image', 'document_declaration', string="Hình ảnh")
+    # public_image_url = fields.Char(compute="_compute_image_related_fields", compute_sudo=True, store=True)
+    # has_picture = fields.Boolean(compute="_compute_image_related_fields", store=True, compute_sudo=True)
     max_photos = fields.Integer(related='type_documents.numbers_of_photos')
     max_files = fields.Integer(related='type_documents.numbers_of_documents')
     see_record_with_config = fields.Boolean()
@@ -51,7 +52,7 @@ class DocumentDeclaration(models.Model):
             else:
                 rec.name = ''
 
-    @api.onchange('type_documents', 'image_ids', 'attachment_ids')
+    @api.onchange('type_documents', 'attachment_ids')
     def onchange_type_documents(self):
         max_photos = 0
         max_files = 0
@@ -67,16 +68,16 @@ class DocumentDeclaration(models.Model):
             max_files = self.type_documents.numbers_of_documents
 
         # Kiểm tra số lượng ảnh
-        if len(self.image_ids) > max_photos:
-            self.image_ids = False
-            raise ValidationError('Vượt quá số lượng ảnh tối đa cho phép!')
+        # if len(self.image_ids) > max_photos:
+        #     self.image_ids = False
+        #     raise ValidationError('Vượt quá số lượng ảnh tối đa cho phép!')
 
         # Kiểm tra số lượng tệp tài liệu
-        if len(self.attachment_ids) > max_files:
-            self.attachment_ids = False
-            raise ValidationError('Vượt quá số lượng tệp tài liệu tối đa cho phép!')
-        if self.image_ids:
-            self.image_ids = [(6, 0, self.image_ids.ids)]
+        # if len(self.attachment_ids) > max_files:
+        #     self.attachment_ids = False
+        #     raise ValidationError('Vượt quá số lượng tệp tài liệu tối đa cho phép!')
+        # if self.image_ids:
+        #     self.image_ids = [(6, 0, self.image_ids.ids)]
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -89,3 +90,16 @@ class DocumentDeclaration(models.Model):
         """Gán giá trị của trường nhân viên khi tạo mới bản ghi tại màn Tạo mới hồ sơ."""
         if self.profile_id:
             self.employee_id = self.profile_id.id
+
+
+# @api.depends("picture_ids", "picture_ids.public_image_url")
+# def _compute_image_related_fields(self):
+#     for rec in self:
+#         rec.has_picture = rec.picture_ids and len(rec.picture_ids) > 0
+#         if rec.picture_ids and len(rec.picture_ids) > 0:
+#             rec.has_picture = True
+#             public_image_urls = [str(x.public_image_url) for x in rec.picture_ids]
+#             rec.public_image_url = ','.join(public_image_urls)
+#         else:
+#             rec.has_picture = False
+

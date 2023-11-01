@@ -26,7 +26,7 @@
                                 <field name="block_id" readonly="1" force_save="1"/>
                                 <field name="system_id" attrs="{'invisible': [('related', '=', True)]}" readonly="1"
                                        force_save="1"/>
-                                <field name="company_id" attrs="{'invisible': [('related', '=', True)]}" readonly="1"
+                                <field name="company" attrs="{'invisible': [('related', '=', True)]}" readonly="1"
                                        force_save="1"/>
                                 <field name="department_id" attrs="{'invisible': [('related', '=', False)]}"
                                        readonly="1" force_save="1"/>
@@ -34,27 +34,17 @@
                         </group>
                         <group>
 
-                            <!--                            <group>-->
-                            <!--                                <field name="image_ids" widget="many2many_binary"/>-->
-                            <!--                                <field name="attachment_ids" widget="many2many_binary"/>-->
-                            <!--                            </group>-->
+                            <group>
+                                <field name="attachment_ids" widget="many2many_binary"/>
+                            </group>
                         </group>
-                        <notebook>
-                            <page string ="Tải tệp" name="image">
-<!--                                <kanban>-->
-                                    <field name="image_ids" class="o_website_sale_image_list"
-                                           options="{'create_text':'Tải hình ảnh'}"
-                                           context="{'default_name': name, 'default_project_id': id}" mode="kanban"
-                                           nolabel="1"
-                                    />
-<!--                                    <field name="attachment_ids" widget="many2many_binary"/>-->
-<!--                                    <templates>-->
-<!--                                        <t t-name="kanban-box">-->
-<!--                                        </t>-->
-<!--                                    </templates>-->
-<!--                                </kanban>-->
-                            </page>
-                        </notebook>
+                        <group>
+                            <group>
+                                <field name="picture_ids" class="o_website_sale_image_list"
+                                       context="{'default_name': name}" mode="kanban"
+                                       options="{'create_text':'Tải hình ảnh lên'}" nolabel="1"/>
+                            </group>
+                        </group>
                     </sheet>
                 </form>
             </field>
@@ -70,7 +60,7 @@
                     <field name="block_id"/>
                     <field name="type_documents"/>
                     <field name="system_id"/>
-                    <field name="company_id"/>
+                    <field name="company"/>
                     <field name="department_id"/>
                     <field name="give_back"/>
                     <field name="manager_document"/>
@@ -84,6 +74,7 @@
             <field name="name">Khai báo tài liệu</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">hrm.document_declaration</field>
+            <field name="domain">[('see_record_with_config', '=', True)]</field>
             <field name="view_mode">tree,form</field>
             <field name="view_ids" eval="[(5, 0, 0),
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_document_declaration_tree')}),
