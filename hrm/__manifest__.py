@@ -28,6 +28,7 @@
         'wizard/confirm_update_document.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
+        'views/see_image.xml',
         'views/hrm.xml',
         'views/document_list_view.xml',
         'views/documents_view.xml',

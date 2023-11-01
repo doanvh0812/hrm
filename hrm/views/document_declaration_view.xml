@@ -33,13 +33,28 @@
                             </group>
                         </group>
                         <group>
-                            <group>
-                                <field name="attachment_ids" widget="many2many_binary"/>
-                            </group>
-                            <group>
-                                <field name="image_ids" widget="many2many_binary"/>
-                            </group>
+
+                            <!--                            <group>-->
+                            <!--                                <field name="image_ids" widget="many2many_binary"/>-->
+                            <!--                                <field name="attachment_ids" widget="many2many_binary"/>-->
+                            <!--                            </group>-->
                         </group>
+                        <notebook>
+                            <page string ="Tải tệp" name="image">
+<!--                                <kanban>-->
+                                    <field name="image_ids" class="o_website_sale_image_list"
+                                           options="{'create_text':'Tải hình ảnh'}"
+                                           context="{'default_name': name, 'default_project_id': id}" mode="kanban"
+                                           nolabel="1"
+                                    />
+<!--                                    <field name="attachment_ids" widget="many2many_binary"/>-->
+<!--                                    <templates>-->
+<!--                                        <t t-name="kanban-box">-->
+<!--                                        </t>-->
+<!--                                    </templates>-->
+<!--                                </kanban>-->
+                            </page>
+                        </notebook>
                     </sheet>
                 </form>
             </field>

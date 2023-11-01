@@ -12,3 +12,4 @@ from . import rank
 from . import team
 from . import document_declaration
 from . import document_list
+from . import see_image
