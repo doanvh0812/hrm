@@ -3,14 +3,14 @@
         <field name="name">hrm.image.form</field>
         <field name="model">hrm.image</field>
         <field name="arch" type="xml">
-            <form string="Image">
+            <form string="Hình ảnh">
                 <div class="row o_website_sale_image_modal">
                     <div class="col-md-6 col-xl-5">
-                        <label for="name" string="Image Name"/>
+                        <label for="name" string="Tên hình ảnh"/>
                         <h2>
-                            <field name="name" placeholder="Image Name"/>
+                            <field name="name" placeholder="Tên hình ảnh"/>
                         </h2>
-                        <button name="open_image" type="object" class="oe_highlight">Link</button>
+                        <button name="open_image" type="object" class="oe_highlight">Xem ảnh</button>
                         <br/>
                     </div>
                     <div class="col-md-6 col-xl-7 text-center o_website_sale_image_modal_container">
@@ -28,7 +28,7 @@
         <field name="name">hrm.image.form</field>
         <field name="model">hrm.image</field>
         <field name="arch" type="xml">
-            <kanban string="Images">
+            <kanban string="Tên hình ảnh">
                 <field name="name"/>
                 <field name="image"/>
                 <templates>
