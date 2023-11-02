@@ -36,8 +36,12 @@
                             <group>
                                 <field name="attachment_ids" widget="many2many_binary"/>
                             </group>
+                        </group>
+                        <group>
                             <group>
-                                <field name="image_ids" widget="many2many_binary"/>
+                                <field name="picture_ids" class="o_website_sale_image_list"
+                                       context="{'default_name': name}" mode="kanban"
+                                       options="{'create_text':'Tải hình ảnh lên'}" nolabel="1"/>
                             </group>
                         </group>
                     </sheet>
