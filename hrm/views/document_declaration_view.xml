@@ -33,6 +33,7 @@
                             </group>
                         </group>
                         <group>
+
                             <group>
                                 <field name="attachment_ids" widget="many2many_binary"/>
                             </group>
