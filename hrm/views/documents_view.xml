@@ -7,10 +7,14 @@
                 <form string="Tài liệu">
                     <sheet>
                         <group>
-                            <field name="name"/>
-                            <field name="document_code"/>
-                            <field name="numbers_of_photos"/>
-                            <field name="numbers_of_documents"/>
+                            <group>
+                                <field name="name"/>
+                                <field name="document_code"/>
+                            </group>
+                            <group>
+                                <field name="numbers_of_photos"/>
+                                <field name="numbers_of_documents"/>
+                            </group>
                         </group>
                     </sheet>
                 </form>

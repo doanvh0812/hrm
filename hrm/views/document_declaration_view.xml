@@ -33,13 +33,18 @@
                             </group>
                         </group>
                         <group>
+
                             <group>
                                 <field name="attachment_ids" widget="many2many_binary"/>
                             </group>
-                            <group>
-                                <field name="image_ids" widget="many2many_binary"/>
-                            </group>
                         </group>
+                        <notebook>
+                            <page string="Hình ảnh">
+                                <field name="picture_ids" class="o_website_sale_image_list"
+                                       context="{'default_name': name}" mode="kanban"
+                                       options="{'create_text':'Tải hình ảnh lên'}" nolabel="1"/>
+                            </page>
+                        </notebook>
                     </sheet>
                 </form>
             </field>
