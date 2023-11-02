@@ -73,6 +73,8 @@ class EmployeeProfile(models.Model):
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
 
+    is_compute_documents_list = fields.Boolean(default=True)
+    
     @api.depends('employee_code_new')
     def compute_check_block(self):
         self.check_blocks = self.env.user.block_id
@@ -676,13 +678,19 @@ class EmployeeProfile(models.Model):
     def compute_documents_list(self):
         """Tìm cấu hình dựa trên block_id"""
         def apply_config(document_id):
-            if self.type_update_document == 'new':
-                self.sudo().write({"document_list": document_id.document_list.ids})
-            elif self.type_update_document == 'all':
-                self.sudo().write({"document_list": document_id.all.ids})
-            elif self.type_update_document == 'not_approved_and_new':
-                self.sudo().write({"document_list": document_id.not_approved_and_new.ids})
+            if self.type_update_document == 'new' and self.is_compute_documents_list:
+                self.sudo().write({"document_list": document_id.new_config.ids, "is_compute_documents_list": False})
+            elif self.type_update_document == 'all' and self.is_compute_documents_list:
+                self.sudo().write({"document_list": document_id.all.ids, "is_compute_documents_list": False})
+            elif self.type_update_document == 'not_approved_and_new' and self.is_compute_documents_list:
+                self.sudo().write({"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
             self.sudo().write({'document_config': document_id})
+            # giải pháp update giá trị cho document_config khi sử dụng store = True không được :((
+            if self.id:
+                self.sudo()._cr.execute(f"""
+                            update hrm_employee_profile
+                            set document_config = {document_id.id}
+                            where id = {self.id};""")
 
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
         document_id = False
@@ -690,7 +698,8 @@ class EmployeeProfile(models.Model):
             if self.block_id.name == constraint.BLOCK_COMMERCE_NAME:
                 # Tìm id danh sách tài liệu theo vị trí của khối.
                 document_id = self.env['hrm.document.list.config'].sudo().search(
-                    [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id)])
+                    [('position_id', '=', self.position_id.id), ('block_id', '=', self.block_id.id),
+                     ('system_id', '=', self.system_id.id), ('company', '=', self.company.id)])
                 if not document_id:
                     # Không tìm được theo vị trí thì tìm theo công ty cha con
                     list_company = self.get_all_parent('hrm_companies', 'parent_company', self.company.id)
