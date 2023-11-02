@@ -23,8 +23,7 @@ class DocumentDeclaration(models.Model):
     attachment_ids = fields.Many2many('ir.attachment', 'model_attachment_rel', 'model_id', 'attachment_id',
                                       string='Tệp đính kèm')
     picture_ids = fields.One2many('hrm.image', 'document_declaration', string="Hình ảnh")
-    # public_image_url = fields.Char(compute="_compute_image_related_fields", compute_sudo=True, store=True)
-    # has_picture = fields.Boolean(compute="_compute_image_related_fields", store=True, compute_sudo=True)
+    document_public_image_url = fields.Char(compute='_compute_image_related_fields', compute_sudo=True, store=True)
     max_photos = fields.Integer(related='type_documents.numbers_of_photos')
     max_files = fields.Integer(related='type_documents.numbers_of_documents')
     see_record_with_config = fields.Boolean()
@@ -85,13 +84,8 @@ class DocumentDeclaration(models.Model):
         if self.profile_id:
             self.employee_id = self.profile_id.id
 
-    # @api.depends("picture_ids", "picture_ids.public_image_url")
-    # def _compute_image_related_fields(self):
-    #     for rec in self:
-    #         rec.has_picture = rec.picture_ids and len(rec.picture_ids) > 0
-    #         if rec.picture_ids and len(rec.picture_ids) > 0:
-    #             rec.has_picture = True
-    #             public_image_urls = [str(x.public_image_url) for x in rec.picture_ids]
-    #             rec.public_image_url = ','.join(public_image_urls)
-    #         else:
-    #             rec.has_picture = False
+    @api.depends("picture_ids", "picture_ids.public_image_url")
+    def _compute_image_related_fields(self):
+        for rec in self:
+            if rec.picture_ids and len(rec.picture_ids) > 0:
+                rec.document_public_image_url = ",".join(rec.picture_ids.mapped('public_image_url'))

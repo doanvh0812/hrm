@@ -8,8 +8,9 @@ class HrmImage(models.Model):
 
     name = fields.Char(string="Tên")
     image = fields.Image(required=True)
-    public_image_url = fields.Char(compute="_compute_public_image")
+    public_image_url = fields.Char(compute="_compute_public_image", store=True)
     document_declaration = fields.Many2one('hrm.document_declaration')
+    sequence = fields.Integer(default=10, index=True)
 
     @api.depends('image')
     def _compute_public_image(self):
@@ -23,7 +24,7 @@ class HrmImage(models.Model):
             if not attachment_id.public:
                 attachment_id.sudo().write({"public": True})
 
-                rec.public_image_url = attachment_id.local_url
+            rec.public_image_url = attachment_id.local_url
 
     def open_image(self):
         self.ensure_one()

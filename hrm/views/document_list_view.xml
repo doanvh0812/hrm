@@ -6,7 +6,7 @@
             <field name="arch" type="xml">
                 <form>
                     <header>
-                        <button name="%(hrm.action_hrm_confirm_update_document)d" string="Cấu hình áp dụng"
+                        <button name="%(hrm.action_hrm_confirm_update_document)d" string="Áp dụng cấu hình"
                                 type="action" class="btn-primary"/>
                     </header>
                     <sheet>
