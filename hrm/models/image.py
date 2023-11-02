@@ -10,6 +10,7 @@ class HrmImage(models.Model):
     image = fields.Image(required=True)
     public_image_url = fields.Char(compute="_compute_public_image", store=True)
     document_declaration = fields.Many2one('hrm.document_declaration')
+    sequence = fields.Integer(default=10, index=True)
 
     @api.depends('image')
     def _compute_public_image(self):
