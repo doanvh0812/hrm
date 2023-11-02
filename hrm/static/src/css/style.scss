@@ -16,6 +16,9 @@
                     // Cho các trường many2one
                     text-align: left;
                 }
+                &.o_list_many2one {
+                    text-align: left;
+                }
             }
             > div {
                 &.custom-control.custom-checkbox {
