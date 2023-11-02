@@ -1,5 +1,5 @@
 from odoo import api, fields, models, tools, _
-from odoo.exceptions import ValidationError
+
 
 class HrmImage(models.Model):
     _name = 'hrm.image'
@@ -8,7 +8,7 @@ class HrmImage(models.Model):
 
     name = fields.Char(string="Tên")
     image = fields.Image(required=True)
-    public_image_url = fields.Char(compute="_compute_public_image", store=True)
+    public_image_url = fields.Char(compute="_compute_public_image", stores=True)
     document_declaration = fields.Many2one('hrm.document_declaration')
     sequence = fields.Integer(default=10, index=True)
 

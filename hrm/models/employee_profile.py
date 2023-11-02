@@ -418,6 +418,7 @@ class EmployeeProfile(models.Model):
             if rec.name:
                 if re.search(r"[\W]+", rec.name.replace(" ", "")) or "_" in rec.name:
                     raise ValidationError(constraint.ERROR_NAME % '')
+
     @api.onchange('position_id')
     def onchange_position_id(self):
         """
