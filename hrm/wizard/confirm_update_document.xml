@@ -7,6 +7,7 @@
                 <form string="Áp dụng tài liệu">
                     <group class="oe_title">
                         <field name="update_confirm_document"/>
+                        <field name="number_applicable_records"/>
                     </group>
                     <footer>
                         <button name="action_confirm_update_document" string="Gửi" type="object" class="btn-primary"/>

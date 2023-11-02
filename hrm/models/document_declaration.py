@@ -79,12 +79,13 @@ class DocumentDeclaration(models.Model):
         for record in self:
             record.related = record.block_id.name == constraint.BLOCK_OFFICE_NAME
 
-    @api.onchange('name')
+    @api.onchange('profile_id')
     def default_employee(self):
         """Gán giá trị của trường nhân viên khi tạo mới bản ghi tại màn Tạo mới hồ sơ."""
         if self.profile_id:
             self.employee_id = self.profile_id.id
 
+<<<<<<< HEAD
     @api.depends("picture_ids", "picture_ids.public_image_url")
     def _compute_image_related_fields(self):
         for rec in self:
@@ -95,3 +96,11 @@ class DocumentDeclaration(models.Model):
                 rec.public_image_url = ','.join(public_image_urls)
             else:
                 rec.has_picture = False
+=======
+    @api.onchange('employee_id')
+    def default_employee(self):
+        """Gán giá trị của trường nhân viên khi tạo mới bản ghi tại màn Tạo mới hồ sơ."""
+        if self.employee_id:
+            self.profile_id = self.employee_id.id
+
+>>>>>>> 1017fe5dbbc4e48e44d952ffafad66859197a730

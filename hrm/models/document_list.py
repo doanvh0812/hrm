@@ -21,6 +21,7 @@ class DocumentListConfig(models.Model):
     update_confirm_document = fields.Selection(selection=constraint.UPDATE_CONFIRM_DOCUMENT, string="Cập nhật tài liệu")
 
     # các field lưu id của tài liệu tương ứng với cấu hình áp dụng cho HSNS
+    new_config = fields.One2many('hrm.document.list', 'new_id')
     not_approved_and_new = fields.One2many('hrm.document.list', 'not_approved_and_new_id')
     all = fields.One2many('hrm.document.list', 'all_id')
 
@@ -138,7 +139,6 @@ class DocumentListConfig(models.Model):
     @api.constrains('name', 'block_id', 'department_id', 'position_id', 'system_id', 'company')
     def check_duplicate_document_config(self):
         """hàm này để kiểm tra trùng lặp cấu hình danh sách tài liệu cho các đối tượng được áp dụng"""
-
         def check_exist_object(department_id=False, position_id=False, system_id=False, company=False):
             check = self.search([('block_id', '=', self.block_id.id), ('id', 'not in', [self.id, False]),
                                  ('department_id', '=', department_id), ('position_id', '=', position_id),
@@ -209,20 +209,35 @@ class DocumentListConfig(models.Model):
                 raise ValidationError('Cần có ít nhất một tài liệu bắt buộc.')
 
     def action_update_document(self, object_update):
-        self.sudo().write({'update_confirm_document': object_update})
+        # self.sudo().write({'update_confirm_document': object_update})
         if object_update == 'all':
-            self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id)]).write({'type_update_document': 'all'})
+            self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id)]).write(
+                {'type_update_document': 'all'}
+            )
             self.all = [(6, 0, self.document_list.ids)]
         elif object_update == 'not_approved_and_new':
-            self.env['hrm.employee.profile'].sudo().search([('document_config', '=', self.id),
-                    ('state', 'in', ('draft','pending'))]).write({'type_update_document': 'not_approved_and_new'})
+            self.env['hrm.employee.profile'].sudo().search([
+                ('document_config', '=', self.id),
+                ('state', 'in', ('draft','pending'))
+            ]).write(
+                {'type_update_document': 'not_approved_and_new'}
+            )
             self.not_approved_and_new = [(6, 0, self.document_list.ids)]
+        else:
+            self.env['hrm.employee.profile'].sudo().search([
+                ('document_config', '=', self.id),
+                ('state', '=', 'draft')
+            ]).write(
+                {'type_update_document': 'new'}
+            )
+            self.new_config = [(6, 0, self.document_list.ids)]
 
 class DocumentList(models.Model):
     _name = 'hrm.document.list'
     _description = 'Danh sách tài liệu'
 
     document_id = fields.Many2one('hrm.document.list.config')
+    new_id = fields.Many2one('hrm.document.list.config')
     not_approved_and_new_id = fields.Many2one('hrm.document.list.config')
     all_id = fields.Many2one('hrm.document.list.config')
     employee_id = fields.Many2one('hrm.employee.profile')
