@@ -224,6 +224,12 @@ class DocumentListConfig(models.Model):
             )
             self.not_approved_and_new = [(6, 0, self.document_list.ids)]
         else:
+            self.env['hrm.employee.profile'].sudo().search([
+                ('document_config', '=', self.id),
+                ('state', '=', 'draft')
+            ]).write(
+                {'type_update_document': 'new'}
+            )
             self.new_config = [(6, 0, self.document_list.ids)]
 
 class DocumentList(models.Model):
