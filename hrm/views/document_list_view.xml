@@ -27,7 +27,7 @@
                         <notebook>
                             <page string="Danh sách tài liệu" name="document_list">
                                 <field name="document_list" oder="sequence">
-                                    <tree editable="bottom">
+                                    <tree editable="bottom" class="hrm_custom_tree_notebook">
                                         <field name="sequence" readonly="1" force_save="1"/>
                                         <field name="doc"/>
                                         <field name="obligatory"/>
