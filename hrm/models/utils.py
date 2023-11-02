@@ -82,7 +82,7 @@ class Utils(models.Model):
         # Lay domain theo cac truong
         if not user.has_group("hrm.hrm_group_create_edit"):
             if company_config:
-                domain.append(('company_id', 'in', company_config))
+                domain.append(('company', 'in', company_config))
             elif system_config:
                 domain.append(('system_id', 'in', system_config))
             elif department_config:

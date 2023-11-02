@@ -19,7 +19,7 @@
                                 <field name="acc_id" invisible="1"/>
                                 <field name="employee_code_new" readonly="1" force_save="1"/>
                                 <field name="name"/>
-                                <field name="phone_num" attrs="{'readonly': [('state','!=','draft')]}"/>
+                                <field name="phone_num"/>
                                 <field name="email" modifiers="{'readonly': false, 'required': true}"/>
                                 <field name="identifier"/>
                                 <field name="work_start_date"/>
@@ -33,7 +33,7 @@
                                 <field name="check_company" invisible="1"/>
                                 <field name="require_team_marketing" invisible="1"/>
                                 <field name="require_team_sale" invisible="1"/>
-                                <field name="block_id" attrs="{'readonly': [('check_blocks', '!=', 'full')]}"/>
+                                <field name="block_id"/>
                                 <field name="system_id"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('related', '=', False)],
                                        'readonly': [('check_company', '!=', 'hrm.companies()')]}"
