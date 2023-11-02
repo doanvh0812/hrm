@@ -44,6 +44,7 @@
         'views/team_view.xml',
         'views/rank_view.xml',
         'views/document_declaration_view.xml',
+        'views/image_view.xml',
         'views/menu.xml'
     ],
     # only loaded in demonstration mode
