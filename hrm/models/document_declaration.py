@@ -84,6 +84,7 @@ class DocumentDeclaration(models.Model):
             for line in self.employee_id.document_config.document_list:
                 domain.append(line.doc.id)
             return {'domain': {'type_documents': [('id', 'in', domain)]}}
+        return {'domain': {'type_documents': [('id', '=', 0)]}}
 
     @api.constrains('employee_id')
     def default_profile_id(self):
