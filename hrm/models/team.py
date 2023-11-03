@@ -1,8 +1,7 @@
 import re
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError,AccessDenied
+from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
-
 
 class Teams(models.Model):
     _name = 'hrm.teams'
@@ -92,7 +91,7 @@ class Teams(models.Model):
         elif self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             return [('id', '=', 0)]
 
-    company = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=default_company)
+    company = fields.Many2one('hrm.companies', string="Công ty", required=True, tracking=True, domain=default_company)
 
     @api.constrains('name', 'type_team', 'team_name', 'active', ' change_system_id')
     def _check_department_access(self):
@@ -110,6 +109,7 @@ class Teams(models.Model):
         block_config = user.block_id
         if block_config == constraint.BLOCK_OFFICE_NAME:
             self.env['hrm.teams'].sudo().search([]).write({'see_record_with_config': False})
+            raise AccessDenied("Bạn không có quyền truy cập tính năng này!")
         else:
             domain = []
             # Lấy domain theo các trường
