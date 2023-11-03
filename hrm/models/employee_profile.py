@@ -6,6 +6,7 @@ from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
+from odoo.http import request
 
 
 class EmployeeProfile(models.Model):
@@ -540,6 +541,7 @@ class EmployeeProfile(models.Model):
 
     def action_cancel(self):
         """Hàm này để hủy bỏ hồ sơ khi đang ở trạng thái chờ phê duyệt"""
+
         if self.state == "pending":
             self.sudo().write({'state': 'draft'})
             self.message_post(body="Hủy bỏ phê duyệt.",
