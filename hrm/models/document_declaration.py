@@ -51,46 +51,19 @@ class DocumentDeclaration(models.Model):
     @api.constrains('attachment_ids')
     def check_attchachment_count(self):
         if self.max_files == 0:
-            self.max_files = 999999
+            return
         for record in self:
             if len(record.attachment_ids) > record.max_files:
-                raise ValidationError(_(f"Số lượng ảnh tệp lên giới hạn là {record.max_files}"))
+                raise ValidationError(_(f"Số lượng tệp lên giới hạn là {record.max_files}"))
 
 
     @api.constrains('picture_ids')
     def check_image_count(self):
         if self.max_photos == 0:
-            self.max_photos = 999999
+            return
         for record in self:
             if len(record.picture_ids) > record.max_photos:
                 raise ValidationError(_(f"Số lượng ảnh tải lên giới hạn là {record.max_photos}"))
-
-    
-
-
-
-    # @api.onchange('type_documents','picture_ids', 'attachment_ids')
-    # def onchange_type_documents(self):
-    #     max_photos = 0
-    #     max_files = 0
-    #
-    #     if self.type_documents.numbers_of_photos == 0:
-    #         max_photos = float('inf')
-    #     elif self.type_documents.numbers_of_photos > 0:
-    #         max_photos = self.type_documents.numbers_of_photos
-    #
-    #     if self.type_documents.numbers_of_documents == 0:
-    #         max_files = float('inf')
-    #     elif self.type_documents.numbers_of_documents > 0:
-    #         max_files = self.type_documents.numbers_of_documents
-    #
-    #     if len(self.picture_ids) > max_photos:
-    #         self.picture_ids = False
-    #         raise ValidationError(f'Vượt quá số lượng ảnh tối đa cho phép ({max_photos})!')
-    #
-    #     if len(self.attachment_ids) > max_files:
-    #         self.attachment_ids = False
-    #         raise ValidationError(f'Vượt quá số lượng tệp tài liệu tối đa cho phép ({max_files})!')
 
     @api.depends('block_id')
     def _compute_related_(self):
