@@ -52,7 +52,7 @@
                         <page string="Trạng thái phê duyệt">
                             <field name="approved_name" readonly="1"/>
                             <field name="approved_link" readonly="1">
-                                <tree default_order="step ASC">
+                                <tree default_order="step ASC" class="hrm_custom_tree_notebook">
                                     <field name="step"/>
                                     <field name="approve"/>
                                     <field name="obligatory"/>

@@ -59,7 +59,7 @@
                             <page string="Danh sách tài liệu">
                                 <field name="document_config" readonly="1" force_save="1"/>
                                 <field name="document_list" readonly="1" oder="sequence" force_save="1">
-                                    <tree>
+                                    <tree class="hrm_custom_tree_notebook">
                                         <field name="sequence"/>
                                         <field name="name"/>
                                         <field name="obligatory"/>
@@ -68,7 +68,7 @@
                             </page>
                             <page string="Khai báo tài liệu">
                                 <field name="document_declaration">
-                                    <tree>
+                                    <tree class="hrm_custom_tree_notebook">
                                         <field name="name"/>
                                         <field name="complete"/>
                                     </tree>
@@ -77,7 +77,7 @@
                             <page string="Trạng thái phê duyệt" attrs="{'invisible': [('approved_name', '=', False)]}">
                                 <field name="approved_name" readonly="1"/>
                                 <field name="approved_link" readonly="1">
-                                    <tree default_order="step ASC">
+                                    <tree default_order="step ASC" class="hrm_custom_tree_notebook">
                                         <field name="step"/>
                                         <field name="approve"/>
                                         <field name="obligatory"/>
