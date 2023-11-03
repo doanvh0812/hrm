@@ -240,7 +240,6 @@ class DocumentList(models.Model):
     new_id = fields.Many2one('hrm.document.list.config')
     not_approved_and_new_id = fields.Many2one('hrm.document.list.config')
     all_id = fields.Many2one('hrm.document.list.config')
-    employee_id = fields.Many2one('hrm.employee.profile')
     sequence = fields.Integer(string="STT")
     doc = fields.Many2one('hrm.documents', string='Tên tài liệu')
     name = fields.Char(related='doc.name')

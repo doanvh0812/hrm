@@ -107,20 +107,20 @@ class Teams(models.Model):
         company_config = self.env['hrm.utils'].get_child_id(user.company, 'hrm_companies', "parent_company")
         system_config = self.env['hrm.utils'].get_child_id(user.system_id, 'hrm_systems', "parent_system")
         block_config = user.block_id
-        domain = []
-        # Lấy domain theo các trường
-        if not user.has_group("hrm.hrm_group_create_edit"):
-            if company_config:
-                domain.append(('company', 'in', company_config))
-            elif system_config:
-                domain.append(('system_id', 'in', system_config))
-            elif block_config:
-                # Nếu là full thì domain = []
-                if block_config != 'full':
-                    block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
-                    if block_id:
-                        print(domain.append(('block_id', '=', block_id.id)))
-        self.env['hrm.teams'].sudo().search(domain).write({'see_record_with_config': True})
+        if block_config == constraint.BLOCK_OFFICE_NAME:
+            self.env['hrm.teams'].sudo().search([]).write({'see_record_with_config': False})
+            raise AccessDenied("Bạn không có quyền truy cập tính năng này!")
+        else:
+            domain = []
+            # Lấy domain theo các trường
+            if not user.has_group("hrm.hrm_group_create_edit"):
+                if company_config:
+                    domain.append(('company', 'in', company_config))
+                elif system_config:
+                    domain.append(('system_id', 'in', system_config))
+
+            self.env['hrm.teams'].sudo().search(domain).write({'see_record_with_config': True})
+
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         self._can_see_record_with_config()
         return super(Teams, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)

@@ -29,6 +29,8 @@ class Approval_flow_object(models.Model):
             func = self.env['hrm.utils']
             for sys in self.env.user.system_id:
                 list_child_company += func._system_have_child_company(sys.id)
+        elif self.env.user.block_id in ['full', constraint.BLOCK_COMMERCE_NAME]:
+            return list_child_company
         return [('id', 'in', list_child_company)]
 
     company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
@@ -196,25 +198,8 @@ class Approval_flow_object(models.Model):
                     list_id += func._system_have_child_company(sys_id)
                 return {'domain': {'company': [('id', 'in', list_id)]}}
             else:
-                return {'domain': {'company': self.get_child_company()}}
+                return {'domain': {'company': [('id', 'in', self.get_child_company())]}}
         self.company = [(6, 0, [])]
-
-    def get_child_company(self):
-        """ lấy tất cả công ty user được cấu hình trong thiết lập """
-        list_child_company = []
-        if self.env.user.company:
-            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
-            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.company, 'hrm_companies',
-                                                                    "parent_company")
-        elif not self.env.user.company and self.env.user.system_id:
-            # nếu user chỉ đc cấu hình hệ thống
-            # lấy list id công ty con của hệ thống đã chọn
-            func = self.env['hrm.utils']
-            for sys in self.env.user.system_id:
-                list_child_company += func._system_have_child_company(sys.id)
-        return [('id', 'in', list_child_company)]
-
-    company = fields.Many2many('hrm.companies', string="Công ty con", tracking=True, domain=get_child_company)
 
     def _default_system(self):
         """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
