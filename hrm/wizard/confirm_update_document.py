@@ -8,7 +8,7 @@ class ConfirmUpdateDocument(models.TransientModel):
     UPDATE_CONFIRM_DOCUMENT = [
         ('all', 'Áp dụng tất cả hồ sơ.'),
         ('not_approved_and_new', 'Áp dụng cho hồ sơ chưa được phê duyệt và nháp.'),
-        ('new', 'Áp dụng cho hồ sơ mới.')
+        ('new', 'Áp dụng cho hồ sơ trạng thái nháp.')
     ]
 
     update_confirm_document = fields.Selection(selection=UPDATE_CONFIRM_DOCUMENT, string="Cập nhật tài liệu",
@@ -51,6 +51,11 @@ class ConfirmUpdateDocument(models.TransientModel):
             )
             return record.action_update_document('not_approved_and_new')
         else:
+            #state khi truyền vào hàm cần là 1 list trên 2 phần tử vì sau đó sẽ dùng tuple(state)
+            record_employee_ids = self._get_record_employee_ids(id_record, ['draft', 'false'])
+            self.env['hrm.employee.profile'].sudo().browse(record_employee_ids).write(
+                {'is_compute_documents_list': True}
+            )
             return record.action_update_document('new')
 
     @api.depends('update_confirm_document')
@@ -63,4 +68,6 @@ class ConfirmUpdateDocument(models.TransientModel):
             record_employee_ids = self._get_record_employee_ids(id_record, ['draft', 'pending'])
             self.number_applicable_records = len(record_employee_ids)
         else:
-            self.number_applicable_records = 0
+            # state khi truyền vào hàm cần là 1 list trên 2 phần tử vì sau đó sẽ dùng tuple(state)
+            record_employee_ids = self._get_record_employee_ids(id_record, ['draft', 'false'])
+            self.number_applicable_records = len(record_employee_ids)

@@ -120,8 +120,7 @@ class Teams(models.Model):
                     block_id = self.env['hrm.blocks'].search([('name', '=', block_config)], limit=1)
                     if block_id:
                         print(domain.append(('block_id', '=', block_id.id)))
-        #
-        # self.env['hrm.teams'].sudo().search(domain).write({'see_record_with_config': True})
+        self.env['hrm.teams'].sudo().search(domain).write({'see_record_with_config': True})
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         self._can_see_record_with_config()
         return super(Teams, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)

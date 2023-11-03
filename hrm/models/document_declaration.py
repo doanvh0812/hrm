@@ -19,12 +19,12 @@ class DocumentDeclaration(models.Model):
     give_back = fields.Boolean(string='Trả lại khi chấm dứt')
     manager_document = fields.Many2one('res.users', string='Quản lý tài liệu')
     complete = fields.Boolean(string='Hoàn thành')
-    attachments = fields.Binary(string='Tệp đính kèm')
+
     attachment_ids = fields.Many2many('ir.attachment', 'model_attachment_rel', 'model_id', 'attachment_id',
                                       string='Tệp đính kèm')
+
     picture_ids = fields.One2many('hrm.image', 'document_declaration', string="Hình ảnh")
-    # public_image_url = fields.Char(compute="_compute_image_related_fields", compute_sudo=True, store=True)
-    # has_picture = fields.Boolean(compute="_compute_image_related_fields", store=True, compute_sudo=True)
+    document_public_image_url = fields.Char(compute='_compute_image_related_fields', compute_sudo=True, store=True)
     max_photos = fields.Integer(related='type_documents.numbers_of_photos')
     max_files = fields.Integer(related='type_documents.numbers_of_documents')
     see_record_with_config = fields.Boolean()
@@ -48,10 +48,10 @@ class DocumentDeclaration(models.Model):
             else:
                 rec.name = ''
 
-    @api.onchange('type_documents', 'attachment_ids')
+    @api.onchange('type_documents', 'picture_ids')
     def onchange_type_documents(self):
         max_photos = 0
-        max_attachments = 0
+        max_files = 0
 
         if self.type_documents.numbers_of_photos == 0:
             max_photos = float('inf')  # Không giới hạn số lượng ảnh
@@ -59,19 +59,20 @@ class DocumentDeclaration(models.Model):
             max_photos = self.type_documents.numbers_of_photos
 
         if self.type_documents.numbers_of_documents == 0:
-            max_attachments = float('inf')  # Không giới hạn số lượng tệp tài liệu
+            max_files = float('inf')  # Không giới hạn số lượng tệp tài liệu
         elif self.type_documents.numbers_of_documents > 0:
-            max_attachments = self.type_documents.numbers_of_documents
+            max_files = self.type_documents.numbers_of_documents
 
         # Kiểm tra số lượng ảnh
-        # if len(self.image_ids) > max_photos:
-        #     self.image_ids = False
-        #     raise ValidationError('Vượt quá số lượng ảnh tối đa cho phép!')
+        if len(self.picture_ids) > max_photos:
+            self.picture_ids = False
+            raise ValidationError('Vượt quá số lượng ảnh tối đa cho phép!')
 
         # Kiểm tra số lượng tệp tài liệu
-        if len(self.attachment_ids) > max_attachments:
+        if len(self.attachment_ids) > max_files:
             self.attachment_ids = False
             raise ValidationError('Vượt quá số lượng tệp tài liệu tối đa cho phép!')
+
 
     @api.depends('block_id')
     def _compute_related_(self):
@@ -85,20 +86,28 @@ class DocumentDeclaration(models.Model):
         if self.profile_id:
             self.employee_id = self.profile_id.id
 
+
     @api.onchange('employee_id')
     def default_employee(self):
         """Gán giá trị của trường nhân viên khi tạo mới bản ghi tại màn Tạo mới hồ sơ."""
         if self.employee_id:
             self.profile_id = self.employee_id.id
 
-    # @api.depends("picture_ids", "picture_ids.public_image_url")
-    # def _compute_image_related_fields(self):
-    #     for rec in self:
-    #         rec.has_picture = rec.picture_ids and len(rec.picture_ids) > 0
-    #         if rec.picture_ids and len(rec.picture_ids) > 0:
-    #             rec.has_picture = True
-    #             public_image_urls = [str(x.public_image_url) for x in rec.picture_ids]
-    #             rec.public_image_url = ','.join(public_image_urls)
-    #         else:
-    #             rec.has_picture = False
+# @api.depends("picture_ids", "picture_ids.public_image_url")
+# def _compute_image_related_fields(self):
+#     for rec in self:
+#         rec.has_picture = rec.picture_ids and len(rec.picture_ids) > 0
+#         if rec.picture_ids and len(rec.picture_ids) > 0:
+#             rec.has_picture = True
+#             public_image_urls = [str(x.public_image_url) for x in rec.picture_ids]
+#             rec.public_image_url = ','.join(public_image_urls)
+#         else:
+#             rec.has_picture = False
+
+
+    @api.depends("picture_ids", "picture_ids.public_image_url")
+    def _compute_image_related_fields(self):
+        for rec in self:
+            if rec.picture_ids and len(rec.picture_ids) > 0:
+                rec.document_public_image_url = ",".join(rec.picture_ids.mapped('public_image_url'))
 
