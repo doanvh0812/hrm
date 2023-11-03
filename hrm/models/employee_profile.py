@@ -64,7 +64,7 @@ class EmployeeProfile(models.Model):
     type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
                                            default='new')
 
-    document_list = fields.One2many('hrm.document.list', inverse_name='employee_id')
+    document_list = fields.Many2many('hrm.document.list')
 
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
@@ -418,6 +418,7 @@ class EmployeeProfile(models.Model):
             if rec.name:
                 if re.search(r"[\W]+", rec.name.replace(" ", "")) or "_" in rec.name:
                     raise ValidationError(constraint.ERROR_NAME % '')
+
     @api.onchange('position_id')
     def onchange_position_id(self):
         """
@@ -684,6 +685,7 @@ class EmployeeProfile(models.Model):
                 self.sudo().write({"document_list": document_id.all.ids, "is_compute_documents_list": False})
             elif self.type_update_document == 'not_approved_and_new' and self.is_compute_documents_list:
                 self.sudo().write({"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
+            print(self.document_list, self.is_compute_documents_list, 'zzzzzzzz')
             self.sudo().write({'document_config': document_id})
             # giải pháp update giá trị cho document_config khi sử dụng store = True không được :((
             if self.id:
