@@ -12,7 +12,7 @@
                                 <field name="name"/>
                                 <field name="employee_id" attrs="{'readonly': [('profile_id', '!=', False)]}"
                                        force_save="1"/>
-                                <field name="type_documents"/>
+                                <field name="type_documents" options="{'limit': 10, 'create': false, 'create_edit': false}"/>
                                 <field name="max_photos"/>
                                 <field name="max_files"/>
                             </group>

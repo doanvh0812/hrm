@@ -16,6 +16,9 @@
                     // Cho các trường many2one
                     text-align: left;
                 }
+                &.o_list_char.o_readonly_modifier {
+                    text-align: left;
+                }
                 &.o_list_many2one {
                     text-align: left;
                 }
