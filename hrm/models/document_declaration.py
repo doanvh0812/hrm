@@ -12,7 +12,7 @@ class DocumentDeclaration(models.Model):
     type_documents = fields.Many2one('hrm.documents', string='Loại tài liệu', required=True)
     block_id = fields.Many2one('hrm.blocks', string='Khối', required=True, related='employee_id.block_id')
     related = fields.Boolean(compute='_compute_related_')
-    employee_id = fields.Many2one('hrm.employee.profile', string='Nhân viên', required=True, compute='default_employee')
+    employee_id = fields.Many2one('hrm.employee.profile', string='Nhân viên', required=True)
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', related='employee_id.system_id')
     company = fields.Many2one('hrm.companies', string='Công ty', related='employee_id.company')
     department_id = fields.Many2one('hrm.departments', string='Phòng ban', related='employee_id.department_id')
@@ -93,6 +93,7 @@ class DocumentDeclaration(models.Model):
             for line in self.employee_id.document_config.document_list:
                 domain.append(line.doc.id)
             return {'domain': {'type_documents': [('id', 'in', domain)]}}
+        return {'domain': {'type_documents': [('id', '=', 0)]}}
 
     @api.constrains('employee_id')
     def default_profile_id(self):
