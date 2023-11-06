@@ -44,7 +44,7 @@ class DocumentDeclaration(models.Model):
             type_name = rec.type_documents.name if rec.type_documents else ''
 
             if employee_name and type_name:
-                rec.name = f"{employee_name} _ {type_name}"
+                rec.name = f"{employee_name}_{type_name}"
             else:
                 rec.name = ''
 
@@ -54,7 +54,7 @@ class DocumentDeclaration(models.Model):
             return
         for record in self:
             if len(record.attachment_ids) > int(record.max_files):
-                raise ValidationError(_(f"Số lượng tệp lên giới hạn là {record.max_files}"))
+                raise ValidationError(_(f"Số lượng tài liệu tải lên giới hạn là {record.max_files}"))
 
     @api.constrains('picture_ids')
     def check_image_count(self):
