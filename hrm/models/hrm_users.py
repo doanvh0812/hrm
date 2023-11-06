@@ -9,7 +9,7 @@ class Users(models.Model):
         ('full', 'Tất cả khối'),
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
         (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối",
-        default=constraint.BLOCK_COMMERCE_NAME)
+        default=constraint.BLOCK_COMMERCE_NAME, required=True)
     department_id = fields.Many2many('hrm.departments', string='Phòng/Ban')
     system_id = fields.Many2many('hrm.systems', string='Hệ thống')
     company = fields.Many2many('hrm.companies', string='Công ty')
