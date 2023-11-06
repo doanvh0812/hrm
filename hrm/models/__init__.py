@@ -13,3 +13,4 @@ from . import team
 from . import document_declaration
 from . import document_list
 from . import image
+from . import multiple_upload_image

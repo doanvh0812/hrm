@@ -1,4 +1,4 @@
-from odoo import api, models, fields,_
+from odoo import api, models, fields, _
 from odoo.exceptions import ValidationError, UserError
 from . import constraint
 
@@ -56,7 +56,6 @@ class DocumentDeclaration(models.Model):
             if len(record.attachment_ids) > record.max_files:
                 raise ValidationError(_(f"Số lượng tệp lên giới hạn là {record.max_files}"))
 
-
     @api.constrains('picture_ids')
     def check_image_count(self):
         if self.max_photos == 0:
@@ -97,4 +96,3 @@ class DocumentDeclaration(models.Model):
         for rec in self:
             if rec.picture_ids and len(rec.picture_ids) > 0:
                 rec.document_public_image_url = ",".join(rec.picture_ids.mapped('public_image_url'))
-

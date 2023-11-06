@@ -12,7 +12,8 @@
                                 <field name="name"/>
                                 <field name="employee_id" attrs="{'readonly': [('profile_id', '!=', False)]}"
                                        force_save="1"/>
-                                <field name="type_documents" options="{'limit': 10, 'create': false, 'create_edit': false}"/>
+                                <field name="type_documents"
+                                       options="{'limit': 10, 'create': false, 'create_edit': false}"/>
                                 <field name="max_photos"/>
                                 <field name="max_files"/>
                             </group>
@@ -40,6 +41,8 @@
                         </group>
                         <notebook>
                             <page string="Hình ảnh">
+                                <button name="%(open_multiple_upload)d" string="Upload Multiple images" type="action"
+                                        class="oe_highlight" />
                                 <field name="picture_ids" class="o_website_sale_image_list"
                                        context="{'default_name': name}" mode="kanban"
                                        options="{'create_text':'Tải hình ảnh lên'}" nolabel="1"/>
