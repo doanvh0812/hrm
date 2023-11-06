@@ -26,6 +26,7 @@
     'data': [
         'wizard/approval_reason_refusal.xml',
         'wizard/confirm_update_document.xml',
+        'wizard/multiple_image_view.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
         'views/hrm.xml',
@@ -43,7 +44,6 @@
         'views/hrm_users_view.xml',
         'views/team_view.xml',
         'views/rank_view.xml',
-        'views/multiple_image_view.xml',
         'views/document_declaration_view.xml',
         'views/image_view.xml',
         'views/menu.xml'

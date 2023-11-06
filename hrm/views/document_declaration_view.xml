@@ -12,17 +12,6 @@
                                 <field name="name"/>
                                 <field name="employee_id" attrs="{'readonly': [('profile_id', '!=', False)]}"
                                        force_save="1"/>
-                                <field name="type_documents"
-                                       options="{'limit': 10, 'create': false, 'create_edit': false}"/>
-                                <field name="max_photos"/>
-                                <field name="max_files"/>
-                            </group>
-                            <group>
-                                <field name="manager_document"/>
-                                <field name="give_back"/>
-                                <field name="complete"/>
-                            </group>
-                            <group>
                                 <field name="related" invisible="1"/>
                                 <field name="block_id" readonly="1" force_save="1"/>
                                 <field name="system_id" attrs="{'invisible': [('related', '=', True)]}" readonly="1"
@@ -31,6 +20,15 @@
                                        force_save="1"/>
                                 <field name="department_id" attrs="{'invisible': [('related', '=', False)]}"
                                        readonly="1" force_save="1"/>
+                                <field name="give_back"/>
+                                <field name="complete"/>
+                            </group>
+                            <group>
+                                <field name="manager_document"/>
+                                <field name="type_documents"
+                                       options="{'limit': 10, 'create': false, 'create_edit': false}"/>
+                                <field name="max_photos"/>
+                                <field name="max_files"/>
                             </group>
                         </group>
                         <group>
@@ -41,8 +39,8 @@
                         </group>
                         <notebook>
                             <page string="Hình ảnh">
-                                <button name="%(open_multiple_upload)d" string="Upload Multiple images" type="action"
-                                        class="oe_highlight" />
+                                <button name="%(open_multiple_upload)d" string="Tải nhiều hình ảnh" type="action"
+                                        class="oe_highlight"/>
                                 <field name="picture_ids" class="o_website_sale_image_list"
                                        context="{'default_name': name}" mode="kanban"
                                        options="{'create_text':'Tải hình ảnh lên'}" nolabel="1"/>
