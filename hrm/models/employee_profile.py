@@ -33,6 +33,7 @@ class EmployeeProfile(models.Model):
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
+
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ',
                                       tracking=True, compute='compute_profile_status', store=True, default='incomplete')
 
@@ -44,6 +45,9 @@ class EmployeeProfile(models.Model):
 
     manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
+    account_status = fields.Selection([
+        ('online', 'Đang hoạt động'),
+        ('offline', 'Đã đóng')], string='Tình trạng tài khoản', readonly=True)
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
@@ -566,7 +570,9 @@ class EmployeeProfile(models.Model):
             self.sudo().write({'state': 'draft'})
             self.message_post(body="Hủy bỏ phê duyệt.",
                               subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
-
+    def lock_personnel_account(self):
+        """Hàm này hoạt động khi bấm button Khóa tk nhân sự, Khi đó trang thái tài khoản ở Hồ s nhân sự sẽ chuyển về đã đóng"""
+        print('ĐÓNG')
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:
@@ -821,3 +827,5 @@ class EmployeeProfile(models.Model):
             if line.complete:
                 list_complete.append(line.type_documents.id)
         return list_complete
+    def change_account_status(self):
+        self.account_status = 'offline'

@@ -11,6 +11,9 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
                         <button name="action_cancel" string="Hủy" type="object"/>
+                        <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
+                                class="btn-red">
+                        </button>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
                     <sheet>
@@ -47,12 +50,15 @@
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('require_team_marketing','=',True)]}"/>
                                 <field name="team_sales"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('require_team_sale','=',True)]}"/>
-                                <field name="manager_id" attrs="{'readonly': [('department_id', '!=', False)], 'invisible': [('related', '=', False)]}" force_save="1"/>
+                                <field name="manager_id"
+                                       attrs="{'readonly': [('department_id', '!=', False)], 'invisible': [('related', '=', False)]}"
+                                       force_save="1"/>
                                 <field name="rank_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
                             </group>
                         </group>
                         <group>
+                            <field name="account_status"/>
                             <field name="auto_create_acc"/>
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
@@ -125,5 +131,6 @@
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_profile_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_employee_profile_form')})]"/>
         </record>
+
     </data>
 </odoo>
