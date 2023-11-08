@@ -30,6 +30,7 @@ class EmployeeProfile(models.Model):
         store=True
     )
 
+
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
@@ -44,6 +45,9 @@ class EmployeeProfile(models.Model):
 
     manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
+    account_status = fields.Selection([
+        ('online', 'Đang hoạt động'),
+        ('offline', 'Đã đóng')], string='Tình trạng tài khoản', readonly=True)
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')

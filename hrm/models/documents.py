@@ -13,6 +13,16 @@ class Documents(models.Model):
     numbers_of_photos = fields.Char(string='Số lượng ảnh', required=True)
     numbers_of_documents = fields.Char(string='Số lượng tài liệu', required=True)
 
+    @api.constrains('numbers_of_photos', 'numbers_of_documents')
+    def check_negative_numbers(self):
+        if self.numbers_of_photos and not re.match(r'^[0-9]+$', self.numbers_of_photos):
+            raise ValidationError('Số ảnh chỉ được chứa số.')
+
+        if self.numbers_of_documents and not re.match(r'^[0-9]+$', self.numbers_of_documents):
+            raise ValidationError('Số tệp chỉ được chứa số.')
+
+
+
     @api.onchange('numbers_of_photos', 'numbers_of_documents')
     def check_negative_numbers(self):
         if self.numbers_of_photos and not re.match(r'^[0-9]+$', self.numbers_of_photos):
@@ -21,8 +31,7 @@ class Documents(models.Model):
         if self.numbers_of_documents and not re.match(r'^[0-9]+$', self.numbers_of_documents):
             raise ValidationError('Số tệp chỉ được chứa số.')
 
-        if int(self.numbers_of_photos) < 0 or int(self.numbers_of_documents) < 0:
-            raise ValidationError('Số lượng phải là số nguyên dương!')
+
 
     @api.constrains('name')
     def check_duplicate_name(self):

@@ -11,6 +11,7 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
                         <button name="action_cancel" string="Hủy" type="object"/>
+                        <button name="action_send" string="Khoá TK nhân sự" type="object"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
                     <sheet>
@@ -50,6 +51,7 @@
                                 <field name="manager_id" attrs="{'readonly': [('department_id', '!=', False)], 'invisible': [('related', '=', False)]}" force_save="1"/>
                                 <field name="rank_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
+                                <field name="account_status"/>
                             </group>
                         </group>
                         <group>
