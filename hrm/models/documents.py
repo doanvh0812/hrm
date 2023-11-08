@@ -3,18 +3,25 @@ from odoo.exceptions import ValidationError
 import re
 from . import constraint
 
+
 class Documents(models.Model):
     _name = 'hrm.documents'
     _description = 'Tài liệu'
 
     name = fields.Char(string='Tên hiển thị', required=True)
     document_code = fields.Char(string='Mã tài liệu', required=True)
-    numbers_of_photos = fields.Integer(string='Số lượng ảnh', required=True)
-    numbers_of_documents = fields.Integer(string='Số lượng tài liệu', required=True)
+    numbers_of_photos = fields.Char(string='Số lượng ảnh', required=True)
+    numbers_of_documents = fields.Char(string='Số lượng tài liệu', required=True)
 
     @api.onchange('numbers_of_photos', 'numbers_of_documents')
     def check_negative_numbers(self):
-        if self.numbers_of_photos < 0 or self.numbers_of_documents < 0:
+        if self.numbers_of_photos and not re.match(r'^[0-9]+$', self.numbers_of_photos):
+            raise ValidationError('Số ảnh chỉ được chứa số.')
+
+        if self.numbers_of_documents and not re.match(r'^[0-9]+$', self.numbers_of_documents):
+            raise ValidationError('Số tệp chỉ được chứa số.')
+
+        if int(self.numbers_of_photos) < 0 or int(self.numbers_of_documents) < 0:
             raise ValidationError('Số lượng phải là số nguyên dương!')
 
     @api.constrains('name')
@@ -24,4 +31,3 @@ class Documents(models.Model):
             for n in name:
                 if n['name'].lower() == record.name.lower():
                     raise ValidationError(constraint.DUPLICATE_RECORD % "Tài liệu")
-
