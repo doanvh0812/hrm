@@ -115,7 +115,6 @@ class Users(models.Model):
         expiration = False
         self.partner_id.sudo().write({'signup_token': token, 'signup_type': type, 'signup_expiration': expiration})
         self.url_reset_password = f"http://localhost:8012/web/reset_password?db=hrm&token={token}"
-        print(self.url_reset_password)
 
     def write(self, vals):
         res = super(Users, self).write(vals)
