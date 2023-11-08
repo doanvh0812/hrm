@@ -14,7 +14,7 @@
                     </group>
                     <group string="Quyền HRMS">
                         <field name="related" invisible="1"/>
-                        <field name="block_id" />
+                        <field name="block_id"/>
                         <field name="department_id" widget="many2many_tags"
                                attrs="{'invisible': ['|', ('related', '!=', True), ('block_id', '=', 'full')]}"/>
                         <field name="system_id" widget="many2many_tags"

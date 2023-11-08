@@ -8,13 +8,20 @@ class Users(models.Model):
     block_id = fields.Selection(selection=[
         ('full', 'Tất cả khối'),
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
-        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối",
+        (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối phân quyền",
         default=constraint.BLOCK_COMMERCE_NAME, required=True)
-    department_id = fields.Many2many('hrm.departments', string='Phòng/Ban')
-    system_id = fields.Many2many('hrm.systems', string='Hệ thống')
-    company = fields.Many2many('hrm.companies', string='Công ty')
+    department_id = fields.Many2many('hrm.departments', string='Phòng/Ban phân quyền')
+    system_id = fields.Many2many('hrm.systems', string='Hệ thống phân quyền')
+    company = fields.Many2many('hrm.companies', string='Công ty phân quyền')
     related = fields.Boolean(compute='_compute_related_')
-    login = fields.Char(string="Login")
+
+    user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True)
+    user_department_id = fields.Many2one('hrm.departments', string='Phòng ban', required=True)
+    user_system_id = fields.Many2one('hrm.systems', string='Hệ thống', required=True)
+    user_company_id = fields.Many2one('hrm.companies', string='Công ty', required=True)
+    user_code = fields.Char(string="Mã nhân viên")
+    user_position_id = fields.Many2one('hrm.position', string='Vị trí')
+    user_team_id = fields.Many2one('hrm.teams', string='Đội ngũ')
 
     @api.depends('block_id')
     def _compute_related_(self):
