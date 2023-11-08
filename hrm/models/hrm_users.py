@@ -16,18 +16,20 @@ class Users(models.Model):
     related = fields.Boolean(compute='_compute_related_')
 
     user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,default=lambda self: self.default_block())
-    user_department_id = fields.Many2one('hrm.departments', string='Phòng ban', required=True)
-    user_system_id = fields.Many2one('hrm.systems', string='Hệ thống', required=True)
-    user_company_id = fields.Many2one('hrm.companies', string='Công ty', required=True)
+    user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
+    user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
+    user_company_id = fields.Many2one('hrm.companies', string='Công ty')
     user_code = fields.Char(string="Mã nhân viên")
     user_position_id = fields.Many2one('hrm.position', string='Vị trí', required=True)
-    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
-    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
+    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing')
+    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng')
     user_phone_num = fields.Char('Số điện thoại di động', required=True)
-    user_name_display = fields.Char('Tên hiển thị', required=True, readonly=True)
+    user_name_display = fields.Char('Tên hiển thị', readonly=True)
     user_related = fields.Boolean(compute='compute_related')
+    require_team = fields.Boolean(default=False)
 
     def default_block(self):
+        """Đặt giá trị mặc định cho trường khối của tài khoản nhân sự"""
         return self.env['hrm.blocks'].sudo().search([('name', '=', constraint.BLOCK_COMMERCE_NAME)])
 
     @api.depends('block_id')
@@ -38,7 +40,7 @@ class Users(models.Model):
 
     @api.depends('user_block_id')
     def compute_related(self):
-        # Lấy giá trị của trường related để check điều kiện hiển thị
+        # Lấy giá trị của trường related để check điều kiện hiển thị (thiết lập nhân sự)
         for record in self:
             record.user_related = record.user_block_id.name == constraint.BLOCK_OFFICE_NAME
 
@@ -49,10 +51,20 @@ class Users(models.Model):
     @api.onchange('user_block_id')
     def _onchange_block_id(self):
         """
-            Khi chọn lại khối clear hết data cũ đã nhập
+            Khi chọn lại khối clear hết data cũ đã nhập (thiết lập nhân sự)
         """
         self.user_position_id = self.user_system_id = self.user_company_id = self.user_department_id \
             = self.user_team_sales = self.user_team_marketing = False
+
+    @api.onchange('user_position_id')
+    def onchange_position_id(self):
+        """
+            Khi thay đổi vị trí sẽ check loại đội ngũ hiển thị là gì.
+        """
+        if self.user_position_id.team_type == 'marketing':
+            self.require_team = True
+        else:
+            self.require_team = False
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
