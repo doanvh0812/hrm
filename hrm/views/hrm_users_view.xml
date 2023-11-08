@@ -4,6 +4,9 @@
         <field name="model">res.users</field>
         <field name="inherit_id" ref="base.view_users_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_reset_password" type="object" class="oe_stat_button" string="Khôi phục mật khẩu"/>
+            </xpath>
             <xpath expr="//div[@class='oe_title']" position="replace">
                 <div class="oe_title">
                     <label for="name" class="oe_edit_only"/>
@@ -26,8 +29,8 @@
                         <field name="user_system_id" attrs="{'invisible': [('user_related', '=', True)], 'required': [('user_related', '=', False)]}"/>
                         <field name="user_company_id" attrs="{'invisible': [('user_related', '=', True)], 'required': [('user_related', '=', False)]}"/>
                         <field name="user_position_id" required="1"/>
-                        <field name="user_team_marketing" attrs="{'invisible': ['|', ('user_related', '=', True), ('require_team', '=', True)], 'required': [('user_related', '=', False)]}"/>
-                        <field name="user_team_sales" attrs="{'invisible': ['|', ('user_related', '=', True), ('require_team', '=', False)], 'required': [('user_related', '=', False)]}"/>
+                        <field name="user_team_marketing" attrs="{'invisible': ['|', ('user_related', '=', True), ('require_team', '=', True)], 'required': False}"/>
+                        <field name="user_team_sales" attrs="{'invisible': ['|', ('user_related', '=', True), ('require_team', '=', False)], 'required': False}"/>
                     </group>
                 </group>
             </xpath>

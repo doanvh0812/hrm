@@ -157,36 +157,36 @@ class EmployeeProfile(models.Model):
     # lý do từ chối
     reason_refusal = fields.Char(string='Lý do từ chối', index=True, ondelete='restrict', tracking=True)
 
-    def auto_create_account_employee(self):
-        # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
-        self.ensure_one()
-        user_group = self.env.ref('hrm.hrm_group_own_edit')
-        values = {
-            'name': self.name,
-            'login': self.email,
-            'groups_id': [(6, 0, [user_group.id])],
+    # def auto_create_account_employee(self):
+    #     # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
+    #     self.ensure_one()
+    #     user_group = self.env.ref('hrm.hrm_group_own_edit')
+    #     values = {
+    #         'name': self.name,
+    #         'login': self.email,
+    #         'groups_id': [(6, 0, [user_group.id])],
+    #
+    #     }
+    #     new_user = self.env['res.users'].sudo().create(values)
+    #     self.acc_id = new_user.id
+        # return {
+        #     'name': "User Created",
+        #     'type': 'ir.actions.act_window',
+        #     'res_model': 'res.users',
+        #     'res_id': new_user.id,
+        #     'view_mode': 'form',
+        # }
 
-        }
-        new_user = self.env['res.users'].sudo().create(values)
-        self.acc_id = new_user.id
-        return {
-            'name': "User Created",
-            'type': 'ir.actions.act_window',
-            'res_model': 'res.users',
-            'res_id': new_user.id,
-            'view_mode': 'form',
-        }
-
-    @api.model
-    def create(self, vals):
-        # Call the create method of the super class to create the record
-        record = super(EmployeeProfile, self).create(vals)
-
-        # Perform your custom logic here
-        if record:
-            # Assuming you want to call the auto_create_account_employee function
-            record.auto_create_account_employee()
-        return record
+    # @api.model
+    # def create(self, vals):
+    #     # Call the create method of the super class to create the record
+    #     record = super(EmployeeProfile, self).create(vals)
+    #
+    #     # Perform your custom logic here
+    #     if record:
+    #         # Assuming you want to call the auto_create_account_employee function
+    #         record.auto_create_account_employee()
+    #     return record
 
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
@@ -464,6 +464,25 @@ class EmployeeProfile(models.Model):
         state = 'pending'
         if max_step[0] <= step or max_step[0] <= step_excess_level:
             state = 'approved'
+            # create new account when approved
+            if self.auto_create_acc:
+                self.ensure_one()
+                team_id = self.team_marketing.id if self.team_marketing else self.team_sales.id
+                user_group = self.env.ref('hrm.hrm_group_own_edit')
+                self.env['res.users'].sudo().create({
+                    'name': self.name,
+                    'login': self.email,
+                    'email': f'{self.email}@bigholding.vn',
+                    'user_block_id': self.block_id.id,
+                    'user_department_id': self.department_id.id,
+                    'user_system_id': self.system_id.id,
+                    'user_company_id': self.company.id,
+                    'user_code': self.employee_code_new,
+                    'user_position_id': self.position_id.id,
+                    'user_team_id': team_id,
+                    'groups_id': [(6, 0, [user_group.id])],
+                })
+                self.acc_id = self.env['res.users'].search([('login', '=', self.email)]).id
         orders.write({'state': state})
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
