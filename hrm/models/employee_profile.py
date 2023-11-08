@@ -1,12 +1,10 @@
-from builtins import list
-
 from odoo import models, fields, api
 import re
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
-from odoo.http import request
+
 
 
 class EmployeeProfile(models.Model):
@@ -34,6 +32,7 @@ class EmployeeProfile(models.Model):
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
+
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ',
                                       tracking=True, compute='compute_profile_status', store=True)
 
@@ -550,7 +549,6 @@ class EmployeeProfile(models.Model):
             self.sudo().write({'state': 'draft'})
             self.message_post(body="Hủy bỏ phê duyệt.",
                               subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
-
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:
@@ -806,3 +804,6 @@ class EmployeeProfile(models.Model):
             if line.complete:
                 list_complete.append(line.type_documents.id)
         return list_complete
+
+    def change_account_status(self):
+        self.account_status = 'offline'
