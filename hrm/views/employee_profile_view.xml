@@ -47,7 +47,9 @@
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('require_team_marketing','=',True)]}"/>
                                 <field name="team_sales"
                                        attrs="{'invisible': [('related', '=', True)], 'required': [('require_team_sale','=',True)]}"/>
-                                <field name="manager_id" attrs="{'readonly': [('department_id', '!=', False)], 'invisible': [('related', '=', False)]}" force_save="1"/>
+                                <field name="manager_id"
+                                       attrs="{'readonly': [('department_id', '!=', False)], 'invisible': [('related', '=', False)]}"
+                                       force_save="1"/>
                                 <field name="rank_id"
                                        attrs="{'invisible': [('related', '=', False)], 'required': [('related', '=', True)]}"/>
                             </group>
@@ -86,6 +88,15 @@
                                         <field name="time"/>
                                     </tree>
                                 </field>
+                            </page>
+                            <page string="Tài khoản liên kết">
+                                <group>
+                                    <field name="account_link"/>
+                                    <field name="account_link_secondary"/>
+                                    <field name="status_account" widget="button"/>
+                                    <field name="date_close"/>
+                                    <field name="date_open"/>
+                                </group>
                             </page>
                         </notebook>
                     </sheet>

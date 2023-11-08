@@ -42,7 +42,7 @@ class EmployeeProfile(models.Model):
     team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
     team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
-    manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
@@ -56,6 +56,12 @@ class EmployeeProfile(models.Model):
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
+    account_link = fields.Char(string="Tài khoản liên kết", readonly=True)
+    account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
+    status_account = fields.Boolean(string="Trạng thái tài khoản", default=True, readonly=True)
+    date_close = fields.Char(string='Ngày đóng tài khoản')
+    date_open = fields.Char(string='Ngày mở lại tài khoản')
+
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
@@ -63,10 +69,9 @@ class EmployeeProfile(models.Model):
 
     document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
     type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
-                                           default='new')
+                                            default='new')
 
     document_list = fields.Many2many('hrm.document.list')
-
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
     see_record_with_config = fields.Boolean()
@@ -75,7 +80,7 @@ class EmployeeProfile(models.Model):
     require_team_sale = fields.Boolean(default=False)
 
     is_compute_documents_list = fields.Boolean(default=True)
-    
+
     @api.depends('employee_code_new')
     def compute_check_block(self):
         self.check_blocks = self.env.user.block_id
@@ -238,14 +243,16 @@ class EmployeeProfile(models.Model):
                     for field in cf.xpath("//field[@name]"):
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
-                        if field.get("name") not in ['employee_code_new', 'document_config', 'document_list', 'manager_id']:
+                        if field.get("name") not in ['employee_code_new', 'document_config', 'document_list',
+                                                     'manager_id']:
                             modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                            ['state', '!=', 'draft']]})
                         if field.get("name") in ['phone_num', 'email', 'identifier']:
                             modifiers.update({'readonly': ["|", ["id", "!=", False],
                                                            ["create_uid", "!=", user_id], ['state', '=', 'pending']]})
                         if field.get("name") == 'block_id':
-                            modifiers.update({'readonly': ["|", ["check_blocks", "!=", 'full'], ['state', '!=', 'draft']]})
+                            modifiers.update(
+                                {'readonly': ["|", ["check_blocks", "!=", 'full'], ['state', '!=', 'draft']]})
                         field.attrib['modifiers'] = json.dumps(modifiers)
                 elif has_group_own_edit:
                     # nếu user login có quyền chỉ chỉnh sửa chính mình
@@ -345,8 +352,6 @@ class EmployeeProfile(models.Model):
         else:
             return {}
         self.system_id = self.company.system_id
-
-
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -567,7 +572,8 @@ class EmployeeProfile(models.Model):
         else:
             return []
 
-    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block, required=True)
+    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block,
+                                  required=True)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
@@ -655,7 +661,8 @@ class EmployeeProfile(models.Model):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng và có cấu hình phòng ban
             if self.env.user.department_id.ids:
-                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                    'superior_department')
                 for depart in self.department_id:
                     if depart.id not in list_department:
                         raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
@@ -680,14 +687,15 @@ class EmployeeProfile(models.Model):
 
     def compute_documents_list(self):
         """Tìm cấu hình dựa trên block_id"""
+
         def apply_config(document_id):
             if self.type_update_document == 'new' and self.is_compute_documents_list:
                 self.sudo().write({"document_list": document_id.new_config.ids, "is_compute_documents_list": False})
             elif self.type_update_document == 'all' and self.is_compute_documents_list:
                 self.sudo().write({"document_list": document_id.all.ids, "is_compute_documents_list": False})
             elif self.type_update_document == 'not_approved_and_new' and self.is_compute_documents_list:
-                self.sudo().write({"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
-            print(self.document_list, self.is_compute_documents_list, 'zzzzzzzz')
+                self.sudo().write(
+                    {"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
             self.sudo().write({'document_config': document_id})
             # giải pháp update giá trị cho document_config khi sử dụng store = True không được :((
             if self.id:
@@ -734,6 +742,7 @@ class EmployeeProfile(models.Model):
                 apply_config(document_id)
         else:
             self.document_config = False
+
     @api.onchange("document_declaration")
     def check_duplicate_document_declaration(self):
         if self.document_declaration:
@@ -802,3 +811,9 @@ class EmployeeProfile(models.Model):
             if line.complete:
                 list_complete.append(line.type_documents.id)
         return list_complete
+
+    def perform_action(self):
+        if self.status_account:
+            pass
+        else:
+            pass
