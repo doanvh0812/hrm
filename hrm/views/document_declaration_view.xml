@@ -12,16 +12,6 @@
                                 <field name="name"/>
                                 <field name="employee_id" attrs="{'readonly': [('profile_id', '!=', False)]}"
                                        force_save="1"/>
-                                <field name="type_documents" options="{'limit': 10, 'create': false, 'create_edit': false}"/>
-                                <field name="max_photos"/>
-                                <field name="max_files"/>
-                            </group>
-                            <group>
-                                <field name="manager_document"/>
-                                <field name="give_back"/>
-                                <field name="complete"/>
-                            </group>
-                            <group>
                                 <field name="related" invisible="1"/>
                                 <field name="block_id" readonly="1" force_save="1"/>
                                 <field name="system_id" attrs="{'invisible': [('related', '=', True)]}" readonly="1"
@@ -30,6 +20,16 @@
                                        force_save="1"/>
                                 <field name="department_id" attrs="{'invisible': [('related', '=', False)]}"
                                        readonly="1" force_save="1"/>
+                            </group>
+                            <group>
+                                <field name="manager_document"/>
+                                <field name="give_back"/>
+                                <field name="complete"/>
+                            </group>
+                            <group>
+                                <field name="type_documents" options="{'limit': 10, 'create': false, 'create_edit': false}"/>
+                                <field name="max_photos"/>
+                                <field name="max_files"/>
                             </group>
                         </group>
                         <group>

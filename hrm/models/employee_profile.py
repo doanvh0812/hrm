@@ -34,7 +34,7 @@ class EmployeeProfile(models.Model):
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ',
-                                      tracking=True, compute='compute_profile_status', store=True)
+                                      tracking=True, compute='compute_profile_status', store=True, default='incomplete')
 
     def _default_team(self):
         return [('id', '=', 0)]
@@ -238,7 +238,8 @@ class EmployeeProfile(models.Model):
                     for field in cf.xpath("//field[@name]"):
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
-                        if field.get("name") not in ['employee_code_new', 'document_config', 'document_list', 'manager_id']:
+                        if field.get("name") not in ['employee_code_new', 'document_config', 'document_list',
+                                                     'manager_id', 'profile_status']:
                             modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                            ['state', '!=', 'draft']]})
                         if field.get("name") in ['phone_num', 'email', 'identifier']:
@@ -687,7 +688,6 @@ class EmployeeProfile(models.Model):
                 self.sudo().write({"document_list": document_id.all.ids, "is_compute_documents_list": False})
             elif self.type_update_document == 'not_approved_and_new' and self.is_compute_documents_list:
                 self.sudo().write({"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
-            print(self.document_list, self.is_compute_documents_list, 'zzzzzzzz')
             self.sudo().write({'document_config': document_id})
             # giải pháp update giá trị cho document_config khi sử dụng store = True không được :((
             if self.id:

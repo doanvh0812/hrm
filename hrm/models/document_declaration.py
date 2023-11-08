@@ -27,7 +27,7 @@ class DocumentDeclaration(models.Model):
     document_public_image_url = fields.Char(compute='_compute_image_related_fields', compute_sudo=True, store=True)
     max_photos = fields.Integer(related='type_documents.numbers_of_photos')
     max_files = fields.Integer(related='type_documents.numbers_of_documents')
-    see_record_with_config = fields.Boolean()
+    see_record_with_config = fields.Boolean(default=True)
 
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         self.env['hrm.utils']._see_record_with_config('hrm.document_declaration')
