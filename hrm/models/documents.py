@@ -16,10 +16,10 @@ class Documents(models.Model):
     @api.onchange('numbers_of_photos', 'numbers_of_documents')
     def check_negative_numbers(self):
         if self.numbers_of_photos and not re.match(r'^[0-9]+$', self.numbers_of_photos):
-            raise ValidationError('Số ảnh chỉ được chứa số.')
+            raise ValidationError('Số ảnh chỉ được chứa số và không âm.')
 
         if self.numbers_of_documents and not re.match(r'^[0-9]+$', self.numbers_of_documents):
-            raise ValidationError('Số tệp chỉ được chứa số.')
+            raise ValidationError('Số tệp đính kèm chỉ được chứa số và không âm.')
 
         if int(self.numbers_of_photos) < 0 or int(self.numbers_of_documents) < 0:
             raise ValidationError('Số lượng phải là số nguyên dương!')
