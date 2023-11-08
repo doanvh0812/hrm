@@ -12,8 +12,8 @@
                                 <field name="document_code"/>
                             </group>
                             <group>
-                                <field name="numbers_of_photos"/>
-                                <field name="numbers_of_documents"/>
+                                <field name="numbers_of_photos" force_save="1"/>
+                                <field name="numbers_of_documents" force_save="1"/>
                             </group>
                         </group>
                     </sheet>

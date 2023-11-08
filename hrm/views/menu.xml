@@ -20,6 +20,8 @@
               action="document_list_action"/>
     <menuitem id="employee" name="Nhân viên" parent="menu_field" sequence="2"
               groups="hrm_group_config_access,hrm_group_own_edit,hrm_group_read_only,hrm_group_create_edit"/>
+    <menuitem id="document_declaration" name="Khai báo  tài liệu" parent="employee" sequence="130"
+              action="document_declaration_action"/>
     <menuitem id="employee_profile" name="Tạo mới" parent="employee" sequence="10" action="employee_profile_action"
               groups="hrm_group_config_access,hrm_group_own_edit,hrm_group_read_only,hrm_group_create_edit"/>
     <menuitem id="approval" name="Phê duyệt" parent="employee" sequence="11" action="approval_action"
