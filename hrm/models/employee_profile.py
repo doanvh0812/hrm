@@ -33,8 +33,9 @@ class EmployeeProfile(models.Model):
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
+
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ',
-                                      tracking=True, compute='compute_profile_status', store=True)
+                                      tracking=True, compute='compute_profile_status', store=True, default='incomplete')
 
     def _default_team(self):
         return [('id', '=', 0)]
@@ -44,6 +45,9 @@ class EmployeeProfile(models.Model):
 
     manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
+    account_status = fields.Selection([
+        ('online', 'Đang hoạt động'),
+        ('offline', 'Đã đóng')], string='Tình trạng tài khoản', readonly=True)
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
@@ -56,6 +60,7 @@ class EmployeeProfile(models.Model):
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
+    account_link = fields.Char(string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
     status_account = fields.Boolean(string="Trạng thái tài khoản", default=False, readonly=True)
     date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
@@ -161,36 +166,36 @@ class EmployeeProfile(models.Model):
     # lý do từ chối
     reason_refusal = fields.Char(string='Lý do từ chối', index=True, ondelete='restrict', tracking=True)
 
-    def auto_create_account_employee(self):
-        # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
-        self.ensure_one()
-        user_group = self.env.ref('hrm.hrm_group_own_edit')
-        values = {
-            'name': self.name,
-            'login': self.email,
-            'groups_id': [(6, 0, [user_group.id])],
+    # def auto_create_account_employee(self):
+    #     # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
+    #     self.ensure_one()
+    #     user_group = self.env.ref('hrm.hrm_group_own_edit')
+    #     values = {
+    #         'name': self.name,
+    #         'login': self.email,
+    #         'groups_id': [(6, 0, [user_group.id])],
+    #
+    #     }
+    #     new_user = self.env['res.users'].sudo().create(values)
+    #     self.acc_id = new_user.id
+    # return {
+    #     'name': "User Created",
+    #     'type': 'ir.actions.act_window',
+    #     'res_model': 'res.users',
+    #     'res_id': new_user.id,
+    #     'view_mode': 'form',
+    # }
 
-        }
-        new_user = self.env['res.users'].sudo().create(values)
-        self.acc_id = new_user.id
-        return {
-            'name': "User Created",
-            'type': 'ir.actions.act_window',
-            'res_model': 'res.users',
-            'res_id': new_user.id,
-            'view_mode': 'form',
-        }
-
-    @api.model
-    def create(self, vals):
-        # Call the create method of the super class to create the record
-        record = super(EmployeeProfile, self).create(vals)
-
-        # Perform your custom logic here
-        if record:
-            # Assuming you want to call the auto_create_account_employee function
-            record.auto_create_account_employee()
-        return record
+    # @api.model
+    # def create(self, vals):
+    #     # Call the create method of the super class to create the record
+    #     record = super(EmployeeProfile, self).create(vals)
+    #
+    #     # Perform your custom logic here
+    #     if record:
+    #         # Assuming you want to call the auto_create_account_employee function
+    #         record.auto_create_account_employee()
+    #     return record
 
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
@@ -243,7 +248,7 @@ class EmployeeProfile(models.Model):
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
                         if field.get("name") not in ['employee_code_new', 'document_config', 'document_list',
-                                                     'manager_id']:
+                                                     'manager_id', 'profile_status']:
                             modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                            ['state', '!=', 'draft']]})
                         if field.get("name") in ['phone_num', 'email', 'identifier']:
@@ -467,6 +472,25 @@ class EmployeeProfile(models.Model):
         state = 'pending'
         if max_step[0] <= step or max_step[0] <= step_excess_level:
             state = 'approved'
+            # create new account when approved
+            if self.auto_create_acc:
+                self.ensure_one()
+                team_id = self.team_marketing.id if self.team_marketing else self.team_sales.id
+                user_group = self.env.ref('hrm.hrm_group_own_edit')
+                self.env['res.users'].sudo().create({
+                    'name': self.name,
+                    'login': self.email,
+                    'email': f'{self.email}@bigholding.vn',
+                    'user_block_id': self.block_id.id,
+                    'user_department_id': self.department_id.id,
+                    'user_system_id': self.system_id.id,
+                    'user_company_id': self.company.id,
+                    'user_code': self.employee_code_new,
+                    'user_position_id': self.position_id.id,
+                    'user_team_id': team_id,
+                    'groups_id': [(6, 0, [user_group.id])],
+                })
+                self.acc_id = self.env['res.users'].search([('login', '=', self.email)]).id
         orders.write({'state': state})
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
@@ -550,6 +574,10 @@ class EmployeeProfile(models.Model):
             self.sudo().write({'state': 'draft'})
             self.message_post(body="Hủy bỏ phê duyệt.",
                               subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
+
+    def lock_personnel_account(self):
+        """Hàm này hoạt động khi bấm button Khóa tk nhân sự, Khi đó trang thái tài khoản ở Hồ s nhân sự sẽ chuyển về đã đóng"""
+        print('ĐÓNG')
 
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
@@ -811,16 +839,5 @@ class EmployeeProfile(models.Model):
                 list_complete.append(line.type_documents.id)
         return list_complete
 
-    def perform_action(self):
-        if self.status_account:
-            pass
-        else:
-            pass
-
-    # Hàm render ra link dăng nhập vào hệ thống
-    def _compute_registration_link(self):
-        base_url = self.env['ir.config_parameter'].get_param('web.base.url')
-        for emp in self:
-            emp.account_link = f'{base_url}/web/login?login={emp.email}'
-
-    account_link = fields.Char(string="Tài khoản liên kết", compute='_compute_registration_link')
+    def change_account_status(self):
+        self.account_status = 'offline'
