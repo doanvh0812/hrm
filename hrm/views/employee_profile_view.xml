@@ -93,6 +93,15 @@
                                     </tree>
                                 </field>
                             </page>
+                            <page string="Tài khoản liên kết">
+                                <group>
+                                    <field name="account_link"/>
+                                    <field name="account_link_secondary"/>
+                                    <field name="status_account" widget="boolean_toggle"/>
+                                    <field name="date_close"/>
+                                    <field name="date_open"/>
+                                </group>
+                            </page>
                         </notebook>
                     </sheet>
                     <div class="oe_chatter">
