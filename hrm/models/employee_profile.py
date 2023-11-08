@@ -56,11 +56,10 @@ class EmployeeProfile(models.Model):
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
-    account_link = fields.Char(string="Tài khoản liên kết", readonly=True)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
-    status_account = fields.Boolean(string="Trạng thái tài khoản", default=True, readonly=True)
-    date_close = fields.Char(string='Ngày đóng tài khoản')
-    date_open = fields.Char(string='Ngày mở lại tài khoản')
+    status_account = fields.Boolean(string="Trạng thái tài khoản", default=False, readonly=True)
+    date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
+    date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -817,3 +816,11 @@ class EmployeeProfile(models.Model):
             pass
         else:
             pass
+
+    # Hàm render ra link dăng nhập vào hệ thống
+    def _compute_registration_link(self):
+        base_url = self.env['ir.config_parameter'].get_param('web.base.url')
+        for emp in self:
+            emp.account_link = f'{base_url}/web/login?login={emp.email}'
+
+    account_link = fields.Char(string="Tài khoản liên kết", compute='_compute_registration_link')
