@@ -4,9 +4,6 @@
         <field name="model">res.users</field>
         <field name="inherit_id" ref="base.view_users_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-                <button name="action_reset_password" type="object" class="oe_stat_button" string="Khôi phục mật khẩu"/>
-            </xpath>
             <xpath expr="//div[@class='oe_title']" position="replace">
                 <div class="oe_title">
                     <label for="name" class="oe_edit_only"/>

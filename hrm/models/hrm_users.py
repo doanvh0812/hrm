@@ -109,13 +109,6 @@ class Users(models.Model):
                 if not any(company in func._system_have_child_company(sys) for company in self.company.ids):
                     self.system_id = [(6, 0, list_system_ids)]
 
-    def action_reset_password(self):
-        token = random_token()
-        type = 'reset'
-        expiration = False
-        self.partner_id.sudo().write({'signup_token': token, 'signup_type': type, 'signup_expiration': expiration})
-        self.url_reset_password = f"http://localhost:8012/web/reset_password?db=hrm&token={token}"
-
     def write(self, vals):
         res = super(Users, self).write(vals)
         self._remove_system_not_have_company()

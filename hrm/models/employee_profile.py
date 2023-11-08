@@ -471,7 +471,6 @@ class EmployeeProfile(models.Model):
             # create new account when approved
             if self.auto_create_acc:
                 self.ensure_one()
-                team_id = self.team_marketing.id if self.team_marketing else self.team_sales.id
                 user_group = self.env.ref('hrm.hrm_group_own_edit')
                 self.env['res.users'].sudo().create({
                     'name': self.name,
@@ -483,7 +482,9 @@ class EmployeeProfile(models.Model):
                     'user_company_id': self.company.id,
                     'user_code': self.employee_code_new,
                     'user_position_id': self.position_id.id,
-                    'user_team_id': team_id,
+                    'user_team_marketing': self.team_marketing.id,
+                    'user_team_sales': self.team_sales.id,
+                    'user_phone_num': self.phone_num,
                     'groups_id': [(6, 0, [user_group.id])],
                 })
                 self.acc_id = self.env['res.users'].search([('login', '=', self.email)]).id
@@ -829,3 +830,6 @@ class EmployeeProfile(models.Model):
         return list_complete
     def change_account_status(self):
         self.account_status = 'offline'
+
+    def reset_password(self):
+        self.env['res.users'].sudo().action_reset_password()

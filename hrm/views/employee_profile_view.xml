@@ -11,6 +11,7 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
                         <button name="action_cancel" string="Hủy" type="object"/>
+                        <button name="reset_password" string="Khôi phục mật khẩu" type="object" class="btn-primary"/>
                         <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
                                 class="btn-red">
                         </button>
