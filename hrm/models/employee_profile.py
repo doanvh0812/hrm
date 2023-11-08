@@ -483,7 +483,8 @@ class EmployeeProfile(models.Model):
                     'user_company_id': self.company.id,
                     'user_code': self.employee_code_new,
                     'user_position_id': self.position_id.id,
-                    'user_team_id': team_id,
+                    'user_team_marketing': self.team_marketing.id,
+                    'user_team_sales': self.team_sales.id,
                     'groups_id': [(6, 0, [user_group.id])],
                 })
                 self.acc_id = self.env['res.users'].search([('login', '=', self.email)]).id

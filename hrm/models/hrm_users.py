@@ -22,6 +22,7 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty phân quyền')
     related = fields.Boolean(compute='_compute_related_')
 
+    user_name_display = fields.Char('Tên hiển thị', readonly=True)
     user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,default=lambda self: self.default_block())
     user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
@@ -31,11 +32,8 @@ class Users(models.Model):
     user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing')
     user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng')
     user_phone_num = fields.Char('Số điện thoại di động', required=True)
-    user_name_display = fields.Char('Tên hiển thị', readonly=True)
     user_related = fields.Boolean(compute='compute_related')
     require_team = fields.Boolean(default=False)
-
-    url_reset_password = fields.Char(string='Reset Password URL')
 
     def default_block(self):
         """Đặt giá trị mặc định cho trường khối của tài khoản nhân sự"""
@@ -114,7 +112,6 @@ class Users(models.Model):
         type = 'reset'
         expiration = False
         self.partner_id.sudo().write({'signup_token': token, 'signup_type': type, 'signup_expiration': expiration})
-        self.url_reset_password = f"http://localhost:8012/web/reset_password?db=hrm&token={token}"
 
     def write(self, vals):
         res = super(Users, self).write(vals)
