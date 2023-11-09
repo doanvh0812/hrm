@@ -806,13 +806,7 @@ class EmployeeProfile(models.Model):
         self.account_link.sudo().write({'active': False})
         self.account_status = 'offline'
 
-    @api.depends('name', 'user_position_id', 'user_company_id', 'user_department_id')
-    def _compute_display_name(self):
-        if self.user_company_id:
-            name_ = f'{self.name}_{self.user_position_id.work_position}_{self.user_company_id.name}'
-        elif self.user_department_id:
-            name_ = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
-        self.user_name_display = name_
+
 
 
 
