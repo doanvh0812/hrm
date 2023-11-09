@@ -20,7 +20,6 @@ class Users(models.Model):
                                     default=lambda self: self.default_block())
     user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
-    user_company_id = fields.Many2one('hrm.companies', string='Công ty')
     user_code = fields.Char(string="Mã nhân viên")
     user_position_id = fields.Many2one('hrm.position', string='Vị trí', required=True)
     user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing')
@@ -111,8 +110,66 @@ class Users(models.Model):
     @api.depends('name', 'user_position_id', 'user_company_id')
     def _compute_user_display_name(self):
         name_f = ''
-        if self.user_position_id and self.user_company_id:
-            name_f = self.name + "_" + self.user_position_id.work_position + "_" + self.user_company_id.name
-        elif self.user_position_id and self.user_department_id:
-            name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
+        if self.name and self.user_position_id and self.user_company_id:
+                name_f = self.name + "_" + self.user_position_id.work_position  + "_" + self.user_company_id.name
+        elif self.name and self.user_position_id and self.user_department_id:
+                name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
         self.user_name_display = name_f
+
+    def get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
+        list_child_company = []
+        if self.env.user.user_company_id:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.user_company_id, 'hrm_companies',
+                                                                    "parent_company")
+        elif not self.env.user.user_company_id and self.env.user.user_system_id:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            func = self.env['hrm.utils']
+            for sys in self.env.user.user_system_id:
+                list_child_company += func._system_have_child_company(sys.id)
+        return [('id', 'in', list_child_company)]
+
+    user_company_id = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=get_child_company)
+
+    @api.onchange('user_system_id')
+    def _onchange_system_id(self):
+        if self.user_system_id:
+            system = self.user_system_id
+            child_company_ids = []
+
+            # Lấy danh sách các ID của các công ty liên quan đến hệ thống đã chọn
+            func = self.env['hrm.utils']
+            child_company_ids += func._system_have_child_company(system.id)
+
+            # Cập nhật miền của trường 'user_company_id' để chỉ hiển thị các công ty liên quan đến hệ thống đã chọn
+            return {'domain': {'user_company_id': [('id', 'in', child_company_ids)]}}
+
+    @api.onchange('user_block_id')
+    def _onchange_user_block_id(self):
+        """
+        Phương thức này được kích hoạt khi trường 'user_block_id' thay đổi.
+        Nó cập nhật các tùy chọn có sẵn cho trường 'user_position_id' dựa trên 'user_block_id' được chọn.
+        """
+        if self.user_block_id:
+            # Tìm tất cả các vị trí thuộc khối đã chọn
+            cac_vi_tri = self.env['hrm.position'].search([('block', '=', self.user_block_id.name)])
+
+            # Cập nhật miền của 'user_position_id' để giới hạn các tùy chọn cho khối đã chọn
+            return {'domain': {'user_position_id': [('id', 'in', cac_vi_tri.ids)]}}
+        else:
+            # Nếu không có khối nào được chọn, xóa bộ lọc
+            return {'domain': {'user_position_id': []}}
+
+    @api.onchange('user_department_id')
+    def _default_position_1(self):
+        if self.user_block_id.name == constraint.BLOCK_OFFICE_NAME:
+            if self.user_department_id:
+                position = self.env['hrm.position'].search([('department', '=', self.user_department_id.id)])
+                print(position)
+                return {'domain': {'user_position_id': [('id', 'in', position.ids)]}}
+
+
+
+
