@@ -22,7 +22,6 @@ class EmployeeProfile(models.Model):
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(string="Mã nhân viên mới", compute='render_code', store=True)
-
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
@@ -38,9 +37,6 @@ class EmployeeProfile(models.Model):
 
     manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
-    account_status = fields.Selection([
-        ('online', 'Đang hoạt động'),
-        ('offline', 'Đã đóng')], string='Tình trạng tài khoản', readonly=True)
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
@@ -59,6 +55,12 @@ class EmployeeProfile(models.Model):
     status_account = fields.Boolean(string="Trạng thái tài khoản", default=False, readonly=True)
     date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
     date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
+    url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
+    url_reset_password_valid = fields.Boolean(string="Link khôi phục mật khẩu hợp lệ",
+                                              related='account_link.signup_valid', readonly=True)
+    status_account = fields.Boolean(string="Trạng thái tài khoản", related='account_link.active', readonly=True)
+    date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
+    date_open = fields.Datetime(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -440,7 +442,6 @@ class EmployeeProfile(models.Model):
             # create new account when approved
             if self.auto_create_acc:
                 self.ensure_one()
-                team_id = self.team_marketing.id if self.team_marketing else self.team_sales.id
                 user_group = self.env.ref('hrm.hrm_group_own_edit')
                 self.env['res.users'].sudo().create({
                     'name': self.name,
@@ -454,6 +455,7 @@ class EmployeeProfile(models.Model):
                     'user_position_id': self.position_id.id,
                     'user_team_marketing': self.team_marketing.id,
                     'user_team_sales': self.team_sales.id,
+                    'user_phone_num': self.phone_num,
                     'groups_id': [(6, 0, [user_group.id])],
                 })
                 self.acc_id = self.env['res.users'].search([('login', '=', self.email)]).id
@@ -803,12 +805,9 @@ class EmployeeProfile(models.Model):
         return list_complete
 
     def change_account_status(self):
+        self.date_close = fields.Datetime.now()
         self.account_link.sudo().write({'active': False})
         self.account_status = 'offline'
 
-
-
-
-
-
-
+    def reset_password(self):
+        return self.account_link.sudo().action_reset_password()
