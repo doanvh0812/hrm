@@ -1,5 +1,4 @@
 from builtins import list
-
 from odoo import models, fields, api
 import re
 from odoo.exceptions import ValidationError, AccessDenied
@@ -24,7 +23,7 @@ class EmployeeProfile(models.Model):
                                tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
-    employee_code_new = fields.Char(
+    employee_code_new = fields.Char(string="Mã nhân viên mới", compute='render_code', store=True)
 
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
@@ -55,7 +54,10 @@ class EmployeeProfile(models.Model):
 
     account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
-    status_account = fields.Boolean(string="Trạng thái tài khoản", default=False, readonly=True)
+    url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
+    url_reset_password_valid = fields.Boolean(string="Link khôi phục mật khẩu hợp lệ",
+                                              related='account_link.signup_valid', readonly=True)
+    status_account = fields.Boolean(string="Trạng thái tài khoản", related='account_link.active', readonly=True)
     date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
     date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
 
@@ -439,7 +441,6 @@ class EmployeeProfile(models.Model):
             # create new account when approved
             if self.auto_create_acc:
                 self.ensure_one()
-                team_id = self.team_marketing.id if self.team_marketing else self.team_sales.id
                 user_group = self.env.ref('hrm.hrm_group_own_edit')
                 self.env['res.users'].sudo().create({
                     'name': self.name,
@@ -453,6 +454,7 @@ class EmployeeProfile(models.Model):
                     'user_position_id': self.position_id.id,
                     'user_team_marketing': self.team_marketing.id,
                     'user_team_sales': self.team_sales.id,
+                    'user_phone_num': self.phone_num,
                     'groups_id': [(6, 0, [user_group.id])],
                 })
                 self.acc_id = self.env['res.users'].search([('login', '=', self.email)]).id
@@ -803,10 +805,6 @@ class EmployeeProfile(models.Model):
     def change_account_status(self):
         self.date_close = fields.Datetime.now()
         self.account_link.sudo().write({'active': False})
-<<<<<<< .mine
-        self.account_status = 'offline'
-        self.date_close = fields.Datetime.now()
-=======
 
-
->>>>>>> .theirs
+    def reset_password(self):
+        return self.account_link.sudo().action_reset_password()
