@@ -26,17 +26,7 @@
                             <group>
                                 <field name="manager_document"/>
                                 <field name="type_documents"
-                                       options="{'limit': 10, 'create': false, 'create_edit': false}"/>
-                                <field name="max_photos"/>
-                                <field name="max_files"/>
-                            </group>
-                            <group>
-                                <field name="manager_document"/>
-                                <field name="give_back"/>
-                                <field name="complete"/>
-                            </group>
-                            <group>
-                                <field name="type_documents" options="{'limit': 10, 'create': false, 'create_edit': false}"/>
+                                       options="{'create': false, 'create_edit': false}"/>
                                 <field name="max_photos"/>
                                 <field name="max_files"/>
                             </group>
