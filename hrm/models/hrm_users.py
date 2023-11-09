@@ -15,9 +15,9 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty phân quyền')
     related = fields.Boolean(compute='_compute_related_')
 
-
-    user_name_display = fields.Char('Tên hiển thị', readonly=True, compute = '_compute_user_display_name', store = True)
-    user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,default=lambda self: self.default_block())
+    user_name_display = fields.Char('Tên hiển thị', readonly=True, compute='_compute_user_display_name', store=True)
+    user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
+                                    default=lambda self: self.default_block())
     user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     user_company_id = fields.Many2one('hrm.companies', string='Công ty')
@@ -25,7 +25,7 @@ class Users(models.Model):
     user_position_id = fields.Many2one('hrm.position', string='Vị trí', required=True)
     user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing')
     user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng')
-    user_phone_num = fields.Char('Số điện thoại di động', required=True)
+    user_phone_num = fields.Char('Số điện thoại', required=True)
     user_related = fields.Boolean(compute='compute_related')
     require_team = fields.Boolean(default=False)
 
@@ -112,7 +112,7 @@ class Users(models.Model):
     def _compute_user_display_name(self):
         name_f = ''
         if self.user_position_id and self.user_company_id:
-                name_f = self.name + "_" + self.user_position_id.work_position  + "_" + self.user_company_id.name
+            name_f = self.name + "_" + self.user_position_id.work_position + "_" + self.user_company_id.name
         elif self.user_position_id and self.user_department_id:
-                name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
+            name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
         self.user_name_display = name_f
