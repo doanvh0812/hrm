@@ -25,9 +25,9 @@ class DocumentDeclaration(models.Model):
 
     picture_ids = fields.One2many('hrm.image', 'document_declaration', string="Hình ảnh")
     document_public_image_url = fields.Char(compute='_compute_image_related_fields', compute_sudo=True, store=True)
+    see_record_with_config = fields.Boolean(default=True)
     max_photos = fields.Char(related='type_documents.numbers_of_photos')
     max_files = fields.Char(related='type_documents.numbers_of_documents')
-    see_record_with_config = fields.Boolean()
 
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         self.env['hrm.utils']._see_record_with_config('hrm.document_declaration')

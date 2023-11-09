@@ -3,7 +3,6 @@ from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 
-
 class Teams(models.Model):
     _name = 'hrm.teams'
     _description = 'Đội ngũ'

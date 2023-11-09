@@ -10,7 +10,6 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
                         <button name="action_cancel" string="Hủy" type="object"/>
-                        <button name="action_send" string="Khoá TK nhân sự" type="object"/>
                         <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
                                 class="btn-red"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
@@ -26,7 +25,7 @@
                                 <field name="identifier"/>
                                 <field name="work_start_date"/>
                                 <field name="date_receipt"/>
-                                <field name="profile_status"/>
+                                <field name="profile_status" readonly="1"/>
                             </group>
                             <group>
                                 <!--related = true là đã chọn văn phòng-->
@@ -58,7 +57,7 @@
                             </group>
                         </group>
                         <group>
-                            <field name="account_status"/>
+                            <field name="account_status" attrs="{'invisible': [('state', '!=', 'approved')]}"/>
                             <field name="auto_create_acc"/>
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
@@ -97,7 +96,7 @@
                                 <group>
                                     <field name="account_link"/>
                                     <field name="account_link_secondary"/>
-                                    <field name="status_account" widget="boolean_toggle" readonly="1"/>
+                                    <field name="status_account" widget="boolean_toggle"/>
                                     <field name="date_close"/>
                                     <field name="date_open"/>
                                 </group>
@@ -140,6 +139,5 @@
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_profile_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_employee_profile_form')})]"/>
         </record>
-
     </data>
 </odoo>
