@@ -807,7 +807,6 @@ class EmployeeProfile(models.Model):
     def change_account_status(self):
         self.date_close = fields.Datetime.now()
         self.account_link.sudo().write({'active': False})
-        self.account_status = 'offline'
 
     def reset_password(self):
         return self.account_link.sudo().action_reset_password()
