@@ -47,7 +47,6 @@ class EmployeeProfile(models.Model):
     account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
 
-    status_account = fields.Boolean(string="Trạng thái tài khoản", default=False, readonly=True)
     date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
     date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
     url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
@@ -802,7 +801,6 @@ class EmployeeProfile(models.Model):
     def change_account_status(self):
         self.date_close = fields.Datetime.now()
         self.account_link.sudo().write({'active': False})
-        self.account_status = 'offline'
 
     def reset_password(self):
         return self.account_link.sudo().action_reset_password()
