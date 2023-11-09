@@ -58,7 +58,7 @@
                             </group>
                         </group>
                         <group>
-                            <field name="account_status"/>
+                            <field name="account_status" attrs="{'invisible': [('state', '!=', 'approved')]}"/>
                             <field name="auto_create_acc"/>
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
