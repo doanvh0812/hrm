@@ -63,8 +63,8 @@ class EmployeeProfile(models.Model):
     account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
     status_account = fields.Boolean(string="Trạng thái tài khoản", default=False, readonly=True)
-    date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
-    date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
+    date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
+    date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -592,11 +592,6 @@ class EmployeeProfile(models.Model):
             result.append(res[0])
         return result
 
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
-
     def find_department(self, list_dept, records):
         # list_dept là danh sách id hệ thống có quan hệ cha con
         # records là danh sách bản ghi cấu hình luồng phê duyệt
@@ -815,3 +810,4 @@ class EmployeeProfile(models.Model):
     def change_account_status(self):
         self.account_link.sudo().write({'active': False})
         self.account_status = 'offline'
+        self.date_close = fields.Datetime.now()
