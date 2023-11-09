@@ -13,7 +13,7 @@
                         <button name="action_cancel" string="Hủy" type="object"/>
                         <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-primary"/>
                         <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
-                                class="btn-red">
+                                class="btn-red" attrs="{'invisible': ['|', ('account_link', '=', False), ('status_account', '=', False)]}">
                         </button>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
@@ -59,7 +59,7 @@
                             </group>
                         </group>
                         <group>
-                            <field name="account_status" attrs="{'invisible': [('state', '!=', 'approved')]}"/>
+                            <field name="status_account" widget="boolean_toggle" attrs="{'invisible': [('account_link', '=', False)]}"/>
                             <field name="auto_create_acc"/>
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">

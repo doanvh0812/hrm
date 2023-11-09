@@ -1,12 +1,5 @@
 from odoo import models, fields, api
 from . import constraint
-import random
-
-
-def random_token():
-    # the token has an entropy of about 120 bits (6 bits/char * 20 chars)
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    return ''.join(random.SystemRandom().choice(chars) for _ in range(20))
 
 
 class Users(models.Model):
@@ -22,7 +15,7 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty phân quyền')
     related = fields.Boolean(compute='_compute_related_')
 
-    user_name_display = fields.Char('Tên hiển thị', readonly=True)
+    user_name_display = fields.Char('Tên hiển thị', readonly=True, default="coin card")
     user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,default=lambda self: self.default_block())
     user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
@@ -107,12 +100,6 @@ class Users(models.Model):
                 if not any(company in func._system_have_child_company(sys) for company in self.company.ids):
                     self.system_id = [(6, 0, list_system_ids)]
 
-    # def action_reset_password(self):
-    #     token = random_token()
-    #     type = 'reset'
-    #     expiration = False
-    #     self.partner_id.sudo().write({'signup_token': token, 'signup_type': type, 'signup_expiration': expiration})
-
     def write(self, vals):
         res = super(Users, self).write(vals)
         self._remove_system_not_have_company()
@@ -125,10 +112,3 @@ class Users(models.Model):
         res = super(Users, self).create(vals_list)
         self._remove_system_not_have_company()
         return res
-
-    # @api.depends('name', 'user_position_id', 'user_company_id')
-    # def _compute_display_name(self):
-    #     if self.user_company_id:
-    #         self.user_name_display = self.name + "_" + self.user_position_id.work_position + "_" + self.user_company_id.name
-    #     elif self.user_department_id:
-    #         self.user_name_display = self.name + "_" + self.user_position_id.work_position + "_" + self.user_department_id.name
