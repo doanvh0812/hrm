@@ -15,7 +15,7 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty phân quyền')
     related = fields.Boolean(compute='_compute_related_')
 
-    user_name_display = fields.Char('Tên hiển thị', readonly=True, default="coin card")
+    user_name_display = fields.Char('Tên hiển thị', readonly=True, compute= '_compute_user_display_name', store=True)
     user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,default=lambda self: self.default_block())
     user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
@@ -112,3 +112,12 @@ class Users(models.Model):
         res = super(Users, self).create(vals_list)
         self._remove_system_not_have_company()
         return res
+
+    @api.depends('name', 'user_position_id', 'user_company_id', 'user_department_id')
+    def _compute_user_display_name(self):
+        name_f = ''
+        if self.user_position_id and self.user_company_id:
+            name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_company_id.name}'
+        elif self.user_position_id and self.user_department_id:
+            name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
+        self.user_name_display = name_f
