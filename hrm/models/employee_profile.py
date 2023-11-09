@@ -61,7 +61,7 @@ class EmployeeProfile(models.Model):
 
     account_link = fields.Char(string="Tài khoản liên kết", readonly=True)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
-    status_account = fields.Boolean(string="Trạng thái tài khoản", default=True, readonly=True)
+    status_account = fields.Boolean(string="Trạng thái tài khoản", default=True)
     date_close = fields.Char(string='Ngày đóng tài khoản')
     date_open = fields.Char(string='Ngày mở lại tài khoản')
 
