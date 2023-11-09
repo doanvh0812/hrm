@@ -59,7 +59,6 @@
                             </group>
                         </group>
                         <group>
-                            <field name="status_account" widget="boolean_toggle" attrs="{'invisible': [('account_link', '=', False)]}"/>
                             <field name="auto_create_acc"/>
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
@@ -94,10 +93,11 @@
                                     </tree>
                                 </field>
                             </page>
-                            <page string="Tài khoản liên kết">
+                            <page string="Thiết lập tài khoản">
                                 <group>
                                     <group>
                                         <field name="account_link"/>
+                                        <field name="status_account" widget="boolean_toggle" attrs="{'invisible': [('account_link', '=', False)]}"/>
                                         <field name="account_link_secondary"/>
                                     </group>
                                     <group>
