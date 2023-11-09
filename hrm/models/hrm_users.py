@@ -125,3 +125,10 @@ class Users(models.Model):
         res = super(Users, self).create(vals_list)
         self._remove_system_not_have_company()
         return res
+
+    # @api.depends('name', 'user_position_id', 'user_company_id')
+    # def _compute_display_name(self):
+    #     if self.user_company_id:
+    #         self.user_name_display = self.name + "_" + self.user_position_id.work_position + "_" + self.user_company_id.name
+    #     elif self.user_department_id:
+    #         self.user_name_display = self.name + "_" + self.user_position_id.work_position + "_" + self.user_department_id.name

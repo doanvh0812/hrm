@@ -60,7 +60,7 @@ class EmployeeProfile(models.Model):
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
-    account_link = fields.Char(string="Tài khoản liên kết", readonly=1)
+    account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
     status_account = fields.Boolean(string="Trạng thái tài khoản", default=False, readonly=True)
     date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
@@ -166,37 +166,6 @@ class EmployeeProfile(models.Model):
     # lý do từ chối
     reason_refusal = fields.Char(string='Lý do từ chối', index=True, ondelete='restrict', tracking=True)
 
-    # def auto_create_account_employee(self):
-    #     # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
-    #     self.ensure_one()
-    #     user_group = self.env.ref('hrm.hrm_group_own_edit')
-    #     values = {
-    #         'name': self.name,
-    #         'login': self.email,
-    #         'groups_id': [(6, 0, [user_group.id])],
-    #
-    #     }
-    #     new_user = self.env['res.users'].sudo().create(values)
-    #     self.acc_id = new_user.id
-    # return {
-    #     'name': "User Created",
-    #     'type': 'ir.actions.act_window',
-    #     'res_model': 'res.users',
-    #     'res_id': new_user.id,
-    #     'view_mode': 'form',
-    # }
-
-    # @api.model
-    # def create(self, vals):
-    #     # Call the create method of the super class to create the record
-    #     record = super(EmployeeProfile, self).create(vals)
-    #
-    #     # Perform your custom logic here
-    #     if record:
-    #         # Assuming you want to call the auto_create_account_employee function
-    #         record.auto_create_account_employee()
-    #     return record
-
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
@@ -257,6 +226,8 @@ class EmployeeProfile(models.Model):
                         if field.get("name") == 'block_id':
                             modifiers.update(
                                 {'readonly': ["|", ["check_blocks", "!=", 'full'], ['state', '!=', 'draft']]})
+                        if field.get("name") == 'account_status':
+                            modifiers.update({'readonly': True})
                         field.attrib['modifiers'] = json.dumps(modifiers)
                 elif has_group_own_edit:
                     # nếu user login có quyền chỉ chỉnh sửa chính mình
@@ -492,6 +463,7 @@ class EmployeeProfile(models.Model):
                     'groups_id': [(6, 0, [user_group.id])],
                 })
                 self.acc_id = self.env['res.users'].search([('login', '=', self.email)]).id
+                self.account_link = self.env['res.users'].search([('login', '=', self.email)])
         orders.write({'state': state})
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
@@ -726,11 +698,11 @@ class EmployeeProfile(models.Model):
                     {"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
             self.sudo().write({'document_config': document_id})
             # giải pháp update giá trị cho document_config khi sử dụng store = True không được :((
-            if self.id:
-                self.sudo()._cr.execute(f"""
-                            update hrm_employee_profile
-                            set document_config = {document_id.id}
-                            where id = {self.id};""")
+            # if self.id:
+            #     self.sudo()._cr.execute(f"""
+            #                 update hrm_employee_profile
+            #                 set document_config = {document_id.id}
+            #                 where id = {self.id};""")
 
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
         document_id = False
@@ -841,4 +813,5 @@ class EmployeeProfile(models.Model):
         return list_complete
 
     def change_account_status(self):
+        self.account_link.sudo().write({'active': False})
         self.account_status = 'offline'
