@@ -10,7 +10,8 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
                         <button name="action_cancel" string="Hủy" type="object"/>
-                        <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"/>
+                        <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"
+                                attrs="{'invisible': [('status_account', '=', False)]}"/>
                         <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
                                 class="btn-red"
                                 attrs="{'invisible': ['|', ('account_link', '=', False), ('status_account', '=', False)]}">
@@ -108,7 +109,8 @@
                                     </group>
                                 </group>
                                 <div class="alert alert-success text-center o_form_header"
-                                     attrs="{'invisible': [('url_reset_password_valid', '=', False)]}" role="status">
+                                     attrs="{'invisible': ['|',('url_reset_password_valid', '=', False),('status_account', '=', False)]}"
+                                     role="status">
                                     <a class="close" data-dismiss="alert" href="#" aria-label="Close">
                                         x
                                     </a>
