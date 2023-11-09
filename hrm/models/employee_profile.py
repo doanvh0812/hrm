@@ -25,10 +25,6 @@ class EmployeeProfile(models.Model):
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
     employee_code_new = fields.Char(
-        string="Mã nhân viên mới",
-        compute='render_code',
-        store=True
-    )
 
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
@@ -45,9 +41,6 @@ class EmployeeProfile(models.Model):
 
     manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
-    account_status = fields.Selection([
-        ('online', 'Đang hoạt động'),
-        ('offline', 'Đã đóng')], string='Tình trạng tài khoản', readonly=True)
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
@@ -808,6 +801,12 @@ class EmployeeProfile(models.Model):
         return list_complete
 
     def change_account_status(self):
+        self.date_close = fields.Datetime.now()
         self.account_link.sudo().write({'active': False})
+<<<<<<< .mine
         self.account_status = 'offline'
         self.date_close = fields.Datetime.now()
+=======
+
+
+>>>>>>> .theirs
