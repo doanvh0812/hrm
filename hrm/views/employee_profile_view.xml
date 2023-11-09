@@ -10,7 +10,7 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
                         <button name="action_cancel" string="Hủy" type="object"/>
-                        <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-primary"
+                        <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"
                                 attrs="{'invisible': [('status_account', '=', False)]}"/>
                         <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
                                 class="btn-red"
@@ -60,8 +60,6 @@
                             </group>
                         </group>
                         <group>
-                            <field name="status_account" widget="boolean_toggle"
-                                   attrs="{'invisible': [('account_link', '=', False)]}"/>
                             <field name="auto_create_acc"/>
                         </group>
                         <notebook attrs="{'invisible': [('id', '=', False)]}">
@@ -96,11 +94,13 @@
                                     </tree>
                                 </field>
                             </page>
-                            <page string="Tài khoản liên kết">
+                            <page string="Thiết lập nhân sự">
                                 <group>
                                     <group>
                                         <field name="account_link"/>
                                         <field name="account_link_secondary"/>
+                                        <field name="status_account" widget="boolean_toggle"
+                                               attrs="{'invisible': [('account_link', '=', False)]}"/>
                                     </group>
                                     <group>
                                         <field name="date_close"/>

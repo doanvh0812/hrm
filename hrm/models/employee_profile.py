@@ -46,7 +46,6 @@ class EmployeeProfile(models.Model):
 
     account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
-
     date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
     date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
     url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
@@ -54,7 +53,7 @@ class EmployeeProfile(models.Model):
                                               related='account_link.signup_valid', readonly=True)
     status_account = fields.Boolean(string="Trạng thái tài khoản", related='account_link.active', readonly=True)
     date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
-    date_open = fields.Datetime(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
+    date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -577,11 +576,6 @@ class EmployeeProfile(models.Model):
         for res in temp:
             result.append(res[0])
         return result
-
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
 
     def find_department(self, list_dept, records):
         # list_dept là danh sách id hệ thống có quan hệ cha con

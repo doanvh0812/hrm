@@ -15,16 +15,16 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty phân quyền')
     related = fields.Boolean(compute='_compute_related_')
 
-
-    user_name_display = fields.Char('Tên hiển thị', readonly=True, compute = '_compute_user_display_name', store = True)
-    user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,default=lambda self: self.default_block())
+    user_name_display = fields.Char('Tên hiển thị', readonly=True, compute='_compute_user_display_name', store=True)
+    user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
+                                    default=lambda self: self.default_block())
     user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     user_code = fields.Char(string="Mã nhân viên")
     user_position_id = fields.Many2one('hrm.position', string='Vị trí', required=True)
     user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing')
     user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng')
-    user_phone_num = fields.Char('Số điện thoại di động', required=True)
+    user_phone_num = fields.Char('Số điện thoại', required=True)
     user_related = fields.Boolean(compute='compute_related')
     require_team = fields.Boolean(default=False)
 
