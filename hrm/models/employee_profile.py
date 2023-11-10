@@ -550,9 +550,6 @@ class EmployeeProfile(models.Model):
             self.sudo().write({'state': 'draft'})
             self.message_post(body="Hủy bỏ phê duyệt.",
                               subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
-    def lock_personnel_account(self):
-        """Hàm này hoạt động khi bấm button Khóa tk nhân sự, Khi đó trang thái tài khoản ở Hồ s nhân sự sẽ chuyển về đã đóng"""
-        print('ĐÓNG')
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:
