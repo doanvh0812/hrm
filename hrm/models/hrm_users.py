@@ -10,9 +10,9 @@ class Users(models.Model):
         (constraint.BLOCK_OFFICE_NAME, constraint.BLOCK_OFFICE_NAME),
         (constraint.BLOCK_COMMERCE_NAME, constraint.BLOCK_COMMERCE_NAME)], string="Khối phân quyền",
         default=constraint.BLOCK_COMMERCE_NAME, required=True)
-    department_id = fields.Many2many('hrm.departments', string='Phòng/Ban phân quyền')
-    system_id = fields.Many2many('hrm.systems', string='Hệ thống phân quyền')
-    company = fields.Many2many('hrm.companies', string='Công ty phân quyền')
+    department_id = fields.Many2many('hrm.departments', string='Phòng/Ban')
+    system_id = fields.Many2many('hrm.systems', string='Hệ thống')
+    company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
 
     user_name_display = fields.Char('Tên hiển thị', readonly=True, compute='_compute_user_display_name', store=True)
@@ -22,8 +22,9 @@ class Users(models.Model):
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     user_code = fields.Char(string="Mã nhân viên")
     user_position_id = fields.Many2one('hrm.position', string='Vị trí', required=True)
-    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing')
-    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng')
+
+    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', domain=[('id', '=', 0)])
+    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', domain=[('id', '=', 0)])
     user_phone_num = fields.Char('Số điện thoại', required=True)
     user_related = fields.Boolean(compute='compute_related')
     require_team = fields.Boolean(default=False)
@@ -107,6 +108,12 @@ class Users(models.Model):
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         return res
 
+    @api.model
+    def create(self, vals_list):
+        res = super(Users, self).create(vals_list)
+        self._remove_system_not_have_company()
+        return res
+
     @api.depends('name', 'user_position_id', 'user_company_id')
     def _compute_user_display_name(self):
         name_f = ''
@@ -165,11 +172,29 @@ class Users(models.Model):
     @api.onchange('user_department_id')
     def _default_position_1(self):
         if self.user_block_id.name == constraint.BLOCK_OFFICE_NAME:
+            self.user_position_id = False
             if self.user_department_id:
                 position = self.env['hrm.position'].search([('department', '=', self.user_department_id.id)])
-                print(position)
                 return {'domain': {'user_position_id': [('id', 'in', position.ids)]}}
 
+    @api.onchange('user_company_id')
+    def _onchange_company(self):
+        """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
+             sẽ tự hiển thị đội ngũ mkt và sale nó thuộc vào
+        """
+        self.user_team_marketing = self.user_team_sales = False
+        if self.user_company_id:
+            list_team_marketing = self.env['hrm.teams'].search(
+                [('company', '=', self.user_company_id.id), ('type_team', '=', 'marketing')])
+            list_team_sale = self.env['hrm.teams'].search(
+                [('company', '=', self.user_company_id.id), ('type_team', 'in', ('sale', 'resale'))])
 
-
-
+            return {
+                'domain': {
+                    'user_team_marketing': [('id', 'in', list_team_marketing.ids)],
+                    'user_team_sales': [('id', 'in', list_team_sale.ids)]
+                }
+            }
+        else:
+            return {}
+        self.user_system_id = self.user_company_id.system_id

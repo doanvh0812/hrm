@@ -48,7 +48,7 @@ class DocumentDeclaration(models.Model):
             else:
                 rec.name = ''
 
-    @api.constrains('attachment_ids','picture_ids')
+    @api.constrains('attachment_ids', 'picture_ids')
     def check_attchachment_count(self):
         if int(self.max_files) == 0:
             return
@@ -59,8 +59,6 @@ class DocumentDeclaration(models.Model):
             return
         if len(self.picture_ids) > int(self.max_photos):
             raise ValidationError(_(f"Số lượng ảnh tải lên giới hạn là {self.max_photos}"))
-
-
 
     @api.depends('block_id')
     def _compute_related_(self):
