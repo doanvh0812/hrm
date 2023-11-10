@@ -16,6 +16,7 @@ class Teams(models.Model):
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
 
     see_record_with_config = fields.Boolean()
+
     @api.onchange('company')
     def _onchange_company(self):
         """ decorator này  chọn cty
@@ -123,4 +124,5 @@ class Teams(models.Model):
 
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         self._can_see_record_with_config()
-        return super(Teams, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
+        return super(Teams, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
+                                                  submenu=submenu)

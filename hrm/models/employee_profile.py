@@ -1,12 +1,9 @@
-from builtins import list
-
 from odoo import models, fields, api
 import re
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
-from odoo.http import request
 
 
 class EmployeeProfile(models.Model):
@@ -24,17 +21,13 @@ class EmployeeProfile(models.Model):
                                tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
-    employee_code_new = fields.Char(
-        string="Mã nhân viên mới",
-        compute='render_code',
-        store=True
-    )
-
+    employee_code_new = fields.Char(string="Mã nhân viên mới", compute='render_code', store=True)
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
+
     profile_status = fields.Selection(constraint.PROFILE_STATUS, string='Trạng thái hồ sơ',
-                                      tracking=True, compute='compute_profile_status', store=True)
+                                      tracking=True, compute='compute_profile_status', store=True, default='incomplete')
 
     def _default_team(self):
         return [('id', '=', 0)]
@@ -42,19 +35,25 @@ class EmployeeProfile(models.Model):
     team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', tracking=True, domain=_default_team)
     team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', tracking=True, domain=_default_team)
 
-    manager_id = fields.Many2one('res.users', string='Quản lý',related = "department_id.manager_id" , tracking=True)
+    manager_id = fields.Many2one('res.users', string='Quản lý', related="department_id.manager_id", tracking=True)
     rank_id = fields.Many2one('hrm.ranks', string='Cấp bậc')
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
-    # lọc duy nhất mã nhân viên
-    # _sql_constraints = [
-    #     ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
-    # ]
-
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
+
+    account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
+    account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
+    date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
+    date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
+    url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
+    url_reset_password_valid = fields.Boolean(string="Link khôi phục mật khẩu hợp lệ",
+                                              related='account_link.signup_valid', readonly=True)
+    status_account = fields.Boolean(string="Trạng thái tài khoản", related='account_link.active', readonly=True)
+    date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
+    date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -63,10 +62,9 @@ class EmployeeProfile(models.Model):
 
     document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
     type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
-                                           default='new')
+                                            default='new')
 
     document_list = fields.Many2many('hrm.document.list')
-
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
     see_record_with_config = fields.Boolean()
@@ -75,7 +73,7 @@ class EmployeeProfile(models.Model):
     require_team_sale = fields.Boolean(default=False)
 
     is_compute_documents_list = fields.Boolean(default=True)
-    
+
     @api.depends('employee_code_new')
     def compute_check_block(self):
         self.check_blocks = self.env.user.block_id
@@ -157,37 +155,6 @@ class EmployeeProfile(models.Model):
     # lý do từ chối
     reason_refusal = fields.Char(string='Lý do từ chối', index=True, ondelete='restrict', tracking=True)
 
-    def auto_create_account_employee(self):
-        # hàm tự tạo tài khoản và gán id tài khoản cho acc_id
-        self.ensure_one()
-        user_group = self.env.ref('hrm.hrm_group_own_edit')
-        values = {
-            'name': self.name,
-            'login': self.email,
-            'groups_id': [(6, 0, [user_group.id])],
-
-        }
-        new_user = self.env['res.users'].sudo().create(values)
-        self.acc_id = new_user.id
-        return {
-            'name': "User Created",
-            'type': 'ir.actions.act_window',
-            'res_model': 'res.users',
-            'res_id': new_user.id,
-            'view_mode': 'form',
-        }
-
-    @api.model
-    def create(self, vals):
-        # Call the create method of the super class to create the record
-        record = super(EmployeeProfile, self).create(vals)
-
-        # Perform your custom logic here
-        if record:
-            # Assuming you want to call the auto_create_account_employee function
-            record.auto_create_account_employee()
-        return record
-
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         res = super(EmployeeProfile, self).fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar,
@@ -238,14 +205,17 @@ class EmployeeProfile(models.Model):
                     for field in cf.xpath("//field[@name]"):
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
-                        if field.get("name") not in ['employee_code_new', 'document_config', 'document_list', 'manager_id']:
+                        if field.get("name") not in ['employee_code_new', 'document_config', 'document_list',
+                                                     'manager_id', 'profile_status']:
                             modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                            ['state', '!=', 'draft']]})
                         if field.get("name") in ['phone_num', 'email', 'identifier']:
                             modifiers.update({'readonly': ["|", ["id", "!=", False],
                                                            ["create_uid", "!=", user_id], ['state', '=', 'pending']]})
                         if field.get("name") == 'block_id':
-                            modifiers.update({'readonly': ["|", ["check_blocks", "!=", 'full'], ['state', '!=', 'draft']]})
+                            modifiers.update(
+                                {'readonly': ["|", ["check_blocks", "!=", 'full'], ['state', '!=', 'draft']]})
+
                         field.attrib['modifiers'] = json.dumps(modifiers)
                 elif has_group_own_edit:
                     # nếu user login có quyền chỉ chỉnh sửa chính mình
@@ -345,8 +315,6 @@ class EmployeeProfile(models.Model):
         else:
             return {}
         self.system_id = self.company.system_id
-
-
 
     @api.onchange('system_id')
     def _onchange_system_id(self):
@@ -463,6 +431,27 @@ class EmployeeProfile(models.Model):
         state = 'pending'
         if max_step[0] <= step or max_step[0] <= step_excess_level:
             state = 'approved'
+            # create new account when approved
+            if self.auto_create_acc:
+                self.ensure_one()
+                user_group = self.env.ref('hrm.hrm_group_own_edit')
+                self.env['res.users'].sudo().create({
+                    'name': self.name,
+                    'login': self.email,
+                    'email': f'{self.email}@bigholding.vn',
+                    'user_block_id': self.block_id.id,
+                    'user_department_id': self.department_id.id,
+                    'user_system_id': self.system_id.id,
+                    'user_company_id': self.company.id,
+                    'user_code': self.employee_code_new,
+                    'user_position_id': self.position_id.id,
+                    'user_team_marketing': self.team_marketing.id,
+                    'user_team_sales': self.team_sales.id,
+                    'user_phone_num': self.phone_num,
+                    'groups_id': [(6, 0, [user_group.id])],
+                })
+                self.acc_id = self.env['res.users'].search([('login', '=', self.email)]).id
+                self.account_link = self.env['res.users'].search([('login', '=', self.email)])
         orders.write({'state': state})
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
@@ -567,7 +556,8 @@ class EmployeeProfile(models.Model):
         else:
             return []
 
-    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block, required=True)
+    position_id = fields.Many2one('hrm.position', string='Vị trí', tracking=True, domain=_default_position_block,
+                                  required=True)
 
     def get_all_parent(self, table_name, parent, starting_id):
         query = f"""
@@ -585,11 +575,6 @@ class EmployeeProfile(models.Model):
         for res in temp:
             result.append(res[0])
         return result
-
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
 
     def find_department(self, list_dept, records):
         # list_dept là danh sách id hệ thống có quan hệ cha con
@@ -655,7 +640,8 @@ class EmployeeProfile(models.Model):
         if self.env.user.block_id == constraint.BLOCK_OFFICE_NAME:
             # nếu là khối văn phòng và có cấu hình phòng ban
             if self.env.user.department_id.ids:
-                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments', 'superior_department')
+                list_department = func.get_child_id(self.env.user.department_id, 'hrm_departments',
+                                                    'superior_department')
                 for depart in self.department_id:
                     if depart.id not in list_department:
                         raise AccessDenied(f"Bạn không có quyền cấu hình phòng ban {depart.name}")
@@ -680,16 +666,17 @@ class EmployeeProfile(models.Model):
 
     def compute_documents_list(self):
         """Tìm cấu hình dựa trên block_id"""
+
         def apply_config(document_id):
             if self.type_update_document == 'new' and self.is_compute_documents_list:
                 self.sudo().write({"document_list": document_id.new_config.ids, "is_compute_documents_list": False})
             elif self.type_update_document == 'all' and self.is_compute_documents_list:
                 self.sudo().write({"document_list": document_id.all.ids, "is_compute_documents_list": False})
             elif self.type_update_document == 'not_approved_and_new' and self.is_compute_documents_list:
-                self.sudo().write({"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
-            print(self.document_list, self.is_compute_documents_list, 'zzzzzzzz')
+                self.sudo().write(
+                    {"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
             self.sudo().write({'document_config': document_id})
-            # giải pháp update giá trị cho document_config khi sử dụng store = True không được :((
+            # giải pháp update giá trị cho document_config khi sử dụng store = True không được
             if self.id:
                 self.sudo()._cr.execute(f"""
                             update hrm_employee_profile
@@ -734,6 +721,7 @@ class EmployeeProfile(models.Model):
                 apply_config(document_id)
         else:
             self.document_config = False
+
     @api.onchange("document_declaration")
     def check_duplicate_document_declaration(self):
         if self.document_declaration:
@@ -802,3 +790,10 @@ class EmployeeProfile(models.Model):
             if line.complete:
                 list_complete.append(line.type_documents.id)
         return list_complete
+
+    def change_account_status(self):
+        self.date_close = fields.Datetime.now()
+        self.account_link.sudo().write({'active': False})
+
+    def reset_password(self):
+        return self.account_link.sudo().action_reset_password()
