@@ -207,7 +207,7 @@ class EmployeeProfile(models.Model):
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
                         if field.get("name") not in ['employee_code_new', 'document_config', 'document_list',
-                                                     'manager_id', 'profile_status']:
+                                                     'manager_id', 'profile_status', 'account_link_secondary']:
                             modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                            ['state', '!=', 'draft']]})
                         if field.get("name") in ['phone_num', 'email', 'identifier']:

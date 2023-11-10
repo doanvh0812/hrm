@@ -23,8 +23,11 @@ class Users(models.Model):
     user_code = fields.Char(string="Mã nhân viên")
     user_position_id = fields.Many2one('hrm.position', string='Vị trí', required=True)
 
-    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', domain=[('id', '=', 0)])
-    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', domain=[('id', '=', 0)])
+    def default_teams(self):
+        return [('id', '=', 0)]
+
+    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', domain=default_teams)
+    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', domain=default_teams)
     user_phone_num = fields.Char('Số điện thoại', required=True)
     user_related = fields.Boolean(compute='compute_related')
     require_team = fields.Boolean(default=False)
