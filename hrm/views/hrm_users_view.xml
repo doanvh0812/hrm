@@ -26,8 +26,10 @@
                         <field name="user_system_id" attrs="{'invisible': [('user_related', '=', True)], 'required': [('user_related', '=', False)]}"/>
                         <field name="user_company_id" attrs="{'invisible': [('user_related', '=', True)], 'required': [('user_related', '=', False)]}"/>
                         <field name="user_position_id" required="1"/>
-                        <field name="user_team_marketing" attrs="{'invisible': ['|', ('user_related', '=', True), ('require_team', '=', True)], 'required': False}"/>
-                        <field name="user_team_sales" attrs="{'invisible': ['|', ('user_related', '=', True), ('require_team', '=', False)], 'required': False}"/>
+                        <field name="user_team_marketing" attrs="{'invisible': ['|', ('user_related', '=', True), ('require_team', '=', False)]
+                                                                    , 'required': ['|', ('user_related', '=', True), ('require_team', '=', True)]}"/>
+                        <field name="user_team_sales" attrs="{'invisible': ['|', ('user_related', '=', True), ('require_team', '=', True)]
+                                                                    , 'required': ['|', ('user_related', '=', True), ('require_team', '=', False)]}"/>
                     </group>
                 </group>
             </xpath>

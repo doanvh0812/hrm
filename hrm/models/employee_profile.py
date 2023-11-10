@@ -40,14 +40,12 @@ class EmployeeProfile(models.Model):
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
-
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
 
     account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
-
     date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
     date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
     url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
@@ -55,7 +53,7 @@ class EmployeeProfile(models.Model):
                                               related='account_link.signup_valid', readonly=True)
     status_account = fields.Boolean(string="Trạng thái tài khoản", related='account_link.active', readonly=True)
     date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
-    date_open = fields.Datetime(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
+    date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -218,8 +216,7 @@ class EmployeeProfile(models.Model):
                         if field.get("name") == 'block_id':
                             modifiers.update(
                                 {'readonly': ["|", ["check_blocks", "!=", 'full'], ['state', '!=', 'draft']]})
-                        if field.get("name") == 'account_status':
-                            modifiers.update({'readonly': True})
+
                         field.attrib['modifiers'] = json.dumps(modifiers)
                 elif has_group_own_edit:
                     # nếu user login có quyền chỉ chỉnh sửa chính mình
@@ -580,11 +577,6 @@ class EmployeeProfile(models.Model):
             result.append(res[0])
         return result
 
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
-
     def find_department(self, list_dept, records):
         # list_dept là danh sách id hệ thống có quan hệ cha con
         # records là danh sách bản ghi cấu hình luồng phê duyệt
@@ -685,12 +677,12 @@ class EmployeeProfile(models.Model):
                 self.sudo().write(
                     {"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
             self.sudo().write({'document_config': document_id})
-            # giải pháp update giá trị cho document_config khi sử dụng store = True không được :((
-            # if self.id:
-            #     self.sudo()._cr.execute(f"""
-            #                 update hrm_employee_profile
-            #                 set document_config = {document_id.id}
-            #                 where id = {self.id};""")
+            # giải pháp update giá trị cho document_config khi sử dụng store = True không được
+            if self.id:
+                self.sudo()._cr.execute(f"""
+                            update hrm_employee_profile
+                            set document_config = {document_id.id}
+                            where id = {self.id};""")
 
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
         document_id = False
