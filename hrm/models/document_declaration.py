@@ -21,7 +21,7 @@ class DocumentDeclaration(models.Model):
     complete = fields.Boolean(string='Hoàn thành')
 
     attachment_ids = fields.Many2many('ir.attachment', 'model_attachment_rel', 'model_id', 'attachment_id',
-                                      string='Tệp đính kèm')
+                                      string='Tệp tài liệu')
 
     picture_ids = fields.One2many('hrm.image', 'document_declaration', string="Hình ảnh")
     document_public_image_url = fields.Char(compute='_compute_image_related_fields', compute_sudo=True, store=True)
@@ -48,15 +48,13 @@ class DocumentDeclaration(models.Model):
             else:
                 rec.name = ''
 
-    @api.constrains('attachment_ids')
+    @api.constrains('attachment_ids', 'picture_ids')
     def check_attchachment_count(self):
         if int(self.max_files) == 0:
             return
         if len(self.attachment_ids) > int(self.max_files):
             raise ValidationError(_(f"Số lượng tài liệu tải lên giới hạn là {self.max_files}"))
 
-    @api.constrains('picture_ids')
-    def check_image_count(self):
         if int(self.max_photos) == 0:
             return
         if len(self.picture_ids) > int(self.max_photos):
