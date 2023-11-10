@@ -2,7 +2,7 @@ import re
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
-from odoo import http
+
 
 
 class DocumentListConfig(models.Model):

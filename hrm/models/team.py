@@ -14,7 +14,6 @@ class Teams(models.Model):
     system_id = fields.Many2one('hrm.systems', string='Hệ thống', required=True)
     active = fields.Boolean(string='Hoạt Động', default=True)
     change_system_id = fields.Many2one('hrm.systems', string="Hệ thống", default=False)
-
     see_record_with_config = fields.Boolean(default=True)
 
     @api.onchange('company')
