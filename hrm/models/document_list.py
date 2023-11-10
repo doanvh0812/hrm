@@ -2,7 +2,7 @@ import re
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
-from odoo import http
+
 
 
 class DocumentListConfig(models.Model):
@@ -16,7 +16,7 @@ class DocumentListConfig(models.Model):
     check_company = fields.Char(default=lambda self: self.env.user.company)
     document_list = fields.One2many('hrm.document.list', 'document_id', string='Danh sách tài liệu')
     related = fields.Boolean(compute='_compute_related_')
-    see_record_with_config = fields.Boolean()
+    see_record_with_config = fields.Boolean(default=True)
 
     update_confirm_document = fields.Selection(selection=constraint.UPDATE_CONFIRM_DOCUMENT, string="Cập nhật tài liệu")
 
