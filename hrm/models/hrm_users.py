@@ -15,15 +15,17 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
 
-    user_name_display = fields.Char('Tên hiển thị', readonly=True, compute= '_compute_user_display_name', store=True)
-    user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,default=lambda self: self.default_block())
+    user_name_display = fields.Char('Tên hiển thị', readonly=True, compute='_compute_user_display_name', store=True)
+    user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
+                                    default=lambda self: self.default_block())
     user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
-    user_company_id = fields.Many2one('hrm.companies', string='Công ty')
     user_code = fields.Char(string="Mã nhân viên")
     user_position_id = fields.Many2one('hrm.position', string='Vị trí', required=True)
-    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing')
-    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng')
+    def _default_team(self):
+        return [('id', '=', 0)]
+    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', domain=_default_team)
+    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', domain=_default_team)
     user_phone_num = fields.Char('Số điện thoại', required=True)
     user_related = fields.Boolean(compute='compute_related')
     require_team = fields.Boolean(default=False)
@@ -113,11 +115,86 @@ class Users(models.Model):
         self._remove_system_not_have_company()
         return res
 
-    @api.depends('name', 'user_position_id', 'user_company_id', 'user_department_id')
+    @api.depends('name', 'user_position_id', 'user_company_id')
     def _compute_user_display_name(self):
         name_f = ''
-        if self.user_position_id and self.user_company_id:
-            name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_company_id.name}'
-        elif self.user_position_id and self.user_department_id:
-            name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
+        if self.name and self.user_position_id and self.user_company_id:
+                name_f = self.name + "_" + self.user_position_id.work_position  + "_" + self.user_company_id.name
+        elif self.name and self.user_position_id and self.user_department_id:
+                name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
         self.user_name_display = name_f
+
+    def get_child_company(self):
+        """ lấy tất cả công ty user được cấu hình trong thiết lập """
+        list_child_company = []
+        if self.env.user.user_company_id:
+            # nếu user đc cấu hình công ty thì lấy list id công ty con của công ty đó
+            list_child_company = self.env['hrm.utils'].get_child_id(self.env.user.user_company_id, 'hrm_companies',
+                                                                    "parent_company")
+        elif not self.env.user.user_company_id and self.env.user.user_system_id:
+            # nếu user chỉ đc cấu hình hệ thống
+            # lấy list id công ty con của hệ thống đã chọn
+            func = self.env['hrm.utils']
+            for sys in self.env.user.user_system_id:
+                list_child_company += func._system_have_child_company(sys.id)
+        return [('id', 'in', list_child_company)]
+
+    user_company_id = fields.Many2one('hrm.companies', string="Công ty", tracking=True, domain=get_child_company)
+
+    @api.onchange('user_system_id')
+    def _onchange_system_id(self):
+        if self.user_system_id:
+            system = self.user_system_id
+            child_company_ids = []
+
+            # Lấy danh sách các ID của các công ty liên quan đến hệ thống đã chọn
+            func = self.env['hrm.utils']
+            child_company_ids += func._system_have_child_company(system.id)
+
+            # Cập nhật miền của trường 'user_company_id' để chỉ hiển thị các công ty liên quan đến hệ thống đã chọn
+            return {'domain': {'user_company_id': [('id', 'in', child_company_ids)]}}
+
+    @api.onchange('user_block_id')
+    def _onchange_user_block_id(self):
+        """
+        Phương thức này được kích hoạt khi trường 'user_block_id' thay đổi.
+        Nó cập nhật các tùy chọn có sẵn cho trường 'user_position_id' dựa trên 'user_block_id' được chọn.
+        """
+        if self.user_block_id:
+            # Tìm tất cả các vị trí thuộc khối đã chọn
+            cac_vi_tri = self.env['hrm.position'].search([('block', '=', self.user_block_id.name)])
+
+            # Cập nhật miền của 'user_position_id' để giới hạn các tùy chọn cho khối đã chọn
+            return {'domain': {'user_position_id': [('id', 'in', cac_vi_tri.ids)]}}
+        else:
+            # Nếu không có khối nào được chọn, xóa bộ lọc
+            return {'domain': {'user_position_id': []}}
+
+    @api.onchange('user_department_id')
+    def _default_position_1(self):
+        if self.user_block_id.name == constraint.BLOCK_OFFICE_NAME:
+            if self.user_department_id:
+                position = self.env['hrm.position'].search([('department', '=', self.user_department_id.id)])
+                return {'domain': {'user_position_id': [('id', 'in', position.ids)]}}
+
+    @api.onchange('user_company_id')
+    def _onchange_company(self):
+        """decorator này tạo hồ sơ nhân viên, chọn cty cho hồ sơ đó
+             sẽ tự hiển thị đội ngũ mkt và sale nó thuộc vào
+        """
+        self.user_team_marketing = self.user_team_sales = False
+        if self.user_company_id:
+            list_team_marketing = self.env['hrm.teams'].search(
+                [('company', '=', self.user_company_id.id), ('type_team', '=', 'marketing')])
+            list_team_sale = self.env['hrm.teams'].search(
+                [('company', '=', self.user_company_id.id), ('type_team', 'in', ('sale', 'resale'))])
+
+            return {
+                'domain': {
+                    'user_team_marketing': [('id', 'in', list_team_marketing.ids)],
+                    'user_team_sales': [('id', 'in', list_team_sale.ids)]
+                }
+            }
+        else:
+            return {}
+        self.user_system_id = self.user_company_id.system_id

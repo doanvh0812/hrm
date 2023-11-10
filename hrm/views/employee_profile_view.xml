@@ -1,6 +1,5 @@
 <odoo>
     <data>
-
         <record id="view_employee_profile_form" model="ir.ui.view">
             <field name="name">hrm.employee.profile.form</field>
             <field name="model">hrm.employee.profile</field>
@@ -11,9 +10,11 @@
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
                         <button name="action_cancel" string="Hủy" type="object"/>
-                        <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-primary"/>
+                        <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"
+                                attrs="{'invisible': [('status_account', '=', False)]}"/>
                         <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
-                                class="btn-red" attrs="{'invisible': ['|', ('account_link', '=', False), ('status_account', '=', False)]}">
+                                class="btn-red"
+                                attrs="{'invisible': ['|', ('account_link', '=', False), ('status_account', '=', False)]}">
                         </button>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
@@ -93,12 +94,14 @@
                                     </tree>
                                 </field>
                             </page>
-                            <page string="Thiết lập tài khoản">
+                            <page string="Thiết lập nhân sự">
                                 <group>
                                     <group>
                                         <field name="account_link"/>
                                         <field name="status_account" widget="boolean_toggle" attrs="{'invisible': [('account_link', '=', False)]}"/>
                                         <field name="account_link_secondary"/>
+                                        <field name="status_account" widget="boolean_toggle"
+                                               attrs="{'invisible': [('account_link', '=', False)]}"/>
                                     </group>
                                     <group>
                                         <field name="date_close"/>
@@ -107,7 +110,8 @@
                                     </group>
                                 </group>
                                 <div class="alert alert-success text-center o_form_header"
-                                     attrs="{'invisible': [('url_reset_password_valid', '=', False)]}" role="status">
+                                     attrs="{'invisible': ['|',('url_reset_password_valid', '=', False),('status_account', '=', False)]}"
+                                     role="status">
                                     <a class="close" data-dismiss="alert" href="#" aria-label="Close">
                                         x
                                     </a>
@@ -159,6 +163,5 @@
                 (0, 0, {'view_mode': 'tree', 'view_id': ref('view_employee_profile_tree')}),
                 (0, 0, {'view_mode': 'form', 'view_id': ref('view_employee_profile_form')})]"/>
         </record>
-
     </data>
 </odoo>

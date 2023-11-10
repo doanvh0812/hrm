@@ -1,11 +1,9 @@
-from builtins import list
 from odoo import models, fields, api
 import re
 from odoo.exceptions import ValidationError, AccessDenied
 from . import constraint
 from lxml import etree
 import json
-from odoo.http import request
 
 
 class EmployeeProfile(models.Model):
@@ -23,8 +21,7 @@ class EmployeeProfile(models.Model):
                                tracking=True)
     work_start_date = fields.Date(string='Ngày vào làm', tracking=True)
     employee_code_old = fields.Char(string='Mã nhân viên cũ')
-    employee_code_new = fields.Char(string="Mã nhân viên mới", compute='render_code',store=True)
-
+    employee_code_new = fields.Char(string="Mã nhân viên mới", compute='render_code', store=True)
     email = fields.Char('Email công việc', required=True, tracking=True)
     phone_num = fields.Char('Số điện thoại di động', required=True, tracking=True)
     identifier = fields.Char('Số căn cước công dân', required=True, tracking=True)
@@ -43,11 +40,6 @@ class EmployeeProfile(models.Model):
     auto_create_acc = fields.Boolean(string='Tự động tạo tài khoản', default=True)
     reason = fields.Char(string='Lý Do Từ Chối')
     acc_id = fields.Integer(string='Id tài khoản đăng nhập')
-    # lọc duy nhất mã nhân viên
-    # _sql_constraints = [
-    #     ('employee_code_uniq', 'unique(employee_code_new)', 'Mã nhân viên phải là duy nhất!'),
-    # ]
-
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
@@ -57,10 +49,11 @@ class EmployeeProfile(models.Model):
     date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
     date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
     url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
-    url_reset_password_valid = fields.Boolean(string="Link khôi phục mật khẩu hợp lệ", related='account_link.signup_valid', readonly=True)
+    url_reset_password_valid = fields.Boolean(string="Link khôi phục mật khẩu hợp lệ",
+                                              related='account_link.signup_valid', readonly=True)
     status_account = fields.Boolean(string="Trạng thái tài khoản", related='account_link.active', readonly=True)
     date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
-    date_open = fields.Datetime(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
+    date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
 
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
@@ -543,10 +536,6 @@ class EmployeeProfile(models.Model):
             self.message_post(body="Hủy bỏ phê duyệt.",
                               subtype_id=self.env['ir.model.data'].xmlid_to_res_id('mail.mt_note'))
 
-    def lock_personnel_account(self):
-        """Hàm này hoạt động khi bấm button Khóa tk nhân sự, Khi đó trang thái tài khoản ở Hồ s nhân sự sẽ chuyển về đã đóng"""
-        print('ĐÓNG')
-
     def _default_departments(self):
         """Hàm này để hiển thị ra các phòng ban mà tài khoản có thể làm việc"""
         if self.env.user.department_id:
@@ -586,11 +575,6 @@ class EmployeeProfile(models.Model):
         for res in temp:
             result.append(res[0])
         return result
-
-    def find_block(self, records):
-        for approved in records:
-            if not approved.department_id and not approved.system_id:
-                return approved
 
     def find_department(self, list_dept, records):
         # list_dept là danh sách id hệ thống có quan hệ cha con
