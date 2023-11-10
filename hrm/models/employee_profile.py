@@ -676,12 +676,12 @@ class EmployeeProfile(models.Model):
                 self.sudo().write(
                     {"document_list": document_id.not_approved_and_new.ids, "is_compute_documents_list": False})
             self.sudo().write({'document_config': document_id})
-            # giải pháp update giá trị cho document_config khi sử dụng store = True không được :((
-            # if self.id:
-            #     self.sudo()._cr.execute(f"""
-            #                 update hrm_employee_profile
-            #                 set document_config = {document_id.id}
-            #                 where id = {self.id};""")
+            # giải pháp update giá trị cho document_config khi sử dụng store = True không được
+            if self.id:
+                self.sudo()._cr.execute(f"""
+                            update hrm_employee_profile
+                            set document_config = {document_id.id}
+                            where id = {self.id};""")
 
         records = self.env['hrm.document.list.config'].sudo().search([('block_id', '=', self.block_id.id)])
         document_id = False

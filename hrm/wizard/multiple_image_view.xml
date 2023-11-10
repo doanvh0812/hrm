@@ -6,7 +6,7 @@
             <form string="Upload hình ảnh">
                 <group>
                     <field name="document_declaration" invisible="1"/>
-                    <field name="attachment_ids"/>
+                    <field name="attachment_ids" widget="many2many_binary"/>
                 </group>
                 <footer>
                     <button name="action_save_images" string="Save" type="object" class="btn-primary"/>

@@ -22,10 +22,9 @@ class Users(models.Model):
     user_system_id = fields.Many2one('hrm.systems', string='Hệ thống')
     user_code = fields.Char(string="Mã nhân viên")
     user_position_id = fields.Many2one('hrm.position', string='Vị trí', required=True)
-    def _default_team(self):
-        return [('id', '=', 0)]
-    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', domain=_default_team)
-    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', domain=_default_team)
+
+    user_team_marketing = fields.Many2one('hrm.teams', string='Đội ngũ marketing', domain=[('id', '=', 0)])
+    user_team_sales = fields.Many2one('hrm.teams', string='Đội ngũ bán hàng', domain=[('id', '=', 0)])
     user_phone_num = fields.Char('Số điện thoại', required=True)
     user_related = fields.Boolean(compute='compute_related')
     require_team = fields.Boolean(default=False)
@@ -173,6 +172,7 @@ class Users(models.Model):
     @api.onchange('user_department_id')
     def _default_position_1(self):
         if self.user_block_id.name == constraint.BLOCK_OFFICE_NAME:
+            self.user_position_id = False
             if self.user_department_id:
                 position = self.env['hrm.position'].search([('department', '=', self.user_department_id.id)])
                 return {'domain': {'user_position_id': [('id', 'in', position.ids)]}}
