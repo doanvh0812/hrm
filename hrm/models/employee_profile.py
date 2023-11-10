@@ -215,8 +215,7 @@ class EmployeeProfile(models.Model):
                         if field.get("name") == 'block_id':
                             modifiers.update(
                                 {'readonly': ["|", ["check_blocks", "!=", 'full'], ['state', '!=', 'draft']]})
-                        if field.get("name") == 'account_status':
-                            modifiers.update({'readonly': True})
+
                         field.attrib['modifiers'] = json.dumps(modifiers)
                 elif has_group_own_edit:
                     # nếu user login có quyền chỉ chỉnh sửa chính mình

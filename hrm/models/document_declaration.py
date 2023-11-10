@@ -52,17 +52,15 @@ class DocumentDeclaration(models.Model):
     def check_attchachment_count(self):
         if int(self.max_files) == 0:
             return
-        for record in self:
-            if len(record.attachment_ids) > int(record.max_files):
-                raise ValidationError(_(f"Số lượng tài liệu tải lên giới hạn là {record.max_files}"))
+        if len(self.attachment_ids) > int(self.max_files):
+            raise ValidationError(_(f"Số lượng tài liệu tải lên giới hạn là {self.max_files}"))
 
     @api.constrains('picture_ids')
     def check_image_count(self):
         if int(self.max_photos) == 0:
             return
-        for record in self:
-            if len(record.picture_ids) > int(record.max_photos):
-                raise ValidationError(_(f"Số lượng ảnh tải lên giới hạn là {record.max_photos}"))
+        if len(self.picture_ids) > int(self.max_photos):
+            raise ValidationError(_(f"Số lượng ảnh tải lên giới hạn là {self.max_photos}"))
 
     @api.depends('block_id')
     def _compute_related_(self):
