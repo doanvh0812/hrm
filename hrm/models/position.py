@@ -34,6 +34,12 @@ class Position(models.Model):
 
     department = fields.Many2one("hrm.departments", string='Phòng/Ban', tracking=True, domain=_default_department)
 
+    @api.onchange('block')
+    def clear_form(self):
+        if self.block == constraint.BLOCK_OFFICE_NAME:
+            self.team_type = ''
+        else:
+            self.team_type = 'marketing'
     @api.constrains("work_position")
     def _check_valid_name(self):
         """
@@ -86,3 +92,10 @@ class Position(models.Model):
             raise AccessDenied(f"Bạn không có quyền chỉnh sửa bản ghi này")
         elif self.env.user.block_id == constraint.BLOCK_COMMERCE_NAME and self.block == constraint.BLOCK_OFFICE_NAME:
             raise AccessDenied(f"Bạn không có quyền chỉnh sửa bản ghi này")
+
+    @api.onchange('block')
+    def clear_form(self):
+        if self.block == constraint.BLOCK_OFFICE_NAME:
+            self.team_type = ''
+        else:
+            self.team_type = 'marketing'
