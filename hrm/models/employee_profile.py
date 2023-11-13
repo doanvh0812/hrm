@@ -68,6 +68,7 @@ class EmployeeProfile(models.Model):
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
     see_record_with_config = fields.Boolean()
+    can_see_button_reset_lock = fields.Boolean()
 
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
@@ -77,6 +78,19 @@ class EmployeeProfile(models.Model):
     @api.depends('employee_code_new')
     def compute_check_block(self):
         self.check_blocks = self.env.user.block_id
+
+    def compute_see_button_reset_and_lock(self):
+        """Điều kiện để thấy button Đổi MK và Khoá TK"""
+        has_group_config = self.env.user.has_group("hrm.hrm_group_config_access")
+        records = self.env['hrm.employee.profile'].sudo().search([])
+        for line in records:
+            line.can_see_button_reset_lock = True
+            if not line.account_link or not line.status_account:
+                line.can_see_button_reset_lock = False
+                continue
+            if line.env.user.id != line.create_uid and not has_group_config:
+                line.can_see_button_reset_lock = False
+
 
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
@@ -99,8 +113,8 @@ class EmployeeProfile(models.Model):
                       (step = (
                         SELECT MAX(step)
                         FROM hrm_approval_flow_profile
-                        WHERE (approve_status = 'pending' OR (obligatory = false AND excess_level = true)) 
-							   AND profile_id = {p.id}
+                        WHERE approve_status = 'pending' AND obligatory = true
+                        AND profile_id = {p.id}
                       ))
                       OR
                       (excess_level = true AND step = (
@@ -163,6 +177,7 @@ class EmployeeProfile(models.Model):
         self.env['hrm.utils']._see_record_with_config('hrm.employee.profile')
         self.see_own_approved_record()
         self.logic_button()
+        self.compute_see_button_reset_and_lock()
 
         # Kiểm tra xem view_type có phải là 'form' và user_id có tồn tại
         if view_id:
@@ -188,6 +203,16 @@ class EmployeeProfile(models.Model):
             res['arch'] = res['arch'].replace(
                 '<button name="action_cancel" string="Hủy" type="object"/>',
                 f'<button name="action_cancel" string="Hủy" type="object" style="background-color: #FD5050; border-radius: 5px;color:#fff;" modifiers=\'{{"invisible":["|",["state","!=","pending"],["create_uid", "!=", {user_id}]]}}\'/>'
+            )
+
+            res['arch'] = res['arch'].replace(
+                '<button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"/>',
+                f'<button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info" modifiers=\'{{"invisible":[["can_see_button_reset_lock", "=", false]]}}\'/>'
+            )
+            id_action = self.env['ir.actions.act_window'].sudo().search([('name', '=', 'Xác nhận khóa tài khoản nhân sự')], limit=1)
+            res['arch'] = res['arch'].replace(
+                f'<button name="{id_action.id}" type="action" string="Khóa TK nhân sự" class="btn-red"/>',
+                f'<button name="{id_action.id}" type="action" string="Khóa TK nhân sự" class="btn-red" modifiers=\'{{"invisible":[["can_see_button_reset_lock", "=", false]]}}\'/>'
             )
 
             doc = etree.XML(res['arch'])
