@@ -111,7 +111,7 @@ class EmployeeProfile(models.Model):
                     FROM hrm_approval_flow_profile where profile_id = {p.id}
                     AND (
                       (step = (
-                        SELECT MIN(step)
+                        SELECT MAX(step)
                         FROM hrm_approval_flow_profile
                         WHERE approve_status = 'pending' AND obligatory = true
                         AND profile_id = {p.id}
@@ -432,7 +432,7 @@ class EmployeeProfile(models.Model):
         step = 0  # step đến lượt
         step_excess_level = 0  # step vượt cấp
         for rec in orders.approved_link:
-            if rec.approve.id == id_access and rec.excess_level == False:
+            if rec.approve.id == id_access and (rec.excess_level == False or (rec.excess_level == True and rec.obligatory == False)):
                 step = rec.step
             elif rec.approve.id == id_access and rec.excess_level == True:
                 step_excess_level = rec.step
