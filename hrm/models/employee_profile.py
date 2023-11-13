@@ -97,9 +97,10 @@ class EmployeeProfile(models.Model):
                     FROM hrm_approval_flow_profile where profile_id = {p.id}
                     AND (
                       (step = (
-                        SELECT MIN(step)
+                        SELECT MAX(step)
                         FROM hrm_approval_flow_profile
-                        WHERE approve_status = 'pending' AND profile_id = {p.id}
+                        WHERE (approve_status = 'pending' OR (obligatory = false AND excess_level = true)) 
+							   AND profile_id = {p.id}
                       ))
                       OR
                       (excess_level = true AND step = (
@@ -206,7 +207,7 @@ class EmployeeProfile(models.Model):
                         modifiers = field.attrib.get('modifiers', '')
                         modifiers = json.loads(modifiers) if modifiers else {}
                         if field.get("name") not in ['employee_code_new', 'document_config', 'document_list',
-                                                     'manager_id', 'profile_status']:
+                                                     'manager_id', 'profile_status', 'account_link_secondary']:
                             modifiers.update({'readonly': ["|", ['id', '!=', False], ['create_uid', '!=', user_id],
                                                            ['state', '!=', 'draft']]})
                         if field.get("name") in ['phone_num', 'email', 'identifier']:
@@ -406,7 +407,7 @@ class EmployeeProfile(models.Model):
         step = 0  # step đến lượt
         step_excess_level = 0  # step vượt cấp
         for rec in orders.approved_link:
-            if rec.approve.id == id_access and rec.excess_level == False:
+            if rec.approve.id == id_access and (rec.excess_level == False or (rec.excess_level == True and rec.obligatory == False)):
                 step = rec.step
             elif rec.approve.id == id_access and rec.excess_level == True:
                 step_excess_level = rec.step
