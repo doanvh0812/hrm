@@ -47,6 +47,7 @@
         'views/rank_view.xml',
         'views/document_declaration_view.xml',
         'views/image_view.xml',
+        'views/account_reopen_flow.xml',
         'views/menu.xml'
     ],
     # only loaded in demonstration mode

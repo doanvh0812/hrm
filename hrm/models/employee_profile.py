@@ -46,8 +46,6 @@ class EmployeeProfile(models.Model):
 
     account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
-    date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
-    date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
     url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
     url_reset_password_valid = fields.Boolean(string="Link khôi phục mật khẩu hợp lệ",
                                               related='account_link.signup_valid', readonly=True)

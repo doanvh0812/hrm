@@ -28,6 +28,8 @@
               action="document_declaration_action"/>
     <menuitem id="approve_flow" name="Luồng phê duyệt" parent="menu_field" sequence="3"
               groups="hrm_group_config_access"/>
-    <menuitem id="create_approve_flow" name="Tạo" parent="approve_flow" sequence="10"
+    <menuitem id="create_approve_flow" name="Luồng phê duyệt" parent="approve_flow" sequence="10"
               action="approval_flow_object_action"/>
+    <menuitem id="create_account_reopen_flow" name="Luồng mở lại tài khoản" parent="approve_flow" sequence="11"
+              action="account_reopen_flow_action"/>
 </odoo>
