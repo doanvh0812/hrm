@@ -73,6 +73,13 @@ class EmployeeProfile(models.Model):
     require_team_sale = fields.Boolean(default=False)
 
     is_compute_documents_list = fields.Boolean(default=True)
+    cancelled_reopen_account = fields.Boolean(string='Huỷ', default=False)
+
+
+    def action_cancel_reopen_account(self):
+        for profile in self:
+            if profile.active in ['active', 'False']:
+                profile.write({'state': 'cancelled_reopen_account', 'cancelled_reopen_account': True})
 
     @api.depends('employee_code_new')
     def compute_check_block(self):
