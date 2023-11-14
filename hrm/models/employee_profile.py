@@ -43,7 +43,7 @@ class EmployeeProfile(models.Model):
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
-
+    # Tab tạo tài khoản tự động
     account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
     url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
@@ -57,11 +57,14 @@ class EmployeeProfile(models.Model):
                                     string="Trạng thái mở lại tài khoản")
     flow_account = fields.One2many('hrm.approval.reopen.account', 'account_id', tracking=True)
     flow_name = fields.Many2many('hrm.account.reopen.flow')
-    # Các trường trong tab
+    # Các trường trong tab luồng phê duyệt hồ sơ
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
-    document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
+    # Các trường trong tab mở lại tài khoản
+    reopen_approval_flow_link = fields.One2many('hrm.approval.reopen.account', 'account_id', tracking=True)
+    reopen_approval_flow_name = fields.Many2one('hrm.account.reopen.flow')
 
+    document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
     document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
     type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
                                             default='new')
