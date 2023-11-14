@@ -28,6 +28,7 @@
         'wizard/confirm_update_document.xml',
         'wizard/multiple_image_view.xml',
         'wizard/lock_account.xml',
+        'wizard/reason_reopening_account.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
         'views/hrm.xml',
