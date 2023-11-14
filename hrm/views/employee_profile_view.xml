@@ -102,6 +102,19 @@
                                     </tree>
                                 </field>
                             </page>
+                            <page string="Mở lại tài khoản">
+                                <field name="reopen_approval_flow_name" readonly="1"/>
+                                <field name="reopen_approval_flow_link" readonly="1">
+                                    <tree default_order="step ASC" class="hrm_custom_tree_notebook">
+                                        <field name="step"/>
+                                        <field name="approval_person"/>
+                                        <field name="imperative"/>
+                                        <field name="pass_level"/>
+                                        <field name="approve_status"/>
+                                        <field name="time"/>
+                                    </tree>
+                                </field>
+                            </page>
                             <page string="Thiết lập nhân sự">
                                 <group>
                                     <group>

@@ -23,6 +23,13 @@ STATE = [
     ('approved', 'Đã duyệt')
 ]
 
+STATE_REOPEN = [
+    ('wait_reopen', 'Chờ mở lại'),
+    ('active_reopen', 'Đang hoạt động'),
+    ('close', 'Đã đóng'),
+    ('cancel', 'Hủy')
+]
+
 APPROVE_STATUS = [
     ('pending', 'Chờ duyệt'),
     ('confirm', 'Đã duyệt'),

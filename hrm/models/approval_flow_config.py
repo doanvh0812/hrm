@@ -201,15 +201,6 @@ class Approval_flow_object(models.Model):
                 return {'domain': {'company': [('id', 'in', self.get_child_company())]}}
         self.company = [(6, 0, [])]
 
-    def _default_system(self):
-        """ tạo bộ lọc cho trường hệ thống user có thể cấu hình """
-        if self.env.user.system_id.ids:
-            list_systems = self.env['hrm.utils'].get_child_id(self.env.user.system_id, 'hrm_systems', "parent_system")
-            return [('id', 'in', list_systems)]
-        return []
-
-    system_id = fields.Many2many('hrm.systems', string="Hệ thống", tracking=True, domain=_default_system)
-
     @api.constrains('name', 'block_id', 'system_id', 'company', 'department_id')
     def check_permission(self):
         """ kiểm tra xem user có quyền cấu hình khối, hệ thống, cty, văn phòng hay không"""
