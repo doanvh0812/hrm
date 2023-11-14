@@ -26,7 +26,7 @@
               groups="hrm_group_config_access,hrm_group_own_edit,hrm_group_read_only,hrm_group_create_edit"/>
     <menuitem id="document_declaration" name="Khai báo tài liệu" parent="employee" sequence="130"
               action="document_declaration_action"/>
-    <menuitem id="approve_flow" name="Luồng phê duyệt" parent="menu_field" sequence="3"
+    <menuitem id="approve_flow" name="Luồng" parent="menu_field" sequence="3"
               groups="hrm_group_config_access"/>
     <menuitem id="create_approve_flow" name="Luồng phê duyệt" parent="approve_flow" sequence="10"
               action="approval_flow_object_action"/>

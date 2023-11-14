@@ -50,9 +50,13 @@ class EmployeeProfile(models.Model):
     url_reset_password_valid = fields.Boolean(string="Link khôi phục mật khẩu hợp lệ",
                                               related='account_link.signup_valid', readonly=True)
     status_account = fields.Boolean(string="Trạng thái tài khoản", related='account_link.active', readonly=True)
+    # Mở lại tài khoản
     date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
     date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
-
+    state_reopen = fields.Selection(constraint.STATE_REOPEN, default='close',
+                                    string="Trạng thái mở lại tài khoản")
+    flow_account = fields.One2many('hrm.approval.reopen.account', 'account_id', tracking=True)
+    flow_name = fields.Many2many('hrm.account.reopen.flow')
     # Các trường trong tab
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
@@ -66,6 +70,11 @@ class EmployeeProfile(models.Model):
     can_see_approved_record = fields.Boolean()
     can_see_button_approval = fields.Boolean()
     see_record_with_config = fields.Boolean()
+
+    # các trường có thể nhìn thấy trạng thái mở duyệt lại tài khoản
+    can_see_flow_reopen = fields.Boolean()
+    can_see_button_flow = fields.Boolean()
+    see_record_with_flow = fields.Boolean()
 
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
@@ -84,6 +93,15 @@ class EmployeeProfile(models.Model):
                 p.can_see_approved_record = True
             else:
                 p.can_see_approved_record = False
+
+    def see_record_reopen(self):
+        """Nhìn thấy những tài khoản được cấu hình"""
+        account = self.env['hrm.employee.profile'].sudo().search([('state_reopen', '!=', 'close')])
+        for acc in account:
+            if self.env.user.id in acc.flow_account.approval_person.ids:
+                acc.can_see_flow_reopen = True
+            else:
+                acc.can_see_flow_reopen = False
 
     def logic_button(self):
         """Nhìn thấy button khi đến lượt phê duyệt"""
@@ -116,6 +134,33 @@ class EmployeeProfile(models.Model):
                 p.can_see_button_approval = True
             else:
                 p.can_see_button_approval = False
+
+    def logic_button_reopen(self):
+        """Nhìn thấy button khi đến lượt phê duyệt"""
+        account = self.env['hrm.employee.profile'].sudo().search([('state_reopen', '=', 'wait_reopen')])
+        for acc in account:
+            query = f"""
+                SELECT approval_person
+                FROM hrm_approval_reopen_account where account_id = {acc.id}
+                    AND (
+                        (step = (SELECT MAX(step)
+                        FROM hrm_approval_reopen_account
+                        WHERE (approve_status = 'wait_reopen' OR (imperative = false AND pass_level = true))
+            			AND account_id = {acc.id}))
+                        OR (pass_level = true AND step = (
+                        SELECT MIN(step)
+                        FROM hrm_approval_reopen_account
+                        WHERE approve_status = 'wait_reopen' AND account_id = {acc.id}
+                        AND pass_level = true
+                        ))
+                    );"""
+            self._cr.execute(query)
+            list_id = self._cr.fetchall()
+            list_id_last = [i[0] for i in list_id]
+            if self.env.user.id in list_id_last:
+                acc.can_see_button_flow = True
+            else:
+                acc.can_see_button_flow = False
 
     def get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
@@ -405,7 +450,8 @@ class EmployeeProfile(models.Model):
         step = 0  # step đến lượt
         step_excess_level = 0  # step vượt cấp
         for rec in orders.approved_link:
-            if rec.approve.id == id_access and (rec.excess_level == False or (rec.excess_level == True and rec.obligatory == False)):
+            if rec.approve.id == id_access and (
+                    rec.excess_level == False or (rec.excess_level == True and rec.obligatory == False)):
                 step = rec.step
             elif rec.approve.id == id_access and rec.excess_level == True:
                 step_excess_level = rec.step
