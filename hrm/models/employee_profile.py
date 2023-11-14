@@ -53,11 +53,14 @@ class EmployeeProfile(models.Model):
     date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
     date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
 
-    # Các trường trong tab
+    # Các trường trong tab luồng phê duyệt hồ sơ
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
-    approved_name = fields.Many2one('hrm..flapprovalow.object')
-    document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
+    approved_name = fields.Many2one('hrm.approval.flow.object')
+    # Các trường trong tab mở lại tài khoản
+    reopen_approval_flow_link = fields.One2many('hrm.approval.reopen.account', 'account_id', tracking=True)
+    reopen_approval_flow_name = fields.Many2one('hrm.account.reopen.flow')
 
+    document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
     document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
     type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
                                             default='new')
