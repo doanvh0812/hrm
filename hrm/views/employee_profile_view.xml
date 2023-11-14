@@ -7,11 +7,11 @@
                 <form string="Tạo mới hồ sơ" create="false" edit="true">
                     <field name="id" invisible="1"/>
                     <field name="create_uid" invisible="1"/>
+                    <field name="can_see_button_reset_lock" invisible="1"/>
                     <header attrs="{'invisible': [('id', '=', False)]}">
                         <button name="action_send" string="Gửi duyệt" type="object" class="btn-primary"/>
                         <button name="action_cancel" string="Hủy" type="object"/>
-                        <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"
-                                attrs="{'invisible': [('status_account', '=', False)]}"/>
+                        <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"/>
                         <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
                                 class="btn-red"
                                 attrs="{'invisible': ['|', ('account_link', '=', False), ('status_account', '=', False)]}">
@@ -23,8 +23,6 @@
                         <button name="action_cancel_reopen_account" string="Hủy" type="object"
                                 class="btn-secondary"
                                 attrs="{'invisible': [('cancelled_reopen_account', '=', True)]}"/>
-
-
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
                     <sheet>
