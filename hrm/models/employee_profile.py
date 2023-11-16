@@ -43,23 +43,28 @@ class EmployeeProfile(models.Model):
     active = fields.Boolean(string='Hoạt động', default=True)
     related = fields.Boolean(compute='_compute_related_')
     state = fields.Selection(constraint.STATE, default='draft', string="Trạng thái phê duyệt")
-
+    # Tab tạo tài khoản tự động
     account_link = fields.Many2one('res.users', string="Tài khoản liên kết", readonly=1)
     account_link_secondary = fields.Many2one('res.users', string='Tài khoản liên kết phụ', tracking=True)
-    date_close = fields.Date(string='Ngày đóng tài khoản', default=fields.Date.today(), readonly=True)
-    date_open = fields.Date(string='Ngày mở lại tài khoản', default=fields.Date.today(), readonly=True)
     url_reset_password = fields.Char(string="Link khôi phục mật khẩu", related='account_link.signup_url', readonly=True)
     url_reset_password_valid = fields.Boolean(string="Link khôi phục mật khẩu hợp lệ",
                                               related='account_link.signup_valid', readonly=True)
     status_account = fields.Boolean(string="Trạng thái tài khoản", related='account_link.active', readonly=True)
+    # Mở lại tài khoản
     date_close = fields.Datetime(string='Ngày đóng tài khoản', readonly=True)
     date_open = fields.Datetime(string='Ngày mở lại tài khoản', readonly=True)
-
-    # Các trường trong tab
+    state_reopen = fields.Selection(constraint.STATE_REOPEN, default='close',
+                                    string="Trạng thái mở lại tài khoản")
+    flow_account = fields.One2many('hrm.approval.reopen.account', 'account_id', tracking=True)
+    flow_name = fields.Many2many('hrm.account.reopen.flow')
+    # Các trường trong tab luồng phê duyệt hồ sơ
     approved_link = fields.One2many('hrm.approval.flow.profile', 'profile_id', tracking=True)
     approved_name = fields.Many2one('hrm.approval.flow.object')
-    document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
+    # Các trường trong tab mở lại tài khoản
+    reopen_approval_flow_link = fields.One2many('hrm.approval.reopen.account', 'account_id', tracking=True)
+    reopen_approval_flow_name = fields.Many2one('hrm.account.reopen.flow')
 
+    document_declaration = fields.One2many('hrm.document_declaration', 'profile_id', tracking=True)
     document_config = fields.Many2one('hrm.document.list.config', compute='compute_documents_list')
     type_update_document = fields.Selection(constraint.UPDATE_CONFIRM_DOCUMENT, string="Đối tượng áp dụng tài liệu",
                                             default='new')
@@ -70,10 +75,21 @@ class EmployeeProfile(models.Model):
     see_record_with_config = fields.Boolean()
     can_see_button_reset_lock = fields.Boolean()
 
+    # các trường có thể nhìn thấy trạng thái mở duyệt lại tài khoản
+    can_see_flow_reopen = fields.Boolean()
+    can_see_button_flow = fields.Boolean()
+    see_record_with_flow = fields.Boolean()
+
     require_team_marketing = fields.Boolean(default=False)
     require_team_sale = fields.Boolean(default=False)
 
     is_compute_documents_list = fields.Boolean(default=True)
+    cancelled_reopen_account = fields.Boolean(string='Huỷ', default=False)
+
+    def action_cancel_reopen_account(self):
+        for profile in self:
+            if profile.active in ['active', 'False']:
+                profile.write({'state': 'cancelled_reopen_account', 'cancelled_reopen_account': True})
 
     @api.depends('employee_code_new')
     def compute_check_block(self):
@@ -91,7 +107,6 @@ class EmployeeProfile(models.Model):
             if line.env.user.id != line.create_uid and not has_group_config:
                 line.can_see_button_reset_lock = False
 
-
     def see_own_approved_record(self):
         """Nhìn thấy những hồ sơ user được cấu hình"""
         profile = self.env['hrm.employee.profile'].sudo().search([('state', '!=', 'draft')])
@@ -100,6 +115,15 @@ class EmployeeProfile(models.Model):
                 p.can_see_approved_record = True
             else:
                 p.can_see_approved_record = False
+
+    def see_record_reopen(self):
+        """Nhìn thấy những tài khoản được cấu hình"""
+        account = self.env['hrm.employee.profile'].sudo().search([('state_reopen', '!=', 'close')])
+        for acc in account:
+            if self.env.user.id in acc.flow_account.approval_person.ids:
+                acc.can_see_flow_reopen = True
+            else:
+                acc.can_see_flow_reopen = False
 
     def logic_button(self):
         """Nhìn thấy button khi đến lượt phê duyệt"""
@@ -132,6 +156,33 @@ class EmployeeProfile(models.Model):
                 p.can_see_button_approval = True
             else:
                 p.can_see_button_approval = False
+
+    def logic_button_reopen(self):
+        """Nhìn thấy button khi đến lượt phê duyệt"""
+        account = self.env['hrm.employee.profile'].sudo().search([('state_reopen', '=', 'wait_reopen')])
+        for acc in account:
+            query = f"""
+                SELECT approval_person
+                FROM hrm_approval_reopen_account where account_id = {acc.id}
+                    AND (
+                        (step = (SELECT MAX(step)
+                        FROM hrm_approval_reopen_account
+                        WHERE (approve_status = 'wait_reopen' OR (imperative = false AND pass_level = true))
+            			AND account_id = {acc.id}))
+                        OR (pass_level = true AND step = (
+                        SELECT MIN(step)
+                        FROM hrm_approval_reopen_account
+                        WHERE approve_status = 'wait_reopen' AND account_id = {acc.id}
+                        AND pass_level = true
+                        ))
+                    );"""
+            self._cr.execute(query)
+            list_id = self._cr.fetchall()
+            list_id_last = [i[0] for i in list_id]
+            if self.env.user.id in list_id_last:
+                acc.can_see_button_flow = True
+            else:
+                acc.can_see_button_flow = False
 
     def get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """
@@ -209,7 +260,8 @@ class EmployeeProfile(models.Model):
                 '<button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"/>',
                 f'<button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info" modifiers=\'{{"invisible":[["can_see_button_reset_lock", "=", false]]}}\'/>'
             )
-            id_action = self.env['ir.actions.act_window'].sudo().search([('name', '=', 'Xác nhận khóa tài khoản nhân sự')], limit=1)
+            id_action = self.env['ir.actions.act_window'].sudo().search(
+                [('name', '=', 'Xác nhận khóa tài khoản nhân sự')], limit=1)
             res['arch'] = res['arch'].replace(
                 f'<button name="{id_action.id}" type="action" string="Khóa TK nhân sự" class="btn-red"/>',
                 f'<button name="{id_action.id}" type="action" string="Khóa TK nhân sự" class="btn-red" modifiers=\'{{"invisible":[["can_see_button_reset_lock", "=", false]]}}\'/>'

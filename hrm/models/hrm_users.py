@@ -15,7 +15,7 @@ class Users(models.Model):
     company = fields.Many2many('hrm.companies', string='Công ty')
     related = fields.Boolean(compute='_compute_related_')
 
-    user_name_display = fields.Char('Tên hiển thị', readonly=True, compute='_compute_user_display_name', store=True)
+    user_name_display = fields.Char('Tên hiển thị', readonly=True, store=True)
     user_block_id = fields.Many2one('hrm.blocks', string='Khối', required=True,
                                     default=lambda self: self.default_block())
     user_department_id = fields.Many2one('hrm.departments', string='Phòng ban')
@@ -117,14 +117,14 @@ class Users(models.Model):
         self._remove_system_not_have_company()
         return res
 
-    @api.depends('name', 'user_position_id', 'user_company_id')
-    def _compute_user_display_name(self):
-        name_f = ''
-        if self.name and self.user_position_id and self.user_company_id:
-                name_f = self.name + "_" + self.user_position_id.work_position  + "_" + self.user_company_id.name
-        elif self.name and self.user_position_id and self.user_department_id:
-                name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
-        self.user_name_display = name_f
+    # @api.depends('name', 'user_position_id', 'user_company_id')
+    # def _compute_user_display_name(self):
+    #     name_f = ''
+    #     if self.name and self.user_position_id and self.user_company_id:
+    #             name_f = self.name + "_" + self.user_position_id.work_position  + "_" + self.user_company_id.name
+    #     elif self.name and self.user_position_id and self.user_department_id:
+    #             name_f = f'{self.name}_{self.user_position_id.work_position}_{self.user_department_id.name}'
+    #     self.user_name_display = name_f
 
     def get_child_company(self):
         """ lấy tất cả công ty user được cấu hình trong thiết lập """

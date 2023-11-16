@@ -28,6 +28,7 @@
         'wizard/confirm_update_document.xml',
         'wizard/multiple_image_view.xml',
         'wizard/lock_account.xml',
+        'wizard/reason_reopening_account.xml',
         'security/security.xml',
         'security/ir.model.access.csv',
         'views/hrm.xml',
@@ -47,6 +48,7 @@
         'views/rank_view.xml',
         'views/document_declaration_view.xml',
         'views/image_view.xml',
+        'views/account_reopen_flow.xml',
         'views/menu.xml'
     ],
     # only loaded in demonstration mode

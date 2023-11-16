@@ -13,7 +13,16 @@
                         <button name="action_cancel" string="Hủy" type="object"/>
                         <button name="reset_password" string="Đặt lại mật khẩu" type="object" class="btn-info"/>
                         <button name="%(action_lock_personnel_account_popup)d" type="action" string="Khóa TK nhân sự"
-                                class="btn-red"/>
+                                class="btn-red"
+                                attrs="{'invisible': ['|', ('account_link', '=', False), ('status_account', '=', False)]}">
+                        </button>
+                        <button name="%(reason_reopening_account_action)d" type="action"
+                                string="Mở lại tài khoản nhân sự"
+                                class="btn-red">
+                        </button>
+                        <button name="action_cancel_reopen_account" string="Hủy" type="object"
+                                class="btn-secondary"
+                                attrs="{'invisible': [('cancelled_reopen_account', '=', True)]}"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved"/>
                     </header>
                     <sheet>
@@ -28,6 +37,7 @@
                                 <field name="work_start_date"/>
                                 <field name="date_receipt"/>
                                 <field name="profile_status" readonly="1"/>
+                                <field name="cancelled_reopen_account" invisible="1"/>
                             </group>
                             <group>
                                 <!--related = true là đã chọn văn phòng-->
@@ -92,10 +102,25 @@
                                     </tree>
                                 </field>
                             </page>
+                            <page string="Mở lại tài khoản">
+                                <field name="reopen_approval_flow_name" readonly="1"/>
+                                <field name="reopen_approval_flow_link" readonly="1">
+                                    <tree default_order="step ASC" class="hrm_custom_tree_notebook">
+                                        <field name="step"/>
+                                        <field name="approval_person"/>
+                                        <field name="imperative"/>
+                                        <field name="pass_level"/>
+                                        <field name="approve_status"/>
+                                        <field name="time"/>
+                                    </tree>
+                                </field>
+                            </page>
                             <page string="Thiết lập nhân sự">
                                 <group>
                                     <group>
                                         <field name="account_link"/>
+                                        <field name="status_account" widget="boolean_toggle"
+                                               attrs="{'invisible': [('account_link', '=', False)]}"/>
                                         <field name="account_link_secondary"/>
                                         <field name="status_account" widget="boolean_toggle"
                                                attrs="{'invisible': [('account_link', '=', False)]}"/>
