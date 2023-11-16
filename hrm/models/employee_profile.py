@@ -420,9 +420,9 @@ class EmployeeProfile(models.Model):
         Khi thay đổi vị trí sẽ check loại đội ngũ là gì.
         """
         self.require_team_marketing = self.require_team_sale = False
-        if self.position_id.team_type == 'marketing':
+        if self.position_id.team_type == 'marketing' and self.block_id == constraint.BLOCK_COMMERCE_NAME:
             self.require_team_marketing = True
-        elif self.position_id.team_type == "sale":
+        elif self.position_id.team_type == "sale" and self.block_id == constraint.BLOCK_COMMERCE_NAME:
             self.require_team_sale = True
 
     def action_confirm(self):
